@@ -1,0 +1,54 @@
+/* Lora for what we say, Lato for how we say it. 16px base, 1.25 ratio for UI steps. */
+:root{
+  --mbc-font-serif:'Lora',Georgia,serif;
+  --mbc-font-sans:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mbc-font-mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+
+  --mbc-weight-light:300;
+  --mbc-weight-regular:400;
+  --mbc-weight-medium:600;
+  --mbc-weight-bold:700;
+
+  /* Fixed steps — do not eyeball intermediate sizes */
+  --mbc-size-display:80px;
+  --mbc-size-h1:66px;
+  --mbc-size-h2:46px;
+  --mbc-size-h3:24px;
+  --mbc-size-scripture:22px;
+  --mbc-size-lead:20px;
+  --mbc-size-body:17px;
+  --mbc-size-small:15px;
+  --mbc-size-fine:14px;
+  --mbc-size-label:11px;
+  --mbc-size-label-sm:10px;
+
+  --mbc-leading-display:1.03;
+  --mbc-leading-h1:1.06;
+  --mbc-leading-h2:1.1;
+  --mbc-leading-h3:1.2;
+  --mbc-leading-scripture:1.45;
+  --mbc-leading-body:1.65;
+  --mbc-leading-lead:1.62;
+  --mbc-leading-tight:1;
+
+  --mbc-track-display:-.025em;
+  --mbc-track-h2:-.02em;
+  --mbc-track-h3:-.01em;
+  --mbc-track-label:.2em;
+  --mbc-track-label-tight:.16em;
+  --mbc-track-button:.06em;
+
+  --mbc-measure:66ch;
+  --mbc-measure-narrow:48ch;
+
+  /* Ready-made font shorthands */
+  --mbc-type-display:var(--mbc-weight-regular) clamp(42px,5.4vw,80px)/var(--mbc-leading-display) var(--mbc-font-serif);
+  --mbc-type-h1:var(--mbc-weight-regular) clamp(38px,4.6vw,66px)/var(--mbc-leading-h1) var(--mbc-font-serif);
+  --mbc-type-h2:var(--mbc-weight-regular) clamp(30px,3.4vw,46px)/var(--mbc-leading-h2) var(--mbc-font-serif);
+  --mbc-type-h3:var(--mbc-weight-medium) 24px/var(--mbc-leading-h3) var(--mbc-font-serif);
+  --mbc-type-scripture:var(--mbc-weight-regular) italic 22px/var(--mbc-leading-scripture) var(--mbc-font-serif);
+  --mbc-type-lead:var(--mbc-weight-light) 20px/var(--mbc-leading-lead) var(--mbc-font-sans);
+  --mbc-type-body:var(--mbc-weight-regular) 17px/var(--mbc-leading-body) var(--mbc-font-sans);
+  --mbc-type-small:var(--mbc-weight-regular) 15px/1.6 var(--mbc-font-sans);
+  --mbc-type-label:var(--mbc-weight-bold) 11px/1 var(--mbc-font-sans);
+}

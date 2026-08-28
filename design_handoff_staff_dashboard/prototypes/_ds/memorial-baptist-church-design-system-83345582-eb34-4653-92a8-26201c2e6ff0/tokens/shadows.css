@@ -1,0 +1,12 @@
+/* Shadow is used almost nowhere on screen — only to lift printed collateral off the page. */
+:root{
+  --mbc-shadow-none:none;
+  --mbc-shadow-print:0 18px 40px -24px rgba(58,50,43,.35);
+  --mbc-shadow-print-sm:0 12px 28px -20px rgba(58,50,43,.35);
+  --mbc-shadow-sign:0 18px 40px -24px rgba(58,50,43,.4);
+  --mbc-shadow-bar:0 -10px 34px rgba(43,37,33,.26);
+  --mbc-scrim:rgba(43,37,33,.58);
+  --mbc-blur-chrome:blur(12px); /* @kind other */
+  --mbc-blur-scrim:blur(3px); /* @kind other */
+  --mbc-header-bg:rgba(248,243,235,.94);
+}

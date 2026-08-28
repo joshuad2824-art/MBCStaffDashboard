@@ -1,0 +1,52 @@
+/* Theme scopes. Wrap a page body — or one section of it — in .mbc-kids or .mbc-students and the
+   semantic layer remaps beneath it, so Button, Card, Eyebrow, Input and ArchPhoto follow with no new props.
+   Site chrome (header, footer, Give) is never scoped: it stays parent-brand on every page. */
+.mbc-kids{
+  --surface-page:var(--mbc-chalk);
+  --surface-card:var(--mbc-parchment);
+  --surface-panel:var(--mbc-chalk-panel);
+  --surface-field:var(--mbc-paper);
+
+  --text-eyebrow:var(--mbc-doorway-blue);
+  --text-category:var(--mbc-yale-sage);
+  --text-link:var(--mbc-doorway-blue);
+  --text-link-hover:var(--mbc-doorway-blue-deep);
+
+  --action-primary:var(--mbc-doorway-blue);
+  --action-primary-text:var(--mbc-chalk);
+  --action-ghost-hover:var(--mbc-chalk-panel);
+
+  --photo-radius:var(--mbc-radius-doorway);
+  --mbc-font-ministry-display:var(--mbc-font-kids-display);
+}
+.mbc-students{
+  --surface-page:var(--mbc-night);
+  --surface-card:var(--mbc-night-card);
+  --surface-panel:var(--mbc-night-card);
+  --surface-field:var(--mbc-night-card);
+
+  --text-heading:var(--mbc-chalk-dim);
+  --text-body:var(--mbc-on-dark-muted);
+  --text-scripture:var(--mbc-brass);
+  --text-meta:var(--mbc-stone);
+  --text-muted:var(--mbc-stone);
+  --text-eyebrow:var(--mbc-ember);
+  --text-category:var(--mbc-signal-sage);
+  --text-link:var(--mbc-brass);
+  --text-link-hover:var(--mbc-chalk-dim);
+
+  --border-card:var(--mbc-night-rule);
+  --border-section:var(--mbc-night-rule);
+  --border-hairline:var(--mbc-night-rule);
+  --border-control:var(--mbc-dark-border);
+  --border-control-hover:var(--mbc-brass);
+
+  --action-primary:var(--mbc-ember);
+  --action-primary-text:var(--mbc-night);
+  --action-dark:var(--mbc-chalk-dim);
+  --action-ghost-hover:var(--mbc-night-card);
+
+  --photo-radius:var(--mbc-radius-photo-hard);
+  --photo-placeholder:var(--photo-placeholder-night);
+  --mbc-font-ministry-display:var(--mbc-font-students-display);
+}

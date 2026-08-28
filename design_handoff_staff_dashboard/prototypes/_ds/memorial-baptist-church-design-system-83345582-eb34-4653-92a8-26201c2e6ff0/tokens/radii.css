@@ -1,0 +1,15 @@
+/* Rounding is generous on cards, absolute on controls, and architectural on photography. */
+:root{
+  --mbc-radius-xs:4px;
+  --mbc-radius-sm:6px;
+  --mbc-radius-md:8px;
+  --mbc-radius-input:10px;
+  --mbc-radius-card-sm:14px;
+  --mbc-radius-card:16px;
+  --mbc-radius-card-lg:18px;
+  --mbc-radius-panel:20px;
+  --mbc-radius-panel-lg:22px;
+  --mbc-radius-pill:999px;
+  /* The signature device: an arch crop taken from the steeple in the mark */
+  --mbc-radius-arch:260px 260px 20px 20px;
+}

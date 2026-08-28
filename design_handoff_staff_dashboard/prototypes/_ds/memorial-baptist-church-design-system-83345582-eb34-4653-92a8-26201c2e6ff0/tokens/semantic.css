@@ -1,0 +1,50 @@
+/* Semantic aliases — reach for these first; the raw --mbc-* palette is the fallback layer. */
+:root{
+  --surface-page:var(--mbc-bulletin-cream);
+  --surface-card:var(--mbc-parchment);
+  --surface-panel:var(--mbc-panel);
+  --surface-field:var(--mbc-field);
+  --surface-dark:var(--mbc-dark);
+  --surface-dark-deep:var(--mbc-dark-deep);
+  --surface-dark-card:var(--mbc-dark-card);
+  --surface-print:var(--mbc-paper);
+
+  --text-heading:var(--mbc-ink);
+  --text-body:var(--mbc-bark);
+  --text-scripture:var(--mbc-ink-soft);
+  --text-meta:var(--mbc-stone);
+  --text-muted:var(--mbc-stone-light);
+  --text-eyebrow:var(--mbc-lamplight);
+  --text-category:var(--mbc-yale-sage);
+  --text-on-dark:var(--mbc-on-dark);
+  --text-on-dark-strong:var(--mbc-on-dark-strong);
+  --text-on-dark-soft:var(--mbc-on-dark-soft);
+  --text-on-dark-label:var(--mbc-on-dark-muted);
+  --text-on-dark-accent:var(--mbc-brass);
+  --text-link:var(--mbc-lamplight);
+  --text-link-hover:var(--mbc-lamplight-deep);
+  --text-error:var(--mbc-error);
+
+  --border-card:var(--mbc-rule-paper);
+  --border-section:var(--mbc-rule);
+  --border-hairline:var(--mbc-rule-hair);
+  --border-control:var(--mbc-border-control);
+  --border-control-hover:var(--mbc-ink);
+  --border-dark:var(--mbc-dark-rule);
+
+  --action-primary:var(--mbc-lamplight);
+  --action-primary-text:var(--mbc-on-accent);
+  --action-dark:var(--mbc-ink);
+  --action-dark-press:var(--mbc-dark-press);
+  --action-light:var(--mbc-on-dark);
+  --action-ghost-hover:var(--mbc-panel);
+
+  --photo-radius:var(--mbc-radius-arch);
+  --photo-placeholder:repeating-linear-gradient(135deg,var(--mbc-stripe-a) 0 9px,var(--mbc-stripe-b) 9px 18px);
+  --photo-placeholder-dark:repeating-linear-gradient(135deg,var(--mbc-stripe-dark-a) 0 9px,var(--mbc-stripe-dark-b) 9px 18px);
+
+  --motion-hover:filter .15s ease,background-color .15s ease,border-color .15s ease,color .15s ease; /* @kind other */
+}
+a{color:var(--text-link);text-decoration:none}
+a:hover{color:var(--text-link-hover)}
+::selection{background:var(--mbc-selection)}
