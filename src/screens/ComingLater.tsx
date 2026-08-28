@@ -23,14 +23,6 @@ export function ComingLater({
   )
 }
 
-export const NoticeLog = () => (
-  <ComingLater
-    phase="Phase two"
-    what="The notice log is next."
-    holding="Twelve decisions are already recorded, and Today is counting the ones nobody has announced yet. What lands here is the gap in days, the median by month, and the standard for each category."
-  />
-)
-
 export const Communicator = () => (
   <ComingLater
     phase="Phase four"

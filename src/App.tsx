@@ -6,7 +6,8 @@ import { Today } from './screens/Today'
 import { Huddle } from './screens/Huddle'
 import { Cadence } from './screens/Cadence'
 import { Discussion } from './screens/Discussion'
-import { CarePipelines, Communicator, Goals, NoticeLog } from './screens/ComingLater'
+import { CarePipelines, Communicator, Goals } from './screens/ComingLater'
+import { NoticeLog } from './screens/NoticeLog'
 import { useSession } from './session/session'
 
 export function App() {

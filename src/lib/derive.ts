@@ -1,6 +1,6 @@
-import { CARE_TYPES } from '../data/seed'
+import { CARE_TYPES, NOTICE_CATEGORIES } from '../data/seed'
 import type { CadenceItem, CareEntry, Notice, Post, Staff, Thread } from '../data/types'
-import { addDays, addMonths, daysBetween, parseDate, toIso } from './date'
+import { addDays, addMonths, countDays, daysBetween, parseDate, toIso } from './date'
 
 /* Everything in this file is computed on read. next_due, announce_by, the notice
    gap and days-open are never written to a row — that is what keeps the ledger
@@ -32,6 +32,41 @@ export function noticeGap(notice: Notice): number | null {
   const notified = parseDate(notice.notifiedOn)
   if (!decided || !notified) return null
   return daysBetween(decided, notified)
+}
+
+/** The standard for a category: the longest delay that still counts as notice. */
+export function noticeStandard(category: string): number | null {
+  const found = NOTICE_CATEGORIES.find((entry) => entry.name === category)
+  return found ? found.std : null
+}
+
+export type NoticeVerdict =
+  | { kind: 'met'; spare: number }
+  | { kind: 'missed'; over: number }
+  | { kind: 'unsent' }
+  | { kind: 'unmeasured' }
+
+/* A measurement, not a judgement. The sentence states the arithmetic and stops
+   there — no red, no exclamation, no "overdue". */
+export function noticeVerdict(notice: Notice): NoticeVerdict {
+  const gap = noticeGap(notice)
+  if (gap === null) return { kind: 'unsent' }
+  const standard = noticeStandard(notice.category)
+  if (standard === null) return { kind: 'unmeasured' }
+  return gap <= standard ? { kind: 'met', spare: standard - gap } : { kind: 'missed', over: gap - standard }
+}
+
+export function describeVerdict(verdict: NoticeVerdict): string {
+  switch (verdict.kind) {
+    case 'met':
+      return verdict.spare === 0 ? 'Met exactly' : 'Met with ' + countDays(verdict.spare) + ' to spare'
+    case 'missed':
+      return 'Missed by ' + countDays(verdict.over)
+    case 'unsent':
+      return 'Not yet communicated'
+    case 'unmeasured':
+      return 'No standard set'
+  }
 }
 
 export function careDueBy(entry: CareEntry): Date | null {
