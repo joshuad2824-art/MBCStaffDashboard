@@ -1,0 +1,263 @@
+/* Memorial Baptist Church — design tokens, concatenated from the bound design system.
+   Source: _ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/ */
+
+/* ================= colors.css ================= */
+/* MBC palette — every value taken from the brand guide and the published site. */
+:root{
+  /* Core five */
+  --mbc-steeple-brown:#3A322B;
+  --mbc-bulletin-cream:#F8F3EB;
+  --mbc-lamplight:#A8613F;
+  --mbc-yale-sage:#4F7A5A;
+  --mbc-brass:#DBAE84;
+
+  /* Lamplight steps */
+  --mbc-lamplight-deep:#8A4C2E;
+  --mbc-lamplight-tint:#F6E3D2;
+
+  /* Warm neutrals — grounds */
+  --mbc-parchment:#FFFDF9;
+  --mbc-paper:#FDFBF7;
+  --mbc-panel:#F1E9DB;
+  --mbc-field:#FBF7EF;
+  --mbc-warm-gray:#F1EEE8;
+
+  /* Warm neutrals — ink */
+  --mbc-ink:#3A322B;
+  --mbc-ink-soft:#4A4139;
+  --mbc-bark:#6B6058;
+  --mbc-bark-light:#5C5249;
+  --mbc-stone:#8A7C6C;
+  --mbc-stone-light:#9A8B7B;
+  --mbc-stone-pale:#A2937F;
+  --mbc-slot-label:#8B7E6E;
+
+  /* Warm neutrals — rules & borders */
+  --mbc-rule:#E4D8C4;
+  --mbc-rule-paper:#E7DCC9;
+  --mbc-rule-hair:#EDE3D3;
+  --mbc-rule-faint:#F0E7D8;
+  --mbc-border-photo:#E0D5C2;
+  --mbc-border-panel:#DED2BC;
+  --mbc-border-control:#CFC1AB;
+  --mbc-border-control-strong:#C6B69E;
+  --mbc-border-chip:#D6C9B4;
+  --mbc-border-input:#DCCFB9;
+  --mbc-underline:#D9C6AE;
+  --mbc-underline-soft:#E0D0B8;
+
+  /* On dark ground */
+  --mbc-dark:#3A322B;
+  --mbc-dark-deep:#2B2521;
+  --mbc-dark-press:#241E1A;
+  --mbc-dark-card:#332C26;
+  --mbc-dark-rule:#55493F;
+  --mbc-dark-rule-soft:#453C35;
+  --mbc-dark-border:#6B5E52;
+  --mbc-on-dark:#F4EDE2;
+  --mbc-on-dark-strong:#E4D9C8;
+  --mbc-on-dark-soft:#C8BAA8;
+  --mbc-on-dark-muted:#B8A48C;
+  --mbc-on-accent:#FFF9F0;
+
+  /* Photo placeholder stripes */
+  --mbc-stripe-a:#EFE6D6;
+  --mbc-stripe-b:#E7DCC8;
+  --mbc-stripe-dark-a:#4A4139;
+  --mbc-stripe-dark-b:#413A32;
+
+  /* Semantic status */
+  --mbc-error:#A8342A;
+  --mbc-selection:#E9D7C2;
+}
+
+/* ================= fonts.css ================= */
+/* Lora + Lato — woff2 subsets lifted from the published MBC site bundle (Google Fonts originals, latin + latin-ext only). */
+@font-face{font-family:'Lato';font-style:italic;font-weight:400;font-display:swap;src:url('/fonts/lato-400i-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Lato';font-style:italic;font-weight:400;font-display:swap;src:url('/fonts/lato-400i-latin.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Lato';font-style:normal;font-weight:300;font-display:swap;src:url('/fonts/lato-300-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Lato';font-style:normal;font-weight:300;font-display:swap;src:url('/fonts/lato-300-latin.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Lato';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/lato-400-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Lato';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/lato-400-latin.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Lato';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/lato-700-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Lato';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/lato-700-latin.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Lato';font-style:normal;font-weight:900;font-display:swap;src:url('/fonts/lato-900-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Lato';font-style:normal;font-weight:900;font-display:swap;src:url('/fonts/lato-900-latin.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Lora';font-style:italic;font-weight:400 600;font-display:swap;src:url('/fonts/lora-400-600i-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Lora';font-style:italic;font-weight:400 600;font-display:swap;src:url('/fonts/lora-400-600i-latin.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Lora';font-style:normal;font-weight:400 700;font-display:swap;src:url('/fonts/lora-400-700-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Lora';font-style:normal;font-weight:400 700;font-display:swap;src:url('/fonts/lora-400-700-latin.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+
+/* ================= typography.css ================= */
+/* Lora for what we say, Lato for how we say it. 16px base, 1.25 ratio for UI steps. */
+:root{
+  --mbc-font-serif:'Lora',Georgia,serif;
+  --mbc-font-sans:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mbc-font-mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+
+  --mbc-weight-light:300;
+  --mbc-weight-regular:400;
+  --mbc-weight-medium:600;
+  --mbc-weight-bold:700;
+
+  /* Fixed steps — do not eyeball intermediate sizes */
+  --mbc-size-display:80px;
+  --mbc-size-h1:66px;
+  --mbc-size-h2:46px;
+  --mbc-size-h3:24px;
+  --mbc-size-scripture:22px;
+  --mbc-size-lead:20px;
+  --mbc-size-body:17px;
+  --mbc-size-small:15px;
+  --mbc-size-fine:14px;
+  --mbc-size-label:11px;
+  --mbc-size-label-sm:10px;
+
+  --mbc-leading-display:1.03;
+  --mbc-leading-h1:1.06;
+  --mbc-leading-h2:1.1;
+  --mbc-leading-h3:1.2;
+  --mbc-leading-scripture:1.45;
+  --mbc-leading-body:1.65;
+  --mbc-leading-lead:1.62;
+  --mbc-leading-tight:1;
+
+  --mbc-track-display:-.025em;
+  --mbc-track-h2:-.02em;
+  --mbc-track-h3:-.01em;
+  --mbc-track-label:.2em;
+  --mbc-track-label-tight:.16em;
+  --mbc-track-button:.06em;
+
+  --mbc-measure:66ch;
+  --mbc-measure-narrow:48ch;
+
+  /* Ready-made font shorthands */
+  --mbc-type-display:var(--mbc-weight-regular) clamp(42px,5.4vw,80px)/var(--mbc-leading-display) var(--mbc-font-serif);
+  --mbc-type-h1:var(--mbc-weight-regular) clamp(38px,4.6vw,66px)/var(--mbc-leading-h1) var(--mbc-font-serif);
+  --mbc-type-h2:var(--mbc-weight-regular) clamp(30px,3.4vw,46px)/var(--mbc-leading-h2) var(--mbc-font-serif);
+  --mbc-type-h3:var(--mbc-weight-medium) 24px/var(--mbc-leading-h3) var(--mbc-font-serif);
+  --mbc-type-scripture:var(--mbc-weight-regular) italic 22px/var(--mbc-leading-scripture) var(--mbc-font-serif);
+  --mbc-type-lead:var(--mbc-weight-light) 20px/var(--mbc-leading-lead) var(--mbc-font-sans);
+  --mbc-type-body:var(--mbc-weight-regular) 17px/var(--mbc-leading-body) var(--mbc-font-sans);
+  --mbc-type-small:var(--mbc-weight-regular) 15px/1.6 var(--mbc-font-sans);
+  --mbc-type-label:var(--mbc-weight-bold) 11px/1 var(--mbc-font-sans);
+}
+
+/* ================= spacing.css ================= */
+/* Page rhythm. Sections breathe with clamps; interior spacing is a fixed 4px-derived set. */
+:root{
+  --mbc-space-1:4px;
+  --mbc-space-2:6px;
+  --mbc-space-3:8px;
+  --mbc-space-4:10px;
+  --mbc-space-5:12px;
+  --mbc-space-6:14px;
+  --mbc-space-7:16px;
+  --mbc-space-8:20px;
+  --mbc-space-9:22px;
+  --mbc-space-10:26px;
+  --mbc-space-11:28px;
+  --mbc-space-12:30px;
+  --mbc-space-13:32px;
+  --mbc-space-14:36px;
+  --mbc-space-15:44px;
+  --mbc-space-16:52px;
+  --mbc-space-17:56px;
+  --mbc-space-18:72px;
+
+  --mbc-page-max:1320px;
+  --mbc-page-max-prose:880px;
+  --mbc-guide-max:1180px;
+  --mbc-gutter:clamp(20px,4vw,56px); /* @kind spacing */
+  --mbc-section-y:clamp(56px,6vw,92px); /* @kind spacing */
+  --mbc-section-y-lg:clamp(64px,7vw,110px); /* @kind spacing */
+  --mbc-card-pad:clamp(28px,3.5vw,44px);
+  --mbc-grid-gap:20px;
+  --mbc-grid-gap-lg:clamp(32px,5vw,72px);
+  --mbc-header-h:96px;
+  --mbc-tap-min:44px;
+}
+
+/* ================= radii.css ================= */
+/* Rounding is generous on cards, absolute on controls, and architectural on photography. */
+:root{
+  --mbc-radius-xs:4px;
+  --mbc-radius-sm:6px;
+  --mbc-radius-md:8px;
+  --mbc-radius-input:10px;
+  --mbc-radius-card-sm:14px;
+  --mbc-radius-card:16px;
+  --mbc-radius-card-lg:18px;
+  --mbc-radius-panel:20px;
+  --mbc-radius-panel-lg:22px;
+  --mbc-radius-pill:999px;
+  /* The signature device: an arch crop taken from the steeple in the mark */
+  --mbc-radius-arch:260px 260px 20px 20px;
+}
+
+/* ================= shadows.css ================= */
+/* Shadow is used almost nowhere on screen — only to lift printed collateral off the page. */
+:root{
+  --mbc-shadow-none:none;
+  --mbc-shadow-print:0 18px 40px -24px rgba(58,50,43,.35);
+  --mbc-shadow-print-sm:0 12px 28px -20px rgba(58,50,43,.35);
+  --mbc-shadow-sign:0 18px 40px -24px rgba(58,50,43,.4);
+  --mbc-shadow-bar:0 -10px 34px rgba(43,37,33,.26);
+  --mbc-scrim:rgba(43,37,33,.58);
+  --mbc-blur-chrome:blur(12px); /* @kind other */
+  --mbc-blur-scrim:blur(3px); /* @kind other */
+  --mbc-header-bg:rgba(248,243,235,.94);
+}
+
+/* ================= semantic.css ================= */
+/* Semantic aliases — reach for these first; the raw --mbc-* palette is the fallback layer. */
+:root{
+  --surface-page:var(--mbc-bulletin-cream);
+  --surface-card:var(--mbc-parchment);
+  --surface-panel:var(--mbc-panel);
+  --surface-field:var(--mbc-field);
+  --surface-dark:var(--mbc-dark);
+  --surface-dark-deep:var(--mbc-dark-deep);
+  --surface-dark-card:var(--mbc-dark-card);
+  --surface-print:var(--mbc-paper);
+
+  --text-heading:var(--mbc-ink);
+  --text-body:var(--mbc-bark);
+  --text-scripture:var(--mbc-ink-soft);
+  --text-meta:var(--mbc-stone);
+  --text-muted:var(--mbc-stone-light);
+  --text-eyebrow:var(--mbc-lamplight);
+  --text-category:var(--mbc-yale-sage);
+  --text-on-dark:var(--mbc-on-dark);
+  --text-on-dark-strong:var(--mbc-on-dark-strong);
+  --text-on-dark-soft:var(--mbc-on-dark-soft);
+  --text-on-dark-label:var(--mbc-on-dark-muted);
+  --text-on-dark-accent:var(--mbc-brass);
+  --text-link:var(--mbc-lamplight);
+  --text-link-hover:var(--mbc-lamplight-deep);
+  --text-error:var(--mbc-error);
+
+  --border-card:var(--mbc-rule-paper);
+  --border-section:var(--mbc-rule);
+  --border-hairline:var(--mbc-rule-hair);
+  --border-control:var(--mbc-border-control);
+  --border-control-hover:var(--mbc-ink);
+  --border-dark:var(--mbc-dark-rule);
+
+  --action-primary:var(--mbc-lamplight);
+  --action-primary-text:var(--mbc-on-accent);
+  --action-dark:var(--mbc-ink);
+  --action-dark-press:var(--mbc-dark-press);
+  --action-light:var(--mbc-on-dark);
+  --action-ghost-hover:var(--mbc-panel);
+
+  --photo-radius:var(--mbc-radius-arch);
+  --photo-placeholder:repeating-linear-gradient(135deg,var(--mbc-stripe-a) 0 9px,var(--mbc-stripe-b) 9px 18px);
+  --photo-placeholder-dark:repeating-linear-gradient(135deg,var(--mbc-stripe-dark-a) 0 9px,var(--mbc-stripe-dark-b) 9px 18px);
+
+  --motion-hover:filter .15s ease,background-color .15s ease,border-color .15s ease,color .15s ease; /* @kind other */
+}
+a{color:var(--text-link);text-decoration:none}
+a:hover{color:var(--text-link-hover)}
+::selection{background:var(--mbc-selection)}
