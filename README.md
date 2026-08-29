@@ -61,13 +61,19 @@ src/
 | Huddle | Built — four columns, posting, clearing tensions, 14-day archive, derived Due next. |
 | Cadence ledger | Built — unclaimed filter, sortable table, claim an owner, record when it was held. |
 | Discussion board | Built — threads, replies by reference, edit, delete, mentions, promote, 14-day purge. |
-| Notice log | Phase two. Records exist and Today counts them; the surface is not built. |
+| Notice log | Built — median gap by month, the per-category standard, recording an entry with a live gap preview, and a verdict per row. |
 | Care pipelines | Phase three. Records exist and drive the calendar and rail; the surface is not built. |
 | Communicator | Phase four. |
 | Goals | Phase five. |
 
-The four unbuilt surfaces render a short page saying where they stand, so
+The three unbuilt surfaces render a short page saying where they stand, so
 nothing on Today links into a dead end.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs `npm ci && npm run build` on every pull request
+and every push to `main`. `npm run build` is `tsc -b && vite build`, so that one
+command is the typecheck as well.
 
 ## Data, and the Supabase seam
 
@@ -92,6 +98,10 @@ be trusted to a client:
   last_activity_at < now() - interval '14 days'`, cascading to posts and
   mentions. It runs on load here so the behaviour is real in development, but a
   board that says it forgets has to actually forget.
+
+The schema and those policies are written and waiting in `supabase/` — see
+`supabase/README.md` for what has to be true before they are wired up. Nothing
+in the application reads them yet.
 
 Nothing derived is ever stored: `next_due`, `announce_by`, `notice_gap_days` and
 `days_open` are computed on read, every time. That is what keeps the ledger
