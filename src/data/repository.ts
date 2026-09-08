@@ -1,6 +1,7 @@
 import { isThreadExpired } from '../lib/derive'
 import { startOfToday } from '../lib/date'
 import { seed } from './seed'
+import { freshenSeed } from './freshen'
 import type { DashboardData } from './types'
 
 /* The seam.
@@ -41,7 +42,10 @@ export function purgeExpired(data: DashboardData): DashboardData {
 
 export class LocalRepository implements Repository {
   async load(): Promise<DashboardData> {
-    let data = seed
+    // Only a first load gets the sample records slid forward to the current
+    // week. Once anything is stored, the dates on the board belong to whoever
+    // put them there.
+    let data = freshenSeed(seed)
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY)
       if (stored) data = { ...seed, ...(JSON.parse(stored) as DashboardData) }

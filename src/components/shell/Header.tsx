@@ -6,10 +6,13 @@ import { formatLong, startOfToday } from '../../lib/date'
 export function Header({
   eyebrow,
   title,
+  maxWidth,
   onOpenHistory,
 }: {
   eyebrow: string
   title: string
+  /** Matches the content below, so the title and the first card share an edge. */
+  maxWidth: string
   onOpenHistory(): void
 }) {
   const { history, undo } = useStore()
@@ -24,14 +27,22 @@ export function Header({
         background: 'var(--mbc-header-bg)',
         backdropFilter: 'var(--mbc-blur-chrome)',
         borderBottom: '1px solid var(--border-section)',
-        padding: '20px clamp(20px,3vw,40px)',
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        gap: 16,
+        padding: '20px 0',
       }}
     >
+      <div
+        style={{
+          width: '100%',
+          maxWidth,
+          marginInline: 'auto',
+          paddingInline: 'clamp(20px,3vw,40px)',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          gap: 16,
+        }}
+      >
       <div>
         <Eyebrow>{eyebrow}</Eyebrow>
         <h1
@@ -64,6 +75,7 @@ export function Header({
         <Button variant="dark" size="sm" onClick={() => setPresentMode(true)}>
           Present mode
         </Button>
+      </div>
       </div>
     </header>
   )

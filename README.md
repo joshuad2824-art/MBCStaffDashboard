@@ -27,6 +27,14 @@ is the one the seed data is written around. There is no password: the
 magic-link flow is stubbed, so "Open the link" stands in for clicking it in
 your inbox.
 
+The sample records were written around a Friday in August 2026. On a **first**
+load they are slid forward to the current week as one piece — every date moves
+by the same whole number of weeks, so every relationship between them survives
+and weekdays stay weekdays (`src/data/freshen.ts`). Without it a board opened
+months later shows nothing: wins past their archive, threads past their purge,
+care windows closed. Once anything is stored, the dates belong to whoever put
+them there and are left alone.
+
 ## Where things are
 
 ```
@@ -173,8 +181,11 @@ Baptist Church design system, unmodified.
 - **Width is per-surface.** Tables and the calendar run the full width of the
   monitor — they are better at every extra pixel. Surfaces built from columns of
   prose stop at `--mbc-measure-max` (2200px), which puts four Huddle columns at
-  roughly seventy characters each. `Surface.wide` in `src/screens/surfaces.ts`
-  is where a surface says which it is.
+  roughly seventy characters each, and are centred there so the leftover space
+  sits evenly rather than piling up on one side. `Surface.wide` in
+  `src/screens/surfaces.ts` is where a surface says which it is. The header
+  shares the same block, so the title always sits directly above the first
+  thing under it.
 - Minimum control height 44px; minimum on-screen type 12px for meta.
 - Tabular numerals on every date, count and gap.
 
