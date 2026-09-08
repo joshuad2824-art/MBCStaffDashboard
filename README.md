@@ -63,11 +63,36 @@ src/
 | Discussion board | Built — threads, replies by reference, edit, delete, mentions, promote, 14-day purge. |
 | Notice log | Built — median gap by month, the per-category standard, recording an entry with a live gap preview, and a verdict per row. |
 | Care pipelines | Phase three. Records exist and drive the calendar and rail; the surface is not built. |
-| Communicator | Phase four. |
-| Goals | Phase five. |
+| Communicator | Built — five forms, a live panel preview, a fit guard that measures the rendered panels, printing, and publishing that writes to the notice log. |
+| Goals | Built — five annual goals, a status you cycle, one sentence per quarter. |
 
-The three unbuilt surfaces render a short page saying where they stand, so
-nothing on Today links into a dead end.
+Care pipelines is the one surface left. It renders a short page saying where it
+stands, so nothing on Today links into a dead end.
+
+## The communicator
+
+The printed piece is one letter sheet, landscape, double-sided, folded in half
+into four 5.5 × 8.5in panels — order of worship and cover on the outside,
+welcome and coming up on the inside. Nobody touches type, spacing or the fold.
+
+Three things are worth knowing about how it works:
+
+- **The fit guard measures, it does not estimate.** A hidden copy of each panel
+  is laid out with no height ceiling and its real height compared to 8.5in, so
+  the guard checks the same markup the printer receives. While any panel is over,
+  the print button is gone and the panel says by how much. That guard is what
+  makes the tool safe to hand to a staff member who has never opened Canva.
+- **Coming Up reads the shared event table.** "Pull from the calendar" takes an
+  event off the same records the calendar and the ledger read, so it is entered
+  once. A line typed by hand is marked as such — it notifies nobody.
+- **Publishing counts as notice.** The bulletin is a real channel, so marking a
+  week published gives every event it carries a notification date in the notice
+  log, unless an earlier one already exists. Going back to a draft undoes
+  exactly that: entries it created are removed, entries it only stamped go back
+  to not-yet-communicated, and nothing anyone else logged is touched.
+
+Printing hides the interface and portals two landscape sheets to the page.
+Verified as a real PDF: two pages at 792 × 612pt.
 
 ## Continuous integration
 

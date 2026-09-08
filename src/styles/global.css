@@ -48,3 +48,49 @@ button { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* ---------------------------------------------------------------- printing
+
+   The communicator prints as two landscape letter sheets, double-sided, flip on
+   short edge, 100% scale. Everything else on the page is hidden: the printer
+   gets the four panels and nothing else. */
+
+.print-only { display: none; }
+
+@media print {
+  @page {
+    size: letter landscape;
+    margin: 0;
+  }
+
+  body { background: #fff; }
+
+  /* The app is hidden; the sheets are portalled to the body so nothing in the
+     interface can wrap, clip or offset them. */
+  #root { display: none !important; }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-only .print-sheet {
+    display: grid;
+    grid-template-columns: 5.5in 5.5in;
+    width: 11in;
+    height: 8.5in;
+    break-after: page;
+    page-break-after: always;
+    overflow: hidden;
+  }
+
+  .print-only .print-sheet:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  /* The panels carry real ink; the browser must not helpfully drop it. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

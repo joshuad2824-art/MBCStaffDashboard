@@ -4,6 +4,7 @@ import { useData } from '../../data/store'
 import { useSession } from '../../session/session'
 import { carePastWindow, openCare, unannouncedNotices, unclaimedCount } from '../../lib/rollups'
 import { formatShort, parseDate, startOfToday } from '../../lib/date'
+import { currentWeek } from '../../lib/communicator'
 
 /* Four counts, each one a link to the surface it came from. The dividers are
    shared hairlines: a 1px-gap grid over the hairline colour inside one border. */
@@ -16,6 +17,7 @@ export function CounterStrip() {
   const open = openCare(data.care)
   const past = carePastWindow(data.care, today)
   const staffOnly = viewAs === 'staff'
+  const week = currentWeek(data.weeks, today)
 
   const cells = [
     {
@@ -38,8 +40,8 @@ export function CounterStrip() {
     },
     {
       label: 'Sunday bulletin',
-      value: data.week.status === 'draft' ? 'Draft' : 'Sent',
-      meta: formatShort(parseDate(data.week.serviceDate)) + ' · four panels',
+      value: !week ? '—' : week.status === 'draft' ? 'Draft' : 'Sent',
+      meta: week ? formatShort(parseDate(week.serviceDate)) + ' · four panels' : 'No issue started',
       to: '/communicator',
     },
   ]
