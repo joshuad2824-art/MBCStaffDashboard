@@ -132,13 +132,72 @@ export const seed: DashboardData = {
     { id: 5, name: 'Wednesday study and dinner', ministry: 'All', startsAt: '2026-09-02', time: '6:00 PM', location: 'Fellowship hall', cadenceItemId: null },
   ],
 
-  week: {
-    serviceDate: '2026-08-30',
-    series: 'Serve',
-    sermonTitle: 'Serve one another',
-    scripture: 'Philippians 2:1–11',
-    status: 'draft',
-    updatedBy: 7,
-    updatedAt: '2026-08-26',
+  weeks: [
+    {
+      id: 701,
+      serviceDate: '2026-08-30',
+      series: 'Serve',
+      sermonTitle: 'Serve one another',
+      scripture: 'Philippians 2:1\u201311',
+      artCaption: 'series art \u2014 serve',
+      status: 'draft',
+      publishedCreatedNoticeIds: [],
+      publishedStampedNoticeIds: [],
+      updatedBy: 7,
+      updatedAt: '2026-08-26',
+      order: [
+        { id: 1, title: 'Scripture reading and welcome', kind: 'spoken', detail: '' },
+        { id: 2, title: 'May the People Praise You', kind: 'song', detail: '' },
+        { id: 3, title: 'Praise to the Lord, the Almighty', kind: 'song', detail: '' },
+        { id: 4, title: 'Firm Foundation (He Won\u2019t)', kind: 'song', detail: '' },
+        { id: 5, title: 'Holy Song', kind: 'song', detail: '' },
+        { id: 6, title: 'The Lord\u2019s Prayer', kind: 'spoken', detail: '' },
+        { id: 7, title: 'Offertory', kind: 'spoken', detail: '' },
+        { id: 8, title: 'SERVE', kind: 'sermon', detail: 'Philippians 2:1\u201311' },
+        { id: 9, title: 'Hallelujah, What a Savior', kind: 'song', detail: '' },
+      ],
+      bulletinEvents: [
+        { id: 1, date: '8.30', title: 'Business meeting', when: '11:45 AM in the sanctuary', detail: '', eventId: null },
+        { id: 2, date: '9.02', title: 'Wednesday study and meal', when: '6:00 PM study \u00b7 7:00 PM meal', detail: '', eventId: 5 },
+        { id: 3, date: '9.06', title: 'Preschool check-in moves to Hall B', when: '9:00 AM \u00b7 same rooms upstairs, new desk', detail: '', eventId: 4 },
+        { id: 4, date: '9.13', title: 'Fall parent meeting \u2014 Students', when: '4:00 PM at the youth house', detail: '', eventId: 2 },
+        { id: 5, date: '9.19', title: 'Volunteer appreciation lunch', when: '12:00 PM in the fellowship hall', detail: '', eventId: 3 },
+      ],
+      give: [
+        'Text 918.233.3740 or scan the code',
+        'Mail 2800 S. Yale Ave, Tulsa, OK 74114',
+        'Offering boxes in the sanctuary',
+      ],
+      stewardship: [
+        { label: 'Given in 2026', value: '$643,945.64' },
+        { label: 'Spent in 2026', value: '$470,226.42' },
+        { label: 'Budgeted for 2026', value: '$485,577.18' },
+        { label: 'Missions', value: '$41,739.68' },
+      ],
+    },
+  ],
+
+  settings: {
+    welcome:
+      'If you are visiting, please fill out a contact card \u2014 in the pew or at memorialbaptist.com \u2014 and return it to an offering box or the Welcome Desk.',
+    families:
+      'Nursery is available for babies through Pre-K. Children in K\u20133rd are invited to Bible Club after singing and will be walked to the Clubhouse classroom upstairs; pick-up is upstairs after the service. Family Worship is the first Sunday of each month.',
+    address: '2800 South Yale Ave, Tulsa, OK 74114 \u00b7 918.744.0079 \u00b7 memorialbaptist.com',
+    contacts: [
+      { role: 'Senior Pastor', name: 'Jacob Bice', phone: '918.744.0079' },
+      { role: 'Associate Pastor', name: 'Spencer Ray', phone: '918.744.0079' },
+      { role: 'Music', name: 'Ricky Weatherford', phone: '918.744.0079' },
+      { role: 'Preschool', name: 'Michelle Davis', phone: '918.744.0079' },
+      { role: 'Office', name: 'Sherry Kitchens', phone: '918.744.0079' },
+    ],
+    meetingBlocks: [
+      { day: 'Sunday', lines: ['9:15 AM Bible study', '10:30 AM Worship'] },
+      { day: 'Wednesday', lines: ['6:00 PM Study', '7:00 PM Dinner'] },
+    ],
+    waysToGive: [
+      'Text 918.233.3740 or scan the code',
+      'Mail 2800 S. Yale Ave, Tulsa, OK 74114',
+      'Offering boxes in the sanctuary',
+    ],
   },
 }

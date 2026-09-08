@@ -115,14 +115,74 @@ export interface ChurchEvent {
   cadenceItemId: Id | null
 }
 
+export type OrderKind = 'song' | 'spoken' | 'sermon'
+
+/** One line in the order of worship. Kind decides how it is set on the sheet:
+    songs in italic serif, spoken in sans, the sermon tracked and bold. */
+export interface OrderItem {
+  id: Id
+  title: string
+  kind: OrderKind
+  detail: string
+}
+
+/** A Coming Up line. `eventId` is what makes publishing count as notice for the
+    event it names; a line typed by hand carries null and notifies nobody. */
+export interface BulletinEvent {
+  id: Id
+  date: string
+  title: string
+  when: string
+  detail: string
+  eventId: Id | null
+}
+
+export interface StewardshipLine {
+  label: string
+  value: string
+}
+
 export interface CommunicatorWeek {
+  id: Id
   serviceDate: string
   series: string
   sermonTitle: string
   scripture: string
+  artCaption: string
+  order: OrderItem[]
+  bulletinEvents: BulletinEvent[]
+  give: string[]
+  stewardship: StewardshipLine[]
   status: 'draft' | 'published'
+  /** What publishing this issue did to the notice log, so unpublishing can undo
+      exactly that: entries it created, and entries it only stamped with a
+      notification date. */
+  publishedCreatedNoticeIds: Id[]
+  publishedStampedNoticeIds: Id[]
   updatedBy: Id
   updatedAt: string
+}
+
+export interface ContactLine {
+  role: string
+  name: string
+  phone: string
+}
+
+export interface MeetingBlock {
+  day: string
+  lines: string[]
+}
+
+/** Standing content. It lives here rather than in one person's browser so the
+    issue is identical whoever builds it. */
+export interface ChurchSettings {
+  welcome: string
+  families: string
+  address: string
+  contacts: ContactLine[]
+  meetingBlocks: MeetingBlock[]
+  waysToGive: string[]
 }
 
 export interface CareType {
@@ -148,5 +208,6 @@ export interface DashboardData {
   posts: Post[]
   mentions: Mention[]
   events: ChurchEvent[]
-  week: CommunicatorWeek
+  weeks: CommunicatorWeek[]
+  settings: ChurchSettings
 }

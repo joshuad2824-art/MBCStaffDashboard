@@ -1,8 +1,8 @@
 import { Card, Eyebrow, Rule } from '../components/ui'
 
-/* Phases two through five are not built yet. Their records already exist and
-   Today already counts them, so this page says exactly where the surface stands
-   rather than pretending it is missing. */
+/* Phase three is not built yet. Its records already exist and Today already
+   counts them, so this page says exactly where the surface stands rather than
+   pretending it is missing. */
 
 export function ComingLater({
   phase,
@@ -23,26 +23,10 @@ export function ComingLater({
   )
 }
 
-export const Communicator = () => (
-  <ComingLater
-    phase="Phase four"
-    what="The communicator gets ported in after the pastoral layer."
-    holding="It works today as a standalone file. Bringing it in moves the weeks into the database, reads Coming Up from the same events the calendar shows, and writes a notification date for every event an issue carries when it is published."
-  />
-)
-
 export const CarePipelines = () => (
   <ComingLater
     phase="Phase three"
     what="Care pipelines wait until the Huddle has been in weekly use."
     holding="Seven entries are already recorded and their response windows show on the calendar and in the rail. The surface itself is deliberately last of the three, because it is the one that must not be built casually: it is staff-role only, enforced in the database, and it never shares a table with the member-facing site."
-  />
-)
-
-export const Goals = () => (
-  <ComingLater
-    phase="Phase five"
-    what="Goals come last, and stay small."
-    holding="Five annual goals are recorded with their owners and targets. The surface is a status you cycle and one sentence per quarter — narrative, not metrics."
   />
 )

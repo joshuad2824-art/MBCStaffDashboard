@@ -2,6 +2,7 @@ import { Card } from '../../components/ui'
 import { useData } from '../../data/store'
 import { useClock } from '../../lib/weather'
 import { nextOnCalendar } from '../../lib/calendar'
+import { currentWeek } from '../../lib/communicator'
 import { formatLong, formatShort, parseDate, relativeDay, startOfToday } from '../../lib/date'
 
 /** The first of the page's two dark bands. Three blocks: the time, the next
@@ -11,7 +12,8 @@ export function RightNowBand() {
   const today = startOfToday()
   const clock = useClock()
   const next = nextOnCalendar(data, today)
-  const service = parseDate(data.week.serviceDate)
+  const week = currentWeek(data.weeks, today)
+  const service = week ? parseDate(week.serviceDate) : null
 
   return (
     <Card tone="dark" radius="panel" pad="30px clamp(24px,2.4vw,34px)">
@@ -48,10 +50,10 @@ export function RightNowBand() {
 
         <Block
           label="Sunday’s bulletin"
-          meta={data.week.sermonTitle + ' · ' + data.week.scripture + ' · ' + formatShort(service)}
+          meta={week ? week.sermonTitle + ' · ' + week.scripture + ' · ' + formatShort(service) : 'No issue started.'}
         >
           <span style={{ font: '400 clamp(19px,1.6vw,23px)/1.3 var(--mbc-font-sans)', color: 'var(--text-on-dark)' }}>
-            {data.week.status === 'draft' ? 'Still a draft' : 'Published'}
+            {!week ? '—' : week.status === 'draft' ? 'Still a draft' : 'Published'}
           </span>
         </Block>
       </div>

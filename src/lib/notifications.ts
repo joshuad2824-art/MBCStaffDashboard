@@ -1,7 +1,8 @@
 import type { DashboardData } from '../data/types'
 import { careDueBy, deriveCadence, firstName, isUnclaimed, staffName, threadForgetsIn } from './derive'
-import { countDays, daysBetween, formatShort, relativeDay } from './date'
+import { countDays, daysBetween, formatShort, parseDate, relativeDay } from './date'
 import { carePastWindow, openCare, unannouncedNotices } from './rollups'
+import { currentWeek } from './communicator'
 
 /* Notifications are derived, never authored. There is no notifications table:
    this recomputes from the same records the other surfaces show, so dismissing
@@ -88,7 +89,7 @@ export function deriveNotifications(
       key: 'unannounced-' + notice.id,
       tone: 'alert',
       tag: 'Decided, not announced',
-      body: notice.subject + ' was decided ' + formatShort(new Date(notice.decidedOn + 'T00:00:00')) + ' and nobody outside this staff has been told.',
+      body: notice.subject + ' was decided ' + formatShort(parseDate(notice.decidedOn)) + ' and nobody outside this staff has been told.',
       actionLabel: 'Open the notice log',
       to: '/notice',
       meta: notice.ministry,
@@ -134,18 +135,19 @@ export function deriveNotifications(
     }
   }
 
-  if (data.week.status === 'draft') {
+  const week = currentWeek(data.weeks, today)
+  if (week && week.status === 'draft') {
     items.push({
       key: 'bulletin-draft',
       tone: 'attention',
       tag: 'Still a draft',
       body:
         'The bulletin for ' +
-        formatShort(new Date(data.week.serviceDate + 'T00:00:00')) +
+        formatShort(parseDate(week.serviceDate)) +
         ' has not been published, so nothing in it counts as notice yet.',
       actionLabel: 'Open the communicator',
       to: '/communicator',
-      meta: staffName(data.staff, data.week.updatedBy),
+      meta: staffName(data.staff, week.updatedBy),
     })
   }
 
