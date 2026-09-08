@@ -23,9 +23,15 @@ npm run build    # typecheck, then a production build into dist/
 ```
 
 Sign in with any address in `src/data/seed.ts` — `joshua@memorialbaptist.com`
-is the one the seed data is written around. There is no password: the
-magic-link flow is stubbed, so "Open the link" stands in for clicking it in
-your inbox.
+is the one the seed data is written around. There is no password anywhere in
+this application; locally there is not even any mail. With no Supabase
+variables set, the magic-link flow is stubbed and "Open the link" stands in for
+clicking it in your inbox, which is why working on a screen needs no secrets.
+
+To run against a real project, copy `.env.example` to `.env.local` and fill in
+the two values. Sign-in then goes through Supabase Auth for real. See
+`docs/LOGIN-SETUP.md` for standing the project up, and `supabase/README.md` for
+what the migrations do.
 
 ## Where things are
 
@@ -36,8 +42,11 @@ src/
     seed.ts         seed records, standing services, care types, notice categories
     repository.ts   THE SEAM — load/persist, plus the 14-day purge
     store.tsx       state, mutations, the undo stack, the toast
-  session/session.tsx   who is signed in, the role preview, present mode
+  session/
+    session.tsx     who is signed in, the role preview, present mode
+    account.ts      the roster row Postgres says the signed-in address belongs to
   lib/
+    supabase.ts     THE AUTH SEAM — the client, or nothing and the stub instead
     date.ts         local-midnight date handling; never `new Date('2026-08-28')`
     derive.ts       next due, announce by, notice gap, days open, mentions
     rollups.ts      the roll-ups Today, Huddle and present mode share
@@ -56,7 +65,7 @@ src/
 
 | Surface | State |
 | --- | --- |
-| Sign-in | Built. Magic link stubbed until Supabase Auth. |
+| Sign-in | Built, on Supabase Auth. Falls back to the stub when the build carries no Supabase variables. |
 | Today at Memorial | Built — clock, counters, forecast, month calendar, notification rail, five overview cards. |
 | Huddle | Built — four columns, posting, clearing tensions, 14-day archive, derived Due next. |
 | Cadence ledger | Built — unclaimed filter, sortable table, claim an owner, record when it was held. |

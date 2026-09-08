@@ -14,7 +14,12 @@ import { NoticeLog } from './screens/NoticeLog'
 import { useSession } from './session/session'
 
 export function App() {
-  const { member } = useSession()
+  const { member, auth } = useSession()
+
+  /* An opened link arrives with its tokens on the address bar and takes a
+     moment to become a session. Showing the sign-in screen in that gap tells
+     somebody who has just done everything right that it did not work. */
+  if (auth.checking) return <Waiting />
   if (!member) return <SignIn />
 
   return (
@@ -31,5 +36,13 @@ export function App() {
       <Route path="/people" element={<AppShell surface={SURFACES.people}><People /></AppShell>} />
       <Route path="*" element={<Navigate to="/today" replace />} />
     </Routes>
+  )
+}
+
+function Waiting() {
+  return (
+    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--surface-page)' }}>
+      <p style={{ font: '400 15px/1.6 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>Signing you in…</p>
+    </div>
   )
 }

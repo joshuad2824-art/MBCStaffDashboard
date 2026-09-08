@@ -4,29 +4,35 @@ import { useData } from '../data/store'
 import { canSignIn } from '../data/types'
 import { useSession } from '../session/session'
 
-/* Invite-only. There is no sign-up and no password.
+/* Invite-only. There is no sign-up and there is no password.
 
-   While the app runs on seed data the link is not really sent — "Open the link"
-   stands in for clicking it in your inbox. Supabase Auth replaces the two
-   handlers below and nothing else on this screen moves. */
+   With Supabase configured this screen sends a real magic link and then waits:
+   the link is opened in the inbox, comes back to the site, and the session
+   provider does the rest. Without it the app is on seed data and "Open the
+   link" stands in for clicking one — which is fine on a laptop and is not fine
+   on a deployed site, so the stub says so out loud. */
 
 export function SignIn() {
   const { people } = useData()
-  const { signIn } = useSession()
+  const { signIn, auth } = useSession()
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const requestLink = () => {
+  const live = auth.mode === 'supabase'
+  const shown = error ?? auth.error
+
+  const requestLink = async () => {
     const address = email.trim().toLowerCase()
     if (!address) {
       setError('Enter your church email address.')
       return
     }
+    setError(null)
     // A real magic link never says whether the address is on staff — that would
     // turn the form into a roster. The stub keeps the same silence.
-    setError(null)
-    setSent(address)
+    const ok = await auth.requestLink(address)
+    if (ok) setSent(address)
   }
 
   const openLink = () => {
@@ -40,6 +46,24 @@ export function SignIn() {
     }
     signIn(member.id)
   }
+
+  const back = () => {
+    setSent(null)
+    setError(null)
+    auth.clearError()
+  }
+
+  const message = (text: string, tone: 'error' | 'muted') => (
+    <p
+      style={{
+        font: '400 13px/1.6 var(--mbc-font-sans)',
+        color: tone === 'error' ? 'var(--text-error)' : 'var(--text-muted)',
+        margin: 0,
+      }}
+    >
+      {text}
+    </p>
+  )
 
   return (
     <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '40px 24px' }}>
@@ -69,7 +93,7 @@ export function SignIn() {
               style={{ display: 'grid', gap: 22 }}
               onSubmit={(event) => {
                 event.preventDefault()
-                requestLink()
+                void requestLink()
               }}
             >
               <div>
@@ -95,14 +119,13 @@ export function SignIn() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
               />
-              <Button type="submit" variant="primary" full shape="input">
-                Email me a sign-in link
+              <Button type="submit" variant="primary" full shape="input" disabled={auth.sending}>
+                {auth.sending ? 'Sending…' : 'Email me a sign-in link'}
               </Button>
-              {error ? (
-                <p style={{ font: '400 13px/1.6 var(--mbc-font-sans)', color: 'var(--text-error)', margin: 0 }}>
-                  {error}
-                </p>
-              ) : null}
+              {shown ? message(shown, 'error') : null}
+              {live
+                ? null
+                : message('Sign-in is not connected yet: this build runs on sample data and sends no mail.', 'muted')}
               <p
                 style={{
                   font: '400 13px/1.6 var(--mbc-font-sans)',
@@ -130,34 +153,19 @@ export function SignIn() {
                   Check your inbox.
                 </p>
                 <p style={{ font: '400 15px/1.65 var(--mbc-font-sans)', color: 'var(--text-body)', margin: '12px 0 0' }}>
-                  We sent a link to {sent}. It expires in fifteen minutes and can be used once.
+                  {live
+                    ? `If ${sent} is on staff, a link is on its way. It expires in fifteen minutes, can be used once, and has to be opened on this device.`
+                    : `We sent a link to ${sent}. It expires in fifteen minutes and can be used once.`}
                 </p>
               </div>
-              <Button variant="dark" full shape="input" onClick={openLink}>
-                Open the link
-              </Button>
-              {error ? (
-                <p style={{ font: '400 13px/1.6 var(--mbc-font-sans)', color: 'var(--text-error)', margin: 0 }}>
-                  {error}
-                </p>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => {
-                  setSent(null)
-                  setError(null)
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  font: '400 14px/1.5 var(--mbc-font-sans)',
-                  color: 'var(--text-link)',
-                  cursor: 'pointer',
-                  justifySelf: 'start',
-                }}
-              >
-                Use a different email
+              {live ? null : (
+                <Button variant="dark" full shape="input" onClick={openLink}>
+                  Open the link
+                </Button>
+              )}
+              {shown ? message(shown, 'error') : null}
+              <button type="button" onClick={back} style={linkButton}>
+                {live ? 'Use a different email, or send another link' : 'Use a different email'}
               </button>
             </div>
           )}
@@ -177,3 +185,13 @@ export function SignIn() {
     </div>
   )
 }
+
+const linkButton = {
+  background: 'none',
+  border: 'none',
+  padding: 0,
+  font: '400 14px/1.5 var(--mbc-font-sans)',
+  color: 'var(--text-link)',
+  cursor: 'pointer',
+  justifySelf: 'start',
+} as const
