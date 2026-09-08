@@ -22,6 +22,12 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
 
   const locked = Boolean(surface.staffOnly) && viewAs === 'limited'
 
+  /* Tables and calendars take the whole monitor. Everything else stops where
+     lines stop being comfortable to read — and is centred there, so on a very
+     wide screen the leftover space sits evenly either side rather than piling
+     up on the right and reading as a mistake. */
+  const contentMax = surface.wide ? '100%' : 'var(--mbc-measure-max)'
+
   return (
     <div
       style={{
@@ -33,14 +39,18 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
       <Sidebar unread={viewAs === 'limited' ? 0 : unread} />
 
       <div style={{ minWidth: 0 }}>
-        <Header eyebrow={surface.eyebrow} title={surface.title} onOpenHistory={() => setHistoryOpen(true)} />
+        <Header
+          eyebrow={surface.eyebrow}
+          title={surface.title}
+          maxWidth={contentMax}
+          onOpenHistory={() => setHistoryOpen(true)}
+        />
 
         <main
           style={{
             padding: 'clamp(24px,3vw,40px) clamp(20px,3vw,40px) 90px',
-            // Tables and calendars take the whole monitor. Everything else
-            // stops where lines stop being comfortable to read.
-            maxWidth: surface.wide ? '100%' : 'var(--mbc-measure-max)',
+            maxWidth: contentMax,
+            marginInline: 'auto',
           }}
         >
           <p
