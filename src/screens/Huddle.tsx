@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button, Card, Rule } from '../components/ui'
 import { useData, useStore } from '../data/store'
 import { useSession } from '../session/session'
-import { isHuddleArchived, nextId, staffName } from '../lib/derive'
+import { isHuddleArchived, nextId, personName } from '../lib/derive'
 import { dueWithin } from '../lib/rollups'
 import { formatShort, relativeDay, parseDate, startOfToday, todayIso } from '../lib/date'
 import type { HuddleColumn, HuddlePost } from '../data/types'
@@ -79,7 +79,7 @@ export function Huddle() {
                   <Entry
                     key={entry.id}
                     entry={entry}
-                    author={staffName(data.staff, entry.authorId)}
+                    author={personName(data.people, entry.authorId)}
                     mine={entry.authorId === member?.id}
                     today={today}
                     onResolve={column.key === 'tension' ? setResolved : undefined}

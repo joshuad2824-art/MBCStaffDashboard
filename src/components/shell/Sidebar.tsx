@@ -102,6 +102,7 @@ export function Sidebar({ unread }: { unread: number }) {
       { to: '/communicator', label: 'Communicator' },
       { to: '/care', label: 'Care pipelines', staffOnly: true },
       { to: '/goals', label: 'Goals' },
+      { to: '/people', label: 'People', staffOnly: true },
     ],
   ]
 

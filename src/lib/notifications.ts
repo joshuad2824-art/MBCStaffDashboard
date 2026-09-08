@@ -1,5 +1,5 @@
 import type { DashboardData } from '../data/types'
-import { careDueBy, deriveCadence, firstName, isUnclaimed, staffName, threadForgetsIn } from './derive'
+import { careDueBy, deriveCadence, firstName, isUnclaimed, personName, threadForgetsIn } from './derive'
 import { countDays, daysBetween, formatShort, parseDate, relativeDay } from './date'
 import { carePastWindow, openCare, unannouncedNotices } from './rollups'
 import { currentWeek } from './communicator'
@@ -49,7 +49,7 @@ export function deriveNotifications(
           ' ago.',
         actionLabel: 'Open the cadence ledger',
         to: '/cadence',
-        meta: staffName(data.staff, item.ownerId),
+        meta: personName(data.people, item.ownerId),
       })
     } else if (away >= 0 && away <= 14) {
       items.push({
@@ -59,7 +59,7 @@ export function deriveNotifications(
         body: item.name + ' has to be announced ' + relativeDay(announceBy, today) + ' to keep its notice window.',
         actionLabel: 'Open the cadence ledger',
         to: '/cadence',
-        meta: staffName(data.staff, item.ownerId),
+        meta: personName(data.people, item.ownerId),
       })
     }
   }
@@ -109,7 +109,7 @@ export function deriveNotifications(
           ' is past its response window.',
         actionLabel: 'Open care pipelines',
         to: '/care',
-        meta: staffName(data.staff, entry.ownerId),
+        meta: personName(data.people, entry.ownerId),
       })
     }
     for (const entry of openCare(data.care)) {
@@ -130,7 +130,7 @@ export function deriveNotifications(
           '.',
         actionLabel: 'Open care pipelines',
         to: '/care',
-        meta: staffName(data.staff, entry.ownerId),
+        meta: personName(data.people, entry.ownerId),
       })
     }
   }
@@ -147,7 +147,7 @@ export function deriveNotifications(
         ' has not been published, so nothing in it counts as notice yet.',
       actionLabel: 'Open the communicator',
       to: '/communicator',
-      meta: staffName(data.staff, week.updatedBy),
+      meta: personName(data.people, week.updatedBy),
     })
   }
 
@@ -162,7 +162,7 @@ export function deriveNotifications(
       body: latestFyi.body,
       actionLabel: 'Open the Huddle',
       to: '/huddle',
-      meta: staffName(data.staff, latestFyi.authorId),
+      meta: personName(data.people, latestFyi.authorId),
     })
   }
 
@@ -177,7 +177,7 @@ export function deriveNotifications(
         body: '“' + thread.subject + '” ages out soon. Promote anything on it that became a commitment.',
         actionLabel: 'Open the discussion board',
         to: '/discussion',
-        meta: staffName(data.staff, thread.createdBy),
+        meta: personName(data.people, thread.createdBy),
       })
     }
   }

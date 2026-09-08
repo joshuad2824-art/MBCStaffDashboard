@@ -100,6 +100,27 @@ Verified as a real PDF: two pages at 792 × 612pt.
 and every push to `main`. `npm run build` is `tsc -b && vite build`, so that one
 command is the typecheck as well.
 
+## People, ownership, and access
+
+Two separate ideas, deliberately not the same list:
+
+- **The roster** (`person`) is everyone who can be *named* — staff, deacons,
+  volunteers. Anyone on it can own a commitment, a goal or a care entry.
+- **An account** is `access` of `staff` or `limited`. `none` means roster-only:
+  they can own things and cannot sign in.
+
+Naming a deacon as the owner of the men's fellowship says who is responsible; it
+does not hand them a key to members' circumstances. So adding somebody and
+inviting them are two acts, and the second is staff-role only. Owner pickers
+offer "Add someone…" inline, which creates a roster entry at `none` and assigns
+it in the same motion — leaving the page to create a record first is how a
+commitment ends up unclaimed.
+
+In Postgres this is enforced, not merely arranged: a new `person` row cannot
+arrive with an account attached, inviting requires an email address, and a
+trigger refuses to let anyone change their own access — including a staff
+member. See `docs/LOGIN-SETUP.md` for turning login on.
+
 ## Data, and the Supabase seam
 
 The app runs on seed data held in `localStorage`. Everything above

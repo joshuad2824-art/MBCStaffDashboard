@@ -1,6 +1,6 @@
 import { STANDING_SERVICES } from '../data/seed'
 import type { DashboardData } from '../data/types'
-import { careDueBy, deriveCadence, firstName, staffName } from './derive'
+import { careDueBy, deriveCadence, firstName, personName } from './derive'
 import { addDays, sameDay, toIso } from './date'
 
 /* One day cell aggregates four sources. The colour encodes which one, since the
@@ -60,7 +60,7 @@ export function itemsForDay(data: DashboardData, day: Date, includeCare: boolean
 
   for (const item of data.cadence) {
     const { nextDue, announceBy } = deriveCadence(item)
-    const owner = staffName(data.staff, item.ownerId)
+    const owner = personName(data.people, item.ownerId)
     if (nextDue && sameDay(nextDue, day)) {
       items.push({
         key: 'due-' + item.id,
@@ -93,7 +93,7 @@ export function itemsForDay(data: DashboardData, day: Date, includeCare: boolean
         source: 'care',
         slot: 'Care',
         label: (entry.sensitive ? firstName(entry.person) : entry.person) + ' — ' + entry.type,
-        meta: staffName(data.staff, entry.ownerId),
+        meta: personName(data.people, entry.ownerId),
       })
     }
   }

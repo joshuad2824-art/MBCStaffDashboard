@@ -4,9 +4,10 @@ import { Button, Card, Rule } from '../components/ui'
 import { useData, useStore } from '../data/store'
 import { useSession } from '../session/session'
 import { markThreadRead, useUnreadThreadIds } from '../lib/unread'
-import { nextId, parseMentions, quotedPost, staffName, threadForgetsIn } from '../lib/derive'
+import { nextId, parseMentions, quotedPost, personName, threadForgetsIn } from '../lib/derive'
 import { countDays, formatShort, parseDate, startOfToday, todayIso } from '../lib/date'
-import type { Post, Staff } from '../data/types'
+import type { Person, Post } from '../data/types'
+import { canSignIn } from '../data/types'
 
 /* Posts are a flat chronological list, not a nested tree — a staff of seven does
    not need indentation levels. A reply carries a reference to the post it
@@ -51,7 +52,7 @@ export function Discussion() {
 
   if (!member) return null
 
-  const activeStaff = data.staff.filter((person) => person.active)
+  const mentionable = data.people.filter(canSignIn)
 
   const touchThread = (threadId: number) => (current: typeof data) => ({
     ...current,
@@ -62,7 +63,7 @@ export function Discussion() {
     const body = draft.trim()
     if (!body || !thread) return
     const postId = nextId(data.posts)
-    const mentioned = parseMentions(body, data.staff)
+    const mentioned = parseMentions(body, data.people)
     setDraft('')
     setReplyTo(null)
     setMentionQuery(null)
@@ -94,7 +95,7 @@ export function Discussion() {
     const body = editDraft.trim()
     if (!body || editing === null || !thread) return
     const postId = editing
-    const mentioned = parseMentions(body, data.staff)
+    const mentioned = parseMentions(body, data.people)
     setEditing(null)
     mutate('Edited a post. It shows as edited; no history is kept.', (current) => {
       const withThread = touchThread(thread.id)(current)
@@ -186,7 +187,7 @@ export function Discussion() {
     setMentionQuery(match ? match[1] : null)
   }
 
-  const insertMention = (person: Staff) => {
+  const insertMention = (person: Person) => {
     setDraft((current) => current.replace(/@([\w' -]*)$/, '@' + person.name + ' '))
     setMentionQuery(null)
     composer.current?.focus()
@@ -195,7 +196,7 @@ export function Discussion() {
   const mentionMatches =
     mentionQuery === null
       ? []
-      : activeStaff.filter((person) => person.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6)
+      : mentionable.filter((person) => person.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6)
 
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
@@ -254,7 +255,7 @@ export function Discussion() {
                     {item.subject}
                   </span>
                   <span style={{ font: '400 12px/1.4 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
-                    {staffName(data.staff, item.createdBy)} · {countPosts(data.posts, item.id)}
+                    {personName(data.people, item.createdBy)} · {countPosts(data.posts, item.id)}
                   </span>
                   <span style={{ font: '400 12px/1.4 var(--mbc-font-sans)', color: 'var(--text-muted)' }}>
                     forgets in {countDays(Math.max(forgets, 0))}
@@ -315,7 +316,7 @@ export function Discussion() {
                 {thread.subject}
               </h2>
               <p style={{ font: '400 13px/1.5 var(--mbc-font-sans)', color: 'var(--text-meta)', margin: 0 }}>
-                Started by {staffName(data.staff, thread.createdBy)} · forgets in{' '}
+                Started by {personName(data.people, thread.createdBy)} · forgets in{' '}
                 {countDays(Math.max(threadForgetsIn(thread, today), 0))} unless somebody posts
               </p>
               <Rule tone="hair" />
@@ -332,7 +333,7 @@ export function Discussion() {
                     id={'post-' + post.id}
                     style={{ padding: '14px 0', borderBottom: '1px solid var(--border-hairline)', display: 'grid', gap: 8 }}
                   >
-                    {post.replyTo !== null ? <QuotedStrip parent={parent} staff={data.staff} /> : null}
+                    {post.replyTo !== null ? <QuotedStrip parent={parent} people={data.people} /> : null}
 
                     {post.removed ? (
                       <p style={{ font: '400 15px/1.6 var(--mbc-font-sans)', color: 'var(--text-muted)', margin: 0 }}>
@@ -357,17 +358,17 @@ export function Discussion() {
                       </div>
                     ) : (
                       <p style={{ font: '400 15px/1.65 var(--mbc-font-sans)', color: 'var(--text-heading)', margin: 0 }}>
-                        <Body body={post.body} staff={data.staff} />
+                        <Body body={post.body} people={data.people} />
                       </p>
                     )}
 
                     <p style={{ font: '400 12px/1.4 var(--mbc-font-sans)', color: 'var(--text-meta)', margin: 0 }}>
-                      {post.removed ? '—' : staffName(data.staff, post.authorId)} ·{' '}
+                      {post.removed ? '—' : personName(data.people, post.authorId)} ·{' '}
                       <span className="tabular">
                         {formatShort(parseDate(post.createdAt))} · {post.time}
                       </span>
                       {post.editedAt ? ' · edited' : ''}
-                      {mentions.length > 0 ? ' · mentions ' + mentions.map((m) => staffName(data.staff, m.staffId)).join(', ') : ''}
+                      {mentions.length > 0 ? ' · mentions ' + mentions.map((m) => personName(data.people, m.staffId)).join(', ') : ''}
                     </p>
 
                     {!post.removed ? (
@@ -442,7 +443,7 @@ export function Discussion() {
               {replyTo !== null ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ font: '400 12px/1.4 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
-                    Replying to {staffName(data.staff, quotedPost(data.posts, replyTo)?.authorId ?? null)}
+                    Replying to {personName(data.people, quotedPost(data.posts, replyTo)?.authorId ?? null)}
                   </span>
                   <TextAction onClick={() => setReplyTo(null)}>Cancel</TextAction>
                 </div>
@@ -523,7 +524,7 @@ const composerStyle = {
 } as const
 
 /** Rendered from the reference, never from a stored copy of the original. */
-function QuotedStrip({ parent, staff }: { parent: Post | null; staff: Staff[] }) {
+function QuotedStrip({ parent, people }: { parent: Post | null; people: Person[] }) {
   const removed = !parent || parent.removed
   return (
     <a
@@ -541,7 +542,7 @@ function QuotedStrip({ parent, staff }: { parent: Post | null; staff: Staff[] })
         'message removed'
       ) : (
         <>
-          <span style={{ fontWeight: 700 }}>{staffName(staff, parent.authorId)}</span>
+          <span style={{ fontWeight: 700 }}>{personName(people, parent.authorId)}</span>
           <span className="tabular"> · {formatShort(parseDate(parent.createdAt))} · </span>
           {parent.body.length > 90 ? parent.body.slice(0, 90) + '…' : parent.body}
         </>
@@ -551,8 +552,10 @@ function QuotedStrip({ parent, staff }: { parent: Post | null; staff: Staff[] })
 }
 
 /** Mentions render as a chip. The stored link is the staff id, not this text. */
-function Body({ body, staff }: { body: string; staff: Staff[] }) {
-  const names = staff.filter((person) => body.includes('@' + person.name)).map((person) => person.name)
+function Body({ body, people }: { body: string; people: Person[] }) {
+  const names = people
+    .filter((person) => canSignIn(person) && body.includes('@' + person.name))
+    .map((person) => person.name)
   if (names.length === 0) return <>{body}</>
 
   const pattern = new RegExp('(@(?:' + names.map(escapeRegExp).join('|') + '))', 'g')

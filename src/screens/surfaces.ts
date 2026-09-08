@@ -53,6 +53,13 @@ export const SURFACES: Record<string, Surface> = {
     lead: 'Per-person and rolling. Every entry carries a response window and an owner. Sensitive entries show a first name and an owner on any list or projected view; full detail requires opening the record.',
     staffOnly: true,
   },
+  people: {
+    path: '/people',
+    eyebrow: 'Who can be named',
+    title: 'People',
+    lead: 'Everyone who can own something, and separately, everyone who can sign in. A deacon or a volunteer belongs on this list the moment they take responsibility for something; giving them a way into the site is a second, deliberate step.',
+    staffOnly: true,
+  },
   goals: {
     path: '/goals',
     eyebrow: 'Annual · reviewed quarterly',

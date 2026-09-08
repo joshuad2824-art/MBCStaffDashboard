@@ -4,7 +4,7 @@ import { Button, Card, Rule } from '../../components/ui'
 import { CARE_TYPES } from '../../data/seed'
 import { useData } from '../../data/store'
 import { useSession } from '../../session/session'
-import { staffName, threadForgetsIn } from '../../lib/derive'
+import { personName, threadForgetsIn } from '../../lib/derive'
 import { dueWithin, medianGapByMonth, openCare, unannouncedNotices } from '../../lib/rollups'
 import type { DueRow } from '../../lib/rollups'
 import { countDays, formatShort, monthKey, startOfToday } from '../../lib/date'
@@ -210,7 +210,7 @@ function HuddleCard({ data }: { data: DashboardData }) {
               {post.body}
             </p>
             <p style={{ font: '400 12px/1.5 var(--mbc-font-sans)', color: 'var(--text-meta)', margin: '4px 0 0' }}>
-              {staffName(data.staff, post.authorId)}
+              {personName(data.people, post.authorId)}
             </p>
           </div>
         ))}

@@ -9,6 +9,7 @@ import { Discussion } from './screens/Discussion'
 import { CarePipelines } from './screens/ComingLater'
 import { Communicator } from './screens/Communicator'
 import { Goals } from './screens/Goals'
+import { People } from './screens/People'
 import { NoticeLog } from './screens/NoticeLog'
 import { useSession } from './session/session'
 
@@ -27,6 +28,7 @@ export function App() {
       <Route path="/communicator" element={<AppShell surface={SURFACES.communicator}><Communicator /></AppShell>} />
       <Route path="/care" element={<AppShell surface={SURFACES.care}><CarePipelines /></AppShell>} />
       <Route path="/goals" element={<AppShell surface={SURFACES.goals}><Goals /></AppShell>} />
+      <Route path="/people" element={<AppShell surface={SURFACES.people}><People /></AppShell>} />
       <Route path="*" element={<Navigate to="/today" replace />} />
     </Routes>
   )

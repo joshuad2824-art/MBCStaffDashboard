@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { Button, Card, Chip, Input, Rule } from '../components/ui'
 import { useData, useStore } from '../data/store'
 import { useSession } from '../session/session'
-import { nextId, staffName } from '../lib/derive'
+import { nextId, personName } from '../lib/derive'
 import {
   bulletinDate,
   currentWeek,
@@ -170,7 +170,7 @@ export function Communicator() {
               {formatDate(parseDate(week.serviceDate))}
             </p>
             <p style={{ font: '400 13px/1.5 var(--mbc-font-sans)', color: 'var(--text-meta)', margin: '6px 0 0' }}>
-              {published ? 'Published' : 'Draft'} · last touched by {staffName(data.staff, week.updatedBy)} on{' '}
+              {published ? 'Published' : 'Draft'} · last touched by {personName(data.people, week.updatedBy)} on{' '}
               <span className="tabular">{formatDate(parseDate(week.updatedAt))}</span>
             </p>
           </div>

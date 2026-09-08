@@ -1,6 +1,6 @@
 import { CARE_TYPES } from '../data/seed'
 import type { CadenceItem, CareEntry, DashboardData } from '../data/types'
-import { careDueBy, deriveCadence, firstName, isUnclaimed, noticeGap, staffName } from './derive'
+import { careDueBy, deriveCadence, firstName, isUnclaimed, noticeGap, personName } from './derive'
 import { daysBetween, formatShort, parseDate } from './date'
 
 /* Roll-ups shared by Today, the Huddle's "Due next" column and present mode.
@@ -43,7 +43,7 @@ export function dueWithin(data: DashboardData, today: Date, days: number, viewAs
 
   for (const item of data.cadence) {
     const { nextDue, announceBy } = deriveCadence(item)
-    const owner = staffName(data.staff, item.ownerId)
+    const owner = personName(data.people, item.ownerId)
     if (nextDue) {
       const away = daysBetween(today, nextDue)
       if (away >= 0 && away <= days) {
@@ -86,7 +86,7 @@ export function dueWithin(data: DashboardData, today: Date, days: number, viewAs
         kind: 'care',
         date: due,
         label: person + ' — ' + entry.type,
-        meta: staffName(data.staff, entry.ownerId) + ' · ' + (CARE_TYPES.find((t) => t.name === entry.type)?.window ?? ''),
+        meta: personName(data.people, entry.ownerId) + ' · ' + (CARE_TYPES.find((t) => t.name === entry.type)?.window ?? ''),
         unclaimed: entry.ownerId === null,
       })
     }

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useData } from '../data/store'
-import type { RoleLevel, Staff } from '../data/types'
+import type { Access, Person } from '../data/types'
 
 /* The magic-link flow is stubbed while the app runs on seed data: entering a
    known staff address and opening the link signs you in for thirty days. When
@@ -22,9 +22,9 @@ interface StoredSession {
 }
 
 interface SessionValue {
-  member: Staff | null
+  member: Person | null
   /** The role the interface is being drawn for — real role, or the preview. */
-  viewAs: RoleLevel
+  viewAs: Access
   previewingLimited: boolean
   setPreviewingLimited(value: boolean): void
   signIn(staffId: number): void
@@ -48,7 +48,7 @@ function readStored(): StoredSession | null {
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const { staff } = useData()
+  const { people } = useData()
   const [staffId, setStaffId] = useState<number | null>(() => readStored()?.staffId ?? null)
   const [previewingLimited, setPreviewingLimited] = useState(false)
   const [presentMode, setPresentMode] = useState(false)
@@ -90,12 +90,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [presentMode])
 
-  const member = useMemo(() => staff.find((s) => s.id === staffId) ?? null, [staff, staffId])
+  const member = useMemo(() => people.find((person) => person.id === staffId) ?? null, [people, staffId])
 
   const value = useMemo<SessionValue>(
     () => ({
       member,
-      viewAs: previewingLimited ? 'limited' : (member?.roleLevel ?? 'limited'),
+      viewAs: previewingLimited ? 'limited' : (member?.access ?? 'none'),
       previewingLimited,
       setPreviewingLimited,
       signIn,
