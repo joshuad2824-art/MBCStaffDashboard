@@ -6,10 +6,21 @@ export interface Surface {
   title: string
   lead: string
   staffOnly?: boolean
+  /* Whether a wide screen buys this surface anything.
+
+     A table or a calendar is better at every extra pixel: columns stop
+     colliding, day cells hold more of what is on them. Those run edge to edge.
+
+     A surface built from columns of prose is not. Past about seventy characters
+     a line gets hard to track back from, so those stop at a measure and leave
+     the rest of the monitor alone. That is the design system's rule, and it is
+     right — it just should not have been applied to the ledger. */
+  wide?: boolean
 }
 
 export const SURFACES: Record<string, Surface> = {
   today: {
+    wide: true,
     path: '/today',
     eyebrow: 'Leave this one up',
     title: 'Today at Memorial',
@@ -22,12 +33,14 @@ export const SURFACES: Record<string, Surface> = {
     lead: 'The meeting itself, as a board. Any staff member can post to any column; entries are attributed and timestamped. Wins and FYIs archive after fourteen days, tensions stay until they are cleared, and Due next is a read-only roll-up.',
   },
   cadence: {
+    wide: true,
     path: '/cadence',
     eyebrow: 'Recurring commitments',
     title: 'Cadence ledger',
     lead: 'Commitments that should happen whether or not anyone remembers. Dates are derived, not typed: next due is the last time it was held plus its interval, and announce by is that date minus its notice window.',
   },
   notice: {
+    wide: true,
     path: '/notice',
     eyebrow: 'The instrument',
     title: 'Notice log',
@@ -54,6 +67,7 @@ export const SURFACES: Record<string, Surface> = {
     staffOnly: true,
   },
   people: {
+    wide: true,
     path: '/people',
     eyebrow: 'Who can be named',
     title: 'People',

@@ -35,7 +35,14 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
       <div style={{ minWidth: 0 }}>
         <Header eyebrow={surface.eyebrow} title={surface.title} onOpenHistory={() => setHistoryOpen(true)} />
 
-        <main style={{ padding: 'clamp(24px,3vw,40px) clamp(20px,3vw,40px) 90px', maxWidth: 1380 }}>
+        <main
+          style={{
+            padding: 'clamp(24px,3vw,40px) clamp(20px,3vw,40px) 90px',
+            // Tables and calendars take the whole monitor. Everything else
+            // stops where lines stop being comfortable to read.
+            maxWidth: surface.wide ? '100%' : 'var(--mbc-measure-max)',
+          }}
+        >
           <p
             style={{
               font: '400 16px/1.7 var(--mbc-font-sans)',

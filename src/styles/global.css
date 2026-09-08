@@ -1,6 +1,13 @@
 /* App-level base styles. Everything visual comes from tokens.css — no new colour
    values are introduced here, and nothing gets a shadow or a gradient. */
 
+:root {
+  /* Where a prose-shaped surface stops widening. Four Huddle columns across
+     this come out at roughly seventy characters each, which is the measure the
+     brand guide asks for. */
+  --mbc-measure-max: 2200px;
+}
+
 *,
 *::before,
 *::after { box-sizing: border-box; }

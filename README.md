@@ -170,6 +170,11 @@ Baptist Church design system, unmodified.
   state, including "Never held". The absence of alarm colour is deliberate: the
   board's authority comes from being plainly factual.
 - **At most two dark bands per page.** Today uses both.
+- **Width is per-surface.** Tables and the calendar run the full width of the
+  monitor — they are better at every extra pixel. Surfaces built from columns of
+  prose stop at `--mbc-measure-max` (2200px), which puts four Huddle columns at
+  roughly seventy characters each. `Surface.wide` in `src/screens/surfaces.ts`
+  is where a surface says which it is.
 - Minimum control height 44px; minimum on-screen type 12px for meta.
 - Tabular numerals on every date, count and gap.
 
