@@ -307,6 +307,7 @@ export function Discussion() {
             <div style={{ display: 'grid', gap: 10 }}>
               <h2
                 style={{
+                  maxWidth: '30ch',
                   font: '600 24px/1.25 var(--mbc-font-serif)',
                   letterSpacing: '-.01em',
                   color: 'var(--text-heading)',
@@ -322,7 +323,7 @@ export function Discussion() {
               <Rule tone="hair" />
             </div>
 
-            <div style={{ display: 'grid', gap: 4 }}>
+            <div style={{ display: 'grid', gap: 4, width: '100%', maxWidth: '82ch' }}>
               {posts.map((post) => {
                 const parent = quotedPost(data.posts, post.replyTo)
                 const mine = post.authorId === member.id
@@ -439,7 +440,7 @@ export function Discussion() {
               })}
             </div>
 
-            <div style={{ display: 'grid', gap: 10, position: 'relative' }}>
+            <div style={{ display: 'grid', gap: 10, position: 'relative', width: '100%', maxWidth: '82ch' }}>
               {replyTo !== null ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ font: '400 12px/1.4 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
