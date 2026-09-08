@@ -4,15 +4,32 @@
 
 export type Id = number
 
-export type RoleLevel = 'staff' | 'limited'
+/* Who can sign in, and what they see.
 
-export interface Staff {
+   'staff'    everything, including care pipelines and the discussion board
+   'limited'  every surface except those two
+   'none'     cannot sign in at all
+
+   'none' is the important one. A deacon or a volunteer can own a commitment
+   without having an account: being named as the owner of something is a fact
+   about who is responsible, not a grant of access to members' circumstances.
+   Adding someone to the roster and inviting them are deliberately two acts. */
+export type Access = 'staff' | 'limited' | 'none'
+
+/** Anyone who can be named — staff, deacons, volunteers. */
+export interface Person {
   id: Id
   name: string
+  /** Their title on the roster: "Senior Pastor", "Deacon", "Volunteer". */
   role: string
+  /** Required to sign in; optional for someone who only owns things. */
   email: string
-  roleLevel: RoleLevel
+  access: Access
   active: boolean
+}
+
+export function canSignIn(person: Person): boolean {
+  return person.active && person.access !== 'none'
 }
 
 export type Ministry = 'All' | 'Children' | 'Students' | 'Men' | 'Women' | 'Music' | 'All groups'
@@ -198,7 +215,7 @@ export interface NoticeCategory {
 }
 
 export interface DashboardData {
-  staff: Staff[]
+  people: Person[]
   cadence: CadenceItem[]
   huddle: HuddlePost[]
   notices: Notice[]

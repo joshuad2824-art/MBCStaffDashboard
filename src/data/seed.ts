@@ -41,15 +41,15 @@ export const CHURCH = {
 }
 
 export const seed: DashboardData = {
-  staff: [
-    { id: 1, name: 'Jacob Bice', role: 'Senior Pastor', email: 'jacob@memorialbaptist.com', roleLevel: 'staff', active: true },
-    { id: 2, name: 'Spencer Ray', role: 'Associate Pastor', email: 'spencer@memorialbaptist.com', roleLevel: 'staff', active: true },
-    { id: 3, name: 'Ricky Weatherford', role: 'Music Minister', email: 'ricky@memorialbaptist.com', roleLevel: 'staff', active: true },
-    { id: 4, name: 'Lori Bell', role: 'Family Ministries Associate', email: 'lori@memorialbaptist.com', roleLevel: 'staff', active: true },
-    { id: 5, name: 'Michelle Davis', role: 'Preschool Minister', email: 'michelle@memorialbaptist.com', roleLevel: 'staff', active: true },
-    { id: 6, name: 'Andrew McGuire', role: 'Campus Minister', email: 'andrew@memorialbaptist.com', roleLevel: 'staff', active: true },
-    { id: 7, name: 'Sherry Kitchens', role: 'Office Administrator', email: 'sherry@memorialbaptist.com', roleLevel: 'staff', active: true },
-    { id: 8, name: 'Joshua Davis', role: 'Office Administrator', email: 'joshua@memorialbaptist.com', roleLevel: 'staff', active: true },
+  people: [
+    { id: 1, name: 'Jacob Bice', role: 'Senior Pastor', email: 'jacob@memorialbaptist.com', access: 'staff', active: true },
+    { id: 2, name: 'Spencer Ray', role: 'Associate Pastor', email: 'spencer@memorialbaptist.com', access: 'staff', active: true },
+    { id: 3, name: 'Ricky Weatherford', role: 'Music Minister', email: 'ricky@memorialbaptist.com', access: 'staff', active: true },
+    { id: 4, name: 'Lori Bell', role: 'Family Ministries Associate', email: 'lori@memorialbaptist.com', access: 'staff', active: true },
+    { id: 5, name: 'Michelle Davis', role: 'Preschool Minister', email: 'michelle@memorialbaptist.com', access: 'staff', active: true },
+    { id: 6, name: 'Andrew McGuire', role: 'Campus Minister', email: 'andrew@memorialbaptist.com', access: 'staff', active: true },
+    { id: 7, name: 'Sherry Kitchens', role: 'Office Administrator', email: 'sherry@memorialbaptist.com', access: 'staff', active: true },
+    { id: 8, name: 'Joshua Davis', role: 'Office Administrator', email: 'joshua@memorialbaptist.com', access: 'staff', active: true },
   ],
 
   cadence: [

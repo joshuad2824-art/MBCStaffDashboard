@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Button, Card, Chip } from '../components/ui'
+import { OwnerNote, OwnerSelect } from '../components/OwnerSelect'
 import { useData, useStore } from '../data/store'
 import { MINISTRIES } from '../data/seed'
-import { deriveCadence, isUnclaimed, staffName } from '../lib/derive'
+import { deriveCadence, isUnclaimed, personName } from '../lib/derive'
 import { formatDate, startOfToday, todayIso } from '../lib/date'
 import type { CadenceItem, Ministry } from '../data/types'
 
@@ -40,7 +41,7 @@ export function Cadence() {
         case 'ministry':
           return item.ministry.toLowerCase()
         case 'owner':
-          return staffName(data.staff, item.ownerId).toLowerCase()
+          return personName(data.people, item.ownerId).toLowerCase()
         case 'lastHeld':
           // Never held sorts last in either direction: it has no date to compare.
           return lastHeld ? lastHeld.getTime() : Number.MAX_SAFE_INTEGER
@@ -57,7 +58,7 @@ export function Cadence() {
       if (left === right) return a.name.localeCompare(b.name)
       return (left < right ? -1 : 1) * sort.dir
     })
-  }, [data.cadence, data.staff, ministry, sort, unclaimedOnly])
+  }, [data.cadence, data.people, ministry, sort, unclaimedOnly])
 
   const patch = (id: number, label: string, fields: Partial<CadenceItem>) =>
     mutate(label, (current) => ({
@@ -150,40 +151,20 @@ export function Cadence() {
                     <Cell>{item.ministry}</Cell>
 
                     <div>
-                      <select
-                        value={item.ownerId === null ? '' : String(item.ownerId)}
-                        aria-label={'Owner of ' + item.name}
-                        onChange={(event) => {
-                          const value = event.target.value
-                          const ownerId = value === '' ? null : Number(value)
+                      <OwnerSelect
+                        ownerId={item.ownerId}
+                        label={'Owner of ' + item.name}
+                        onChange={(ownerId, name) =>
                           patch(
                             item.id,
                             ownerId === null
                               ? 'Cleared the owner. It is unclaimed again.'
-                              : staffName(data.staff, ownerId) + ' owns ' + item.name + '.',
+                              : name + ' owns ' + item.name + '.',
                             { ownerId },
                           )
-                        }}
-                        style={{
-                          width: '100%',
-                          minHeight: 40,
-                          background: 'var(--surface-field)',
-                          border: '1px solid var(--mbc-border-panel)',
-                          borderRadius: 'var(--mbc-radius-md)',
-                          padding: '9px 10px',
-                          font: '400 14px/1.3 var(--mbc-font-sans)',
-                          color: item.ownerId === null ? 'var(--text-muted)' : 'var(--text-heading)',
-                        }}
-                      >
-                        <option value="">Unclaimed</option>
-                        {data.staff
-                          .filter((person) => person.active)
-                          .map((person) => (
-                            <option key={person.id} value={person.id}>
-                              {person.name}
-                            </option>
-                          ))}
-                      </select>
+                        }
+                      />
+                      <OwnerNote ownerId={item.ownerId} />
                     </div>
 
                     <Cell>{item.intervalLabel}</Cell>

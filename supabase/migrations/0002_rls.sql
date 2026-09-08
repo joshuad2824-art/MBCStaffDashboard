@@ -8,7 +8,7 @@
 -- and the Discussion board entirely. Losing them means the query returns no
 -- rows, not that a button is hidden.
 
-alter table staff              enable row level security;
+alter table person             enable row level security;
 alter table cadence_item       enable row level security;
 alter table cadence_occurrence enable row level security;
 alter table event              enable row level security;
@@ -27,15 +27,15 @@ alter table church_settings    enable row level security;
 
 -- ---------------------------------------------------------------- helpers
 
--- The signed-in staff row. security definer so the lookup itself is not subject
--- to the policies it is used by, which would recurse.
-create or replace function current_staff_id() returns uuid
+-- The signed-in person's row. security definer so the lookup itself is not
+-- subject to the policies it is used by, which would recurse.
+create or replace function current_person_id() returns uuid
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select id from staff where auth_id = auth.uid() and active;
+  select id from person where auth_id = auth.uid() and active and access <> 'none';
 $$;
 
 create or replace function is_staff_role() returns boolean
@@ -45,30 +45,69 @@ security definer
 set search_path = public
 as $$
   select exists (
-    select 1 from staff
-     where auth_id = auth.uid() and active and role_level = 'staff'
+    select 1 from person
+     where auth_id = auth.uid() and active and access = 'staff'
   );
 $$;
 
+-- Access 'none' is not a way in. A roster entry with no account can hold an
+-- auth_id only if somebody sets one by hand, and this still refuses it.
 create or replace function is_signed_in() returns boolean
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select exists (select 1 from staff where auth_id = auth.uid() and active);
+  select exists (
+    select 1 from person
+     where auth_id = auth.uid() and active and access <> 'none'
+  );
 $$;
 
--- ---------------------------------------------------------------- staff
+-- ---------------------------------------------------------------- people
 
--- Everyone signed in can see the roster: it is what owner dropdowns and the
--- mention picker are built from. Nobody edits it from the application — adding
--- a row is the invitation, and that happens in the dashboard.
-create policy staff_read on staff
+-- Everyone signed in reads the roster: it is what the owner pickers and the
+-- mention list are built from.
+create policy person_read on person
   for select using (is_signed_in());
 
-create policy staff_update_self on staff
+-- Adding somebody is staff-role only, and a new row can never arrive with an
+-- account attached. Granting access is the separate act below.
+create policy person_insert on person
+  for insert with check (is_staff_role() and access = 'none' and auth_id is null);
+
+-- Changing anyone's access — including handing out a staff role — is staff-role
+-- only. A limited account can name an owner but cannot widen anybody's reach.
+create policy person_update on person
+  for update using (is_staff_role()) with check (is_staff_role());
+
+-- Anyone may correct their own name or title, but not their own access. The
+-- trigger below is what actually enforces that half.
+create policy person_update_self on person
   for update using (auth_id = auth.uid()) with check (auth_id = auth.uid());
+
+-- Nobody escalates themselves, whichever policy let the update through.
+create or replace function guard_own_access() returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.auth_id is not distinct from auth.uid()
+     and (new.access is distinct from old.access or new.auth_id is distinct from old.auth_id)
+  then
+    raise exception 'You cannot change your own access.';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger person_no_self_escalation
+  before update on person
+  for each row execute function guard_own_access();
+
+-- Nobody is deleted. Someone who leaves is marked inactive so the record of
+-- what they owned survives; what they owned goes back to unclaimed.
 
 -- ------------------------------------------- surfaces both roles can see
 
@@ -106,7 +145,7 @@ create policy huddle_read on huddle_post
   for select using (is_signed_in());
 
 create policy huddle_insert on huddle_post
-  for insert with check (author_id = current_staff_id());
+  for insert with check (author_id = current_person_id());
 
 -- Anyone may clear or reopen a tension — that is the board working — but the
 -- body belongs to whoever wrote it.
@@ -114,7 +153,7 @@ create policy huddle_update on huddle_post
   for update using (is_signed_in()) with check (is_signed_in());
 
 create policy huddle_delete on huddle_post
-  for delete using (author_id = current_staff_id());
+  for delete using (author_id = current_person_id());
 
 -- ---------------------------------------------- care: staff role only
 
@@ -137,7 +176,7 @@ create policy thread_read on thread
   for select using (is_staff_role());
 
 create policy thread_insert on thread
-  for insert with check (is_staff_role() and created_by = current_staff_id());
+  for insert with check (is_staff_role() and created_by = current_person_id());
 
 create policy thread_update on thread
   for update using (is_staff_role()) with check (is_staff_role());
@@ -146,15 +185,15 @@ create policy post_read on post
   for select using (is_staff_role());
 
 create policy post_insert on post
-  for insert with check (is_staff_role() and author_id = current_staff_id());
+  for insert with check (is_staff_role() and author_id = current_person_id());
 
 -- Edit and delete are enforced on author_id here, not by hiding buttons.
 create policy post_update_own on post
-  for update using (is_staff_role() and author_id = current_staff_id())
-  with check (is_staff_role() and author_id = current_staff_id());
+  for update using (is_staff_role() and author_id = current_person_id())
+  with check (is_staff_role() and author_id = current_person_id());
 
 create policy post_delete_own on post
-  for delete using (is_staff_role() and author_id = current_staff_id());
+  for delete using (is_staff_role() and author_id = current_person_id());
 
 create policy mention_read on mention
   for select using (is_staff_role());
@@ -164,7 +203,7 @@ create policy mention_write on mention
 
 -- Your own read marks, nobody else's.
 create policy thread_read_own on thread_read
-  for all using (staff_id = current_staff_id()) with check (staff_id = current_staff_id());
+  for all using (person_id = current_person_id()) with check (person_id = current_person_id());
 
 -- ---------------------------------------------------------------- notes
 --

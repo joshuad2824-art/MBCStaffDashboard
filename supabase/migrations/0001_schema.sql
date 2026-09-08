@@ -7,22 +7,31 @@
 
 create extension if not exists "pgcrypto";
 
--- ---------------------------------------------------------------- staff
+-- ---------------------------------------------------------------- people
 
-create type role_level as enum ('staff', 'limited');
+-- 'none' cannot sign in at all. It is the default, and it is what makes this
+-- table safe to add to: naming a deacon as the owner of the men's fellowship
+-- says who is responsible, it does not hand them a key to care records.
+-- Being on the roster and having an account are two separate facts.
+create type access_level as enum ('staff', 'limited', 'none');
 
--- One row per staff member, keyed to the Supabase auth user. There is no
--- self-registration: a row here is the invitation.
-create table staff (
-  id          uuid primary key default gen_random_uuid(),
-  auth_id     uuid unique references auth.users (id) on delete set null,
-  name        text        not null,
-  role        text        not null,
-  email       citext      not null unique,
-  role_level  role_level  not null default 'limited',
-  active      boolean     not null default true,
-  created_at  timestamptz not null default now()
+create table person (
+  id         uuid primary key default gen_random_uuid(),
+  auth_id    uuid unique references auth.users (id) on delete set null,
+  name       text        not null,
+  -- Their title on the roster: "Senior Pastor", "Deacon", "Volunteer".
+  role       text        not null default 'Volunteer',
+  -- Required before anyone can be invited; empty for roster-only people.
+  email      citext unique,
+  access     access_level not null default 'none',
+  active     boolean     not null default true,
+  created_at timestamptz not null default now(),
+
+  -- You cannot have a way in without an address to send the link to.
+  constraint person_account_needs_email check (access = 'none' or email is not null)
 );
+
+create index person_active_idx on person (active, name);
 
 -- ---------------------------------------------------------------- cadence
 
@@ -30,7 +39,7 @@ create table cadence_item (
   id             uuid primary key default gen_random_uuid(),
   name           text    not null,
   ministry       text    not null,
-  owner_id       uuid references staff (id) on delete set null,  -- null is Unclaimed
+  owner_id       uuid references person (id) on delete set null,  -- null is Unclaimed
   interval_count integer not null check (interval_count > 0),
   interval_unit  text    not null default 'month' check (interval_unit in ('month', 'week')),
   interval_label text    not null,
@@ -65,7 +74,7 @@ create table event (
   location        text        not null default '',
   detail          text        not null default '',
   audience        text        not null default '',
-  owner_id        uuid references staff (id) on delete set null,
+  owner_id        uuid references person (id) on delete set null,
   cadence_item_id uuid references cadence_item (id) on delete set null,
   public          boolean     not null default false,
   created_at      timestamptz not null default now()
@@ -81,7 +90,7 @@ create table huddle_post (
   id          uuid primary key default gen_random_uuid(),
   column_key  huddle_column not null,
   body        text          not null check (length(btrim(body)) > 0),
-  author_id   uuid          not null references staff (id) on delete cascade,
+  author_id   uuid          not null references person (id) on delete cascade,
   created_at  timestamptz   not null default now(),
   resolved_at timestamptz                                          -- tensions only
 );
@@ -106,7 +115,7 @@ create table notice_entry (
   channel         text not null default 'Not sent',
   cadence_item_id uuid references cadence_item (id) on delete set null,
   event_id        uuid references event (id) on delete set null,
-  created_by      uuid references staff (id) on delete set null,
+  created_by      uuid references person (id) on delete set null,
   created_at      timestamptz not null default now(),
   constraint notice_entry_notified_after_decided check (notified_on is null or notified_on >= decided_on)
 );
@@ -133,7 +142,7 @@ create table care_entry (
   person_name   text        not null,
   type          text        not null references care_type (name),
   opened_on     date        not null,
-  owner_id      uuid references staff (id) on delete set null,
+  owner_id      uuid references person (id) on delete set null,
   status        care_status not null default 'open',
   last_touch_on date,
   sensitive     boolean     not null default false,
@@ -150,7 +159,7 @@ create index care_entry_status_idx on care_entry (status, opened_on);
 create table thread (
   id               uuid primary key default gen_random_uuid(),
   subject          text        not null check (length(btrim(subject)) > 0),
-  created_by       uuid        not null references staff (id) on delete cascade,
+  created_by       uuid        not null references person (id) on delete cascade,
   created_at       timestamptz not null default now(),
   last_activity_at timestamptz not null default now()
 );
@@ -166,7 +175,7 @@ create table post (
   -- the fourteen-day purge.
   reply_to_post_id uuid references post (id) on delete set null,
   body             text        not null default '',
-  author_id        uuid        not null references staff (id) on delete cascade,
+  author_id        uuid        not null references person (id) on delete cascade,
   created_at       timestamptz not null default now(),
   edited_at        timestamptz,
   removed          boolean     not null default false
@@ -174,22 +183,23 @@ create table post (
 
 create index post_thread_idx on post (thread_id, created_at);
 
--- Mentions are parsed on save and keyed to staff_id rather than left as raw
--- text, so a name change does not orphan the link.
+-- Mentions are parsed on save and keyed to person_id rather than left as raw
+-- text, so a name change does not orphan the link. Only people who can open the
+-- board can be mentioned — naming somebody who cannot read it is noise.
 create table mention (
   id         uuid primary key default gen_random_uuid(),
   post_id    uuid not null references post (id) on delete cascade,
-  staff_id   uuid not null references staff (id) on delete cascade,
+  person_id  uuid not null references person (id) on delete cascade,
   created_at timestamptz not null default now(),
-  unique (post_id, staff_id)
+  unique (post_id, person_id)
 );
 
 -- Per-person read marks behind the one unread count in the nav.
 create table thread_read (
-  staff_id  uuid        not null references staff (id) on delete cascade,
+  person_id uuid        not null references person (id) on delete cascade,
   thread_id uuid        not null references thread (id) on delete cascade,
   read_at   timestamptz not null default now(),
-  primary key (staff_id, thread_id)
+  primary key (person_id, thread_id)
 );
 
 -- Any insert or edit on a post moves its thread's clock. The fourteen days run
@@ -215,7 +225,7 @@ create table goal (
   id       uuid primary key default gen_random_uuid(),
   title    text    not null,
   ministry text    not null,
-  owner_id uuid references staff (id) on delete set null,
+  owner_id uuid references person (id) on delete set null,
   target   text    not null default '',
   status   text    not null default 'Not started',
   year     integer not null,
@@ -242,7 +252,7 @@ create table communicator_week (
   prayer_lines  text[]      not null default '{}',
   giving_json   jsonb       not null default '{}'::jsonb,
   status        week_status not null default 'draft',
-  updated_by    uuid references staff (id) on delete set null,
+  updated_by    uuid references person (id) on delete set null,
   updated_at    timestamptz not null default now()
 );
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button, Card, Eyebrow, Input } from '../components/ui'
 import { useData } from '../data/store'
+import { canSignIn } from '../data/types'
 import { useSession } from '../session/session'
 
 /* Invite-only. There is no sign-up and no password.
@@ -10,7 +11,7 @@ import { useSession } from '../session/session'
    handlers below and nothing else on this screen moves. */
 
 export function SignIn() {
-  const { staff } = useData()
+  const { people } = useData()
   const { signIn } = useSession()
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState<string | null>(null)
@@ -29,7 +30,9 @@ export function SignIn() {
   }
 
   const openLink = () => {
-    const member = staff.find((person) => person.email.toLowerCase() === sent && person.active)
+    // Only someone with an account: a person on the roster who owns things but
+    // has not been invited cannot sign in.
+    const member = people.find((person) => person.email.toLowerCase() === sent && canSignIn(person))
     if (!member) {
       setError('That link did not sign anyone in. Ask the office to send an invitation.')
       setSent(null)

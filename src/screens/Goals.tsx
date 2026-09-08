@@ -1,6 +1,7 @@
 import { Button, Card, Rule } from '../components/ui'
 import { useData, useStore } from '../data/store'
-import { staffName } from '../lib/derive'
+import { OwnerNote, OwnerSelect } from '../components/OwnerSelect'
+
 import type { Goal } from '../data/types'
 
 /* Annual, entered once, reviewed four times. Deliberately lightweight: a
@@ -55,8 +56,24 @@ export function Goals() {
                 {goal.title}
               </p>
               <p style={{ font: '400 13px/1.5 var(--mbc-font-sans)', color: 'var(--text-meta)', margin: '8px 0 0' }}>
-                {goal.ministry} · {staffName(data.staff, goal.ownerId)} · {goal.target}
+                {goal.ministry} · {goal.target}
               </p>
+              <div style={{ maxWidth: 260, marginTop: 12 }}>
+                <OwnerSelect
+                  ownerId={goal.ownerId}
+                  label={'Owner of: ' + goal.title}
+                  onChange={(ownerId, name) =>
+                    mutate(
+                      ownerId === null ? 'Cleared the owner of a goal.' : name + ' owns that goal.',
+                      (current) => ({
+                        ...current,
+                        goals: current.goals.map((row) => (row.id === goal.id ? { ...row, ownerId } : row)),
+                      }),
+                    )
+                  }
+                />
+                <OwnerNote ownerId={goal.ownerId} />
+              </div>
             </div>
             <Button variant="outline" size="sm" onClick={() => cycleStatus(goal)}>
               {goal.status}

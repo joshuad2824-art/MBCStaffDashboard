@@ -1,5 +1,6 @@
 import { CARE_TYPES, NOTICE_CATEGORIES } from '../data/seed'
-import type { CadenceItem, CareEntry, Notice, Post, Staff, Thread } from '../data/types'
+import type { CadenceItem, CareEntry, Notice, Person, Post, Thread } from '../data/types'
+import { canSignIn } from '../data/types'
 import { addDays, addMonths, countDays, daysBetween, parseDate, toIso } from './date'
 
 /* Everything in this file is computed on read. next_due, announce_by, the notice
@@ -99,9 +100,9 @@ export function isHuddleArchived(createdAt: string, today: Date): boolean {
   return daysBetween(created, today) >= HUDDLE_ARCHIVE_DAYS
 }
 
-export function staffName(staff: Staff[], id: number | null): string {
+export function personName(people: Person[], id: number | null): string {
   if (id === null) return 'Unclaimed'
-  const person = staff.find((s) => s.id === id)
+  const person = people.find((candidate) => candidate.id === id)
   return person ? person.name : 'Unclaimed'
 }
 
@@ -128,10 +129,12 @@ export function nextId(...collections: { id: number }[][]): number {
 }
 
 /** Mentions are parsed out of the body on save and keyed to staff_id. */
-export function parseMentions(body: string, staff: Staff[]): number[] {
+export function parseMentions(body: string, people: Person[]): number[] {
   const found: number[] = []
-  for (const person of staff) {
-    if (!person.active) continue
+  for (const person of people) {
+    // Only people who can open the board. Naming someone who cannot read it
+    // would be a mention nobody ever sees.
+    if (!canSignIn(person)) continue
     if (body.includes('@' + person.name)) found.push(person.id)
   }
   return found

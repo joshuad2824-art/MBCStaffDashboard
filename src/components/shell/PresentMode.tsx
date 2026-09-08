@@ -1,7 +1,7 @@
 import { Button, Eyebrow } from '../ui'
 import { useData } from '../../data/store'
 import { useSession } from '../../session/session'
-import { deriveCadence, isUnclaimed, staffName } from '../../lib/derive'
+import { deriveCadence, isUnclaimed, personName } from '../../lib/derive'
 import { dueWithin } from '../../lib/rollups'
 import { formatDate, formatShort, startOfToday } from '../../lib/date'
 
@@ -58,12 +58,12 @@ export function PresentMode() {
         <div style={{ display: 'grid', gap: 26, gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))' }}>
           <Column title="Wins" count={wins.length}>
             {wins.map((post) => (
-              <Line key={post.id} body={post.body} meta={staffName(data.staff, post.authorId)} />
+              <Line key={post.id} body={post.body} meta={personName(data.people, post.authorId)} />
             ))}
           </Column>
           <Column title="Tensions" count={tensions.length}>
             {tensions.map((post) => (
-              <Line key={post.id} body={post.body} meta={staffName(data.staff, post.authorId)} />
+              <Line key={post.id} body={post.body} meta={personName(data.people, post.authorId)} />
             ))}
           </Column>
         </div>
@@ -124,7 +124,7 @@ export function PresentMode() {
                     {item.name}
                   </span>
                   <span style={{ font: '400 19px/1.4 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
-                    {staffName(data.staff, item.ownerId)}
+                    {personName(data.people, item.ownerId)}
                   </span>
                   <span className="tabular" style={{ font: '400 19px/1.4 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
                     {lastHeld ? formatDate(lastHeld) : 'Never held'}
