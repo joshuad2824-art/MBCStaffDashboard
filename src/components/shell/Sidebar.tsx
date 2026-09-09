@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { Rule } from '../ui'
 import { useSession } from '../../session/session'
 import { NARROW, useMediaQuery } from '../../lib/media'
+import { ChangePasswordDialog } from './ChangePasswordDialog'
 
 interface NavItem {
   to: string
@@ -86,9 +88,10 @@ function Item({ item, locked }: { item: NavItem; locked: boolean }) {
 }
 
 export function Sidebar({ unread }: { unread: number }) {
-  const { member, viewAs, signOut } = useSession()
+  const { member, viewAs, signOut, auth } = useSession()
   const narrow = useMediaQuery(NARROW)
   const limited = viewAs === 'limited'
+  const [passwordOpen, setPasswordOpen] = useState(false)
 
   const groups: NavItem[][] = [
     [{ to: '/today', label: 'Today' }],
@@ -206,23 +209,29 @@ export function Sidebar({ unread }: { unread: number }) {
         <span style={{ font: '400 12px/1.4 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
           {member?.role} · role {viewAs}
         </span>
-        <button
-          type="button"
-          onClick={signOut}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: '4px 0',
-            textAlign: 'left',
-            font: '400 13px/1.4 var(--mbc-font-sans)',
-            color: 'var(--text-link)',
-            cursor: 'pointer',
-          }}
-        >
-          Sign out
-        </button>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: narrow ? 12 : 8 }}>
+          {auth.mode === 'supabase' ? (
+            <button type="button" onClick={() => setPasswordOpen(true)} style={accountActionStyle}>
+              Change password
+            </button>
+          ) : null}
+          <button type="button" onClick={signOut} style={accountActionStyle}>
+            Sign out
+          </button>
+        </div>
       </div>
       </nav>
+      <ChangePasswordDialog open={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </div>
   )
 }
+
+const accountActionStyle = {
+  background: 'none',
+  border: 'none',
+  padding: '4px 0',
+  textAlign: 'left',
+  font: '400 13px/1.4 var(--mbc-font-sans)',
+  color: 'var(--text-link)',
+  cursor: 'pointer',
+} as const
