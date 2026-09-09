@@ -4,28 +4,41 @@ import { useData } from '../data/store'
 import { canSignIn } from '../data/types'
 import { useSession } from '../session/session'
 
-/* Invite-only. There is no sign-up and there is no password.
+/* Invite-only. There is no sign-up.
 
-   With Supabase configured this screen sends a real magic link and then waits:
-   the link is opened in the inbox, comes back to the site, and the session
-   provider does the rest. Without it the app is on seed data and "Open the
-   link" stands in for clicking one — which is fine on a laptop and is not fine
-   on a deployed site, so the stub says so out loud. */
+   With Supabase configured this screen accepts an administrator-created
+   password and also keeps magic links as a fallback. Without it the app is on
+   seed data and "Open the link" stands in for clicking one — which is fine on
+   a laptop and is not fine on a deployed site, so the stub says so out loud. */
+
+type SignInMethod = 'password' | 'link'
 
 export function SignIn() {
   const { people } = useData()
   const { signIn, auth } = useSession()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [method, setMethod] = useState<SignInMethod>('password')
   const [sent, setSent] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const live = auth.mode === 'supabase'
+  const passwordMode = live && method === 'password'
   const shown = error ?? auth.error
 
-  const requestLink = async () => {
+  const submit = async () => {
     const address = email.trim().toLowerCase()
     if (!address) {
       setError('Enter your church email address.')
+      return
+    }
+    if (passwordMode) {
+      if (!password) {
+        setError('Enter your password.')
+        return
+      }
+      setError(null)
+      await auth.signInWithPassword(address, password)
       return
     }
     setError(null)
@@ -93,7 +106,7 @@ export function SignIn() {
               style={{ display: 'grid', gap: 22 }}
               onSubmit={(event) => {
                 event.preventDefault()
-                void requestLink()
+                void submit()
               }}
             >
               <div>
@@ -106,8 +119,9 @@ export function SignIn() {
                     maxWidth: '46ch',
                   }}
                 >
-                  There is no sign-up. If you are on staff, enter your church email and we will send a link that signs
-                  you in for thirty days.
+                  {passwordMode
+                    ? 'There is no public sign-up. Sign in with the church email and password that were created for you.'
+                    : 'There is no public sign-up. Enter your church email and we will send a one-time sign-in link.'}
                 </p>
               </div>
               <Input
@@ -119,10 +133,39 @@ export function SignIn() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
               />
+              {passwordMode ? (
+                <Input
+                  label="Password"
+                  on="card"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              ) : null}
               <Button type="submit" variant="primary" full shape="input" disabled={auth.sending}>
-                {auth.sending ? 'Sending…' : 'Email me a sign-in link'}
+                {auth.sending
+                  ? passwordMode
+                    ? 'Signing in…'
+                    : 'Sending…'
+                  : passwordMode
+                    ? 'Sign in'
+                    : 'Email me a sign-in link'}
               </Button>
               {shown ? message(shown, 'error') : null}
+              {live ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMethod(passwordMode ? 'link' : 'password')
+                    setError(null)
+                    auth.clearError()
+                  }}
+                  style={linkButton}
+                >
+                  {passwordMode ? 'Use an emailed link instead' : 'Use a password instead'}
+                </button>
+              ) : null}
               {live
                 ? null
                 : message('Sign-in is not connected yet: this build runs on sample data and sends no mail.', 'muted')}
