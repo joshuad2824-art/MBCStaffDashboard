@@ -12,11 +12,12 @@ import type { Access, Person } from '../data/types'
    There are two ways in, and which one is live depends on whether the build
    carries VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY:
 
-   **Supabase.** "Email me a sign-in link" sends a real one. Opening it brings a
-   session back to the site, and `claim_account()` says whether the address that
-   was verified belongs to somebody on the roster and what they may see. There
-   is no password and there is no sign-up: a person gets in because staff put
-   them on the roster and invited them, and for no other reason.
+   **Supabase.** A person can sign in with an administrator-created password or
+   ask for an emailed link. Either route brings a session back to the site, and
+   `claim_account()` says whether the verified address belongs to somebody on
+   the roster and what they may see. There is no sign-up: a person gets in
+   because staff put them on the roster and created an account, and for no
+   other reason.
 
    **The stub.** No variables, no network: entering a known address from
    src/data/seed.ts and pressing "Open the link" signs you in. This is what
@@ -44,6 +45,8 @@ export interface AuthValue {
   /** Something the person in front of the screen can act on, or null. */
   error: string | null
   clearError(): void
+  /** Resolves true once Supabase accepts the email and password. */
+  signInWithPassword(email: string, password: string): Promise<boolean>
   /** Resolves true when the screen should say "check your inbox". */
   requestLink(email: string): Promise<boolean>
 }
@@ -276,6 +279,35 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return false
   }, [])
 
+  const signInWithPassword = useCallback(async (address: string, password: string): Promise<boolean> => {
+    setError(null)
+    if (!supabase) return false
+
+    setSending(true)
+    try {
+      const { error: failed } = await supabase.auth.signInWithPassword({ email: address, password })
+      if (!failed) return true
+
+      const code = (failed as { code?: string }).code ?? ''
+      if (code === 'invalid_credentials' || /invalid login credentials/i.test(failed.message)) {
+        setError('That email or password was not accepted.')
+        return false
+      }
+      if (code === 'email_not_confirmed' || /email not confirmed/i.test(failed.message)) {
+        setError('That account has not been confirmed yet. Ask an administrator to confirm it.')
+        return false
+      }
+
+      setError(failed.message)
+      return false
+    } catch {
+      setError('Sign-in could not reach the server. Check your connection and try again.')
+      return false
+    } finally {
+      setSending(false)
+    }
+  }, [])
+
   // Present mode is a full-screen overlay: escape is the way out, and the page
   // behind it must not scroll away underneath the projection.
   useEffect(() => {
@@ -303,9 +335,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       sending,
       error,
       clearError: () => setError(null),
+      signInWithPassword,
       requestLink,
     }),
-    [checking, account, staffId, sending, error, requestLink],
+    [checking, account, staffId, sending, error, signInWithPassword, requestLink],
   )
 
   const value = useMemo<SessionValue>(
