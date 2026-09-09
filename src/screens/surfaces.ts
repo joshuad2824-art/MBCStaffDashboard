@@ -57,7 +57,7 @@ export const SURFACES: Record<string, Surface> = {
     path: '/communicator',
     eyebrow: 'One entry, many outputs',
     title: 'Communicator',
-    lead: 'Fill in the five forms and the printed piece formats itself: one letter sheet, folded in half, four panels. Nobody touches type, spacing, or the fold. Weeks live in the database so anyone can pick up last week’s issue, and publishing counts as a real notification.',
+    lead: 'Fill in the weekly details, add the cover image, and the printed piece formats itself: one letter sheet, folded in half, four panels. Nobody touches type, spacing, or the fold. Weeks live in the database so anyone can pick up last week’s issue, and publishing counts as a real notification.',
   },
   care: {
     path: '/care',

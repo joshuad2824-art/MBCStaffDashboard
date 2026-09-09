@@ -139,6 +139,7 @@ export const seed: DashboardData = {
       series: 'Serve',
       sermonTitle: 'Serve one another',
       scripture: 'Philippians 2:1\u201311',
+      coverImageUrl: '',
       artCaption: 'series art \u2014 serve',
       status: 'draft',
       publishedCreatedNoticeIds: [],

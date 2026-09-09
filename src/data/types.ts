@@ -165,6 +165,7 @@ export interface CommunicatorWeek {
   series: string
   sermonTitle: string
   scripture: string
+  coverImageUrl?: string
   artCaption: string
   order: OrderItem[]
   bulletinEvents: BulletinEvent[]
