@@ -181,21 +181,36 @@ export function CoverPanel({
             borderRadius: '200px 200px 16px 16px',
             height: '2.5in',
             flex: 'none',
+            overflow: 'hidden',
+            position: 'relative',
             display: 'flex',
             alignItems: 'flex-end',
             justifyContent: 'center',
             padding: 16,
           }}
         >
-          <span
-            style={{
-              font: '400 11px/1.4 ui-monospace, monospace',
-              color: 'var(--text-muted)',
-              textTransform: 'lowercase',
-            }}
-          >
-            {week.artCaption}
-          </span>
+          {week.coverImageUrl ? (
+            <img
+              src={week.coverImageUrl}
+              alt=""
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : null}
+          {week.artCaption ? (
+            <span
+              style={{
+                position: 'relative',
+                font: '400 11px/1.4 ui-monospace, monospace',
+                color: 'var(--text-muted)',
+                textTransform: 'lowercase',
+                background: 'var(--surface-print)',
+                borderRadius: 'var(--mbc-radius-input)',
+                padding: week.coverImageUrl ? '5px 8px' : 0,
+              }}
+            >
+              {week.artCaption}
+            </span>
+          ) : null}
         </div>
 
         <div style={{ marginTop: 22, textAlign: 'center' }}>
