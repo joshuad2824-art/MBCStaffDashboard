@@ -80,7 +80,7 @@ src/
 | Discussion board | Built — threads, replies by reference, edit, delete, mentions, promote, 14-day purge. |
 | Notice log | Built — median gap by month, the per-category standard, recording an entry with a live gap preview, and a verdict per row. |
 | Care pipelines | Phase three. Records exist and drive the calendar and rail; the surface is not built. |
-| Communicator | Built — five forms, a live panel preview, a fit guard that measures the rendered panels, printing, and publishing that writes to the notice log. |
+| Communicator | Built — weekly fields, drag-and-drop cover art, a live panel preview, a fit guard that measures the rendered panels, printing, and publishing that writes to the notice log. |
 | Goals | Built — five annual goals, a status you cycle, one sentence per quarter. |
 
 Care pipelines is the one surface left. It renders a short page saying where it
@@ -92,8 +92,12 @@ The printed piece is one letter sheet, landscape, double-sided, folded in half
 into four 5.5 × 8.5in panels — order of worship and cover on the outside,
 welcome and coming up on the inside. Nobody touches type, spacing or the fold.
 
-Three things are worth knowing about how it works:
+Four things are worth knowing about how it works:
 
+- **Cover art is prepared automatically.** Drop a JPEG, PNG or WebP onto the
+  cover-image area, or use its file-picker button on Windows or Mac. Large
+  phone photos are resized before the issue is saved so they remain practical
+  to preview and print.
 - **The fit guard measures, it does not estimate.** A hidden copy of each panel
   is laid out with no height ceiling and its real height compared to 8.5in, so
   the guard checks the same markup the printer receives. While any panel is over,
