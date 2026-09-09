@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import type { DragEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Button, Card, Chip, Input, Rule } from '../components/ui'
 import { useData, useStore } from '../data/store'
@@ -13,6 +14,7 @@ import {
   sortedWeeks,
 } from '../lib/communicator'
 import { addDays, formatDate, parseDate, startOfToday, toIso, todayIso } from '../lib/date'
+import { prepareCoverImage } from '../lib/coverImage'
 import { CoverPanel, EventsPanel, PANELS, WelcomePanel, WorshipPanel } from './communicator/Sheet'
 import type { PanelKey } from './communicator/Sheet'
 import { useFitGuard } from './communicator/useFitGuard'
@@ -27,6 +29,9 @@ export function Communicator() {
   const [openWeekId, setOpenWeekId] = useState<number | null>(null)
   const [panel, setPanel] = useState<PanelKey>('cover')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [coverImageBusy, setCoverImageBusy] = useState(false)
+  const [coverDragActive, setCoverDragActive] = useState(false)
+  const coverImageInput = useRef<HTMLInputElement>(null)
 
   const week = data.weeks.find((candidate) => candidate.id === openWeekId) ?? currentWeek(data.weeks, today)
   const settings = data.settings
@@ -66,6 +71,26 @@ export function Communicator() {
           : candidate,
       ),
     }))
+
+  const useCoverImage = async (file: File | undefined) => {
+    if (!file || coverImageBusy) return
+    setCoverImageBusy(true)
+    try {
+      const coverImageUrl = await prepareCoverImage(file)
+      patch('Cover image added.', { coverImageUrl })
+    } catch (error) {
+      say(error instanceof Error ? error.message : 'That image could not be added.')
+    } finally {
+      setCoverImageBusy(false)
+      if (coverImageInput.current) coverImageInput.current.value = ''
+    }
+  }
+
+  const dropCoverImage = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    setCoverDragActive(false)
+    void useCoverImage(event.dataTransfer.files[0])
+  }
 
   const publish = () => {
     const { notices, created, stamped } = noticesForPublish(data, week, todayIso())
@@ -237,6 +262,91 @@ export function Communicator() {
                 value={week.artCaption}
                 onChange={(event) => update({ artCaption: event.target.value })}
               />
+            </div>
+          </Section>
+
+          <Section title="Cover image">
+            <div
+              onDragEnter={(event) => {
+                event.preventDefault()
+                setCoverDragActive(true)
+              }}
+              onDragOver={(event) => {
+                event.preventDefault()
+                event.dataTransfer.dropEffect = 'copy'
+              }}
+              onDragLeave={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setCoverDragActive(false)
+              }}
+              onDrop={dropCoverImage}
+              style={{
+                border: `2px dashed ${coverDragActive ? 'var(--border-control-hover)' : 'var(--border-control)'}`,
+                borderRadius: 'var(--mbc-radius-card)',
+                background: coverDragActive ? 'var(--action-ghost-hover)' : 'var(--surface-card)',
+                padding: 18,
+                display: 'grid',
+                gridTemplateColumns: week.coverImageUrl ? '112px minmax(0, 1fr)' : 'minmax(0, 1fr)',
+                alignItems: 'center',
+                gap: 18,
+              }}
+            >
+              <input
+                ref={coverImageInput}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                aria-label="Choose cover image"
+                onChange={(event) => void useCoverImage(event.target.files?.[0])}
+                style={{ display: 'none' }}
+              />
+
+              {week.coverImageUrl ? (
+                <img
+                  src={week.coverImageUrl}
+                  alt="Current cover"
+                  style={{
+                    width: 112,
+                    height: 82,
+                    objectFit: 'cover',
+                    border: '1px solid var(--mbc-border-photo)',
+                    borderRadius: 'var(--mbc-radius-input)',
+                  }}
+                />
+              ) : null}
+
+              <div style={{ display: 'grid', gap: 12, justifyItems: 'start' }}>
+                <div>
+                  <p style={{ font: '600 15px/1.4 var(--mbc-font-sans)', color: 'var(--text-heading)', margin: 0 }}>
+                    {coverImageBusy
+                      ? 'Preparing your image…'
+                      : week.coverImageUrl
+                        ? 'Drag a new image here to replace the current cover.'
+                        : 'Drag and drop a cover image here.'}
+                  </p>
+                  <p style={{ font: '400 12px/1.5 var(--mbc-font-sans)', color: 'var(--text-meta)', margin: '5px 0 0' }}>
+                    JPEG, PNG, or WebP · up to 15 MB · automatically resized for printing
+                  </p>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={coverImageBusy}
+                    onClick={() => coverImageInput.current?.click()}
+                  >
+                    {week.coverImageUrl ? 'Choose a different image' : 'Choose image'}
+                  </Button>
+                  {week.coverImageUrl ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={coverImageBusy}
+                      onClick={() => patch('Cover image removed.', { coverImageUrl: '' })}
+                    >
+                      Remove image
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
             </div>
           </Section>
 
