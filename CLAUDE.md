@@ -54,7 +54,7 @@ follows from it. "Just cause" is a note written by a person.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0006_…` |
+| Migrations | Continue the sequence: next is `supabase/migrations/0007_…` |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -80,6 +80,13 @@ follows from it. "Just cause" is a note written by a person.
 - **`supabase/migrations/0005_meeting.sql`** — `board_meeting`, `agenda_item`, `meeting_attendance`,
   `motion`; `my_seats()`; `board_attendance_summary()`, which returns rows only to the chairman of
   the Board and is the only place the ¾ count is computed. No delete policy on any of the four.
+- **`supabase/migrations/0006_reports.sql`** — `report` (one table, `kind` committee / treasurer /
+  minutes, the four-state lifecycle) and `report_version` (written on publish, never updated or
+  deleted). A draft is its committee's own; a filed report goes to the whole Board, as the
+  appendices to the Board's minutes always have. What keeps that safe is the shape of each report:
+  Family Assistance has no field for a circumstance; a dollar figure in a Personnel report is
+  refused by a trigger. `src/data/meetings/reports.ts` holds the shapes and the standard template —
+  the Brotherhood of Deacons minutes and their appendices A–D, as the Board has filed them for years.
 - **Seating.** Memberships change by SQL, by one administrator. The one automatic seat: an active
   person granted access who sits in no body yet is put in `staff`, so the People page keeps
   working. Seat a deacon first, grant access second, and the trigger adds nothing.

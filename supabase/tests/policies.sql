@@ -627,3 +627,180 @@ select test.assert((select count(*) from board_meeting) = 0,      'signed out: n
 select test.assert((select count(*) from meeting_attendance) = 0, 'signed out: no attendance');
 select test.assert((select count(*) from motion) = 0,             'signed out: no motions');
 reset role;
+
+-- ------------------------------------------------------- 8. the reports
+--
+-- 0006. Chairs write their committee's report, the Board reads what is not
+-- confidential, publishing writes a version nobody can change, and a
+-- Personnel report cannot carry a dollar figure.
+
+-- Seats for this section: Deacon A chairs Finance too; Deacon B chairs
+-- Personnel; a new man chairs Building & Grounds and sits on no other body.
+update membership set role_in_body = 'chair'
+ where person_id = 'b0000000-0000-0000-0000-000000000009'
+   and body_id = (select id from body where slug = 'committee:finance');
+insert into membership (person_id, body_id, role_in_body, term_start)
+select 'b0000000-0000-0000-0000-000000000010', id, 'chair', date '2025-09-01' from body where slug = 'committee:personnel';
+insert into auth.users (id, email) values ('a0000000-0000-0000-0000-000000000011', 'grounds@memorial.test');
+insert into person (id, auth_id, name, role, email, access) values
+  ('b0000000-0000-0000-0000-000000000011', 'a0000000-0000-0000-0000-000000000011', 'Grounds Chair', 'Member', 'grounds@memorial.test', 'none');
+insert into membership (person_id, body_id, role_in_body, term_start)
+select 'b0000000-0000-0000-0000-000000000011', id, 'chair', date '2025-09-01' from body where slug = 'committee:building-grounds';
+update person set access = 'limited' where id = 'b0000000-0000-0000-0000-000000000011';
+
+-- 8a. The Finance chair drafts, submits and publishes; the Board reads.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+
+select test.assert(can_write_report('committee', (select id from body where slug = 'committee:finance')), 'finance chair: may write the Finance report');
+select test.assert(not can_write_report('committee', (select id from body where slug = 'committee:personnel')), 'finance chair: may not write Personnel''s');
+
+insert into report (id, kind, body_id, meeting_id, payload, created_by)
+  values ('d1000000-0000-0000-0000-000000000001', 'committee', (select id from body where slug = 'committee:finance'),
+          'c1000000-0000-0000-0000-000000000001', '{"budgetAdopted": 1284000}', 'b0000000-0000-0000-0000-000000000009');
+select test.refused(
+  $q$ insert into report (kind, body_id, meeting_id, created_by)
+      values ('committee', (select id from body where slug = 'committee:finance'), 'c1000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000010') $q$,
+  '42501', 'finance chair: cannot file under another man''s name');
+select test.refused(
+  $q$ insert into report (kind, body_id, created_by) values ('treasurer', (select id from body where slug = 'committee:finance'), 'b0000000-0000-0000-0000-000000000009') $q$,
+  '23514', 'treasurer: a report without its period is refused');
+insert into report (id, kind, body_id, meeting_id, period_start, period_end, created_by)
+  values ('d1000000-0000-0000-0000-000000000002', 'treasurer', (select id from body where slug = 'committee:finance'),
+          'c1000000-0000-0000-0000-000000000001', date '2026-08-01', date '2026-08-31', 'b0000000-0000-0000-0000-000000000009');
+
+update report set status = 'submitted', submitted_by = 'b0000000-0000-0000-0000-000000000009', submitted_at = now()
+ where id = 'd1000000-0000-0000-0000-000000000001';
+update report set status = 'published', published_at = now() where id = 'd1000000-0000-0000-0000-000000000001';
+insert into report_version (id, report_id, version_no, payload, rendered, created_by)
+  values ('e1000000-0000-0000-0000-000000000001', 'd1000000-0000-0000-0000-000000000001', 1, '{"budgetAdopted": 1284000}', 'Finance committee report', 'b0000000-0000-0000-0000-000000000009');
+insert into report_version (report_id, version_no, payload, rendered, created_by, supersedes_version_id)
+  values ('d1000000-0000-0000-0000-000000000001', 2, '{"budgetAdopted": 1284000, "note": "restated"}', 'Finance committee report, revised', 'b0000000-0000-0000-0000-000000000009', 'e1000000-0000-0000-0000-000000000001');
+select test.assert((select count(*) from report_version where report_id = 'd1000000-0000-0000-0000-000000000001') = 2, 'publishing: a second publish is a second version');
+select test.refused(
+  $q$ insert into report_version (report_id, version_no, payload, created_by)
+      values ('d1000000-0000-0000-0000-000000000001', 3, '{}', 'b0000000-0000-0000-0000-000000000010') $q$,
+  '42501', 'versions: cannot be written under another man''s name');
+
+-- Versions are records: no update, no delete, for anyone.
+update report_version set rendered = 'tampered' where version_no = 1;
+delete from report_version;
+delete from report;
+select test.assert((select rendered from report_version where version_no = 1) = 'Finance committee report', 'versions: cannot be changed after publication');
+select test.assert((select count(*) from report_version) = 2, 'versions: cannot be deleted');
+select test.assert((select count(*) from report) = 2, 'reports: cannot be deleted');
+reset role;
+
+-- The Board reads a non-confidential committee's report; a non-chair member cannot change it.
+select test.sign_in('a0000000-0000-0000-0000-000000000010', 'deacon-b@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from report where kind = 'committee') = 1, 'board member: reads the Finance report');
+select test.assert((select count(*) from report_version) = 2, 'board member: reads both versions');
+update report set payload = '{"budgetAdopted": 1}' where id = 'd1000000-0000-0000-0000-000000000001';
+reset role;
+select test.assert((select payload->>'budgetAdopted' from report where id = 'd1000000-0000-0000-0000-000000000001') = '1284000',
+  'board member: an update aimed at another committee''s report changed nothing');
+
+-- 8b. A draft is the committee's own; a filed report goes to the Board.
+
+set role authenticated;
+insert into report (id, kind, body_id, meeting_id, status, submitted_by, submitted_at, payload, created_by)
+  values ('d1000000-0000-0000-0000-000000000003', 'committee', (select id from body where slug = 'committee:family-assistance'),
+          'c1000000-0000-0000-0000-000000000001', 'submitted', 'b0000000-0000-0000-0000-000000000010', now(),
+          '{"received": 3, "approved": 2, "declined": 1, "totalApproved": 1850, "thirdPartyInvoiceConfirmed": true}',
+          'b0000000-0000-0000-0000-000000000010');
+reset role;
+
+-- The confidential body's row is invisible to a non-member, so the report is
+-- found by the body's id, captured here, not by a subquery on `body`.
+select id as fa_body from body where slug = 'committee:family-assistance' \gset
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from report where body_id = :'fa_body') = 1,
+  'chairman: reads the Family Assistance report once it is filed — counts, amounts and the D002 line, which is all it can hold');
+select test.assert((select count(*) from body where id = :'fa_body') = 0,
+  'chairman: and still cannot see the confidential body''s own row — the report names itself through reports_filed()');
+select test.assert((select count(*) from reports_filed('c1000000-0000-0000-0000-000000000001')) = 2,
+  'chairman: reports_filed() lists what was filed against the meeting — the Treasurer''s draft is not filed yet');
+reset role;
+
+-- A draft stays in the committee's room until it is filed.
+select test.sign_in('a0000000-0000-0000-0000-000000000010', 'deacon-b@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from report where kind = 'treasurer') = 0,
+  'board member: reads ZERO drafts of another committee — a draft is the chair''s own until filed');
+reset role;
+
+-- 8c. Personnel carries no compensation figures.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000010', 'deacon-b@memorial.test');
+set role authenticated;
+select test.refused(
+  $q$ insert into report (kind, body_id, meeting_id, payload, created_by)
+      values ('committee', (select id from body where slug = 'committee:personnel'), 'c1000000-0000-0000-0000-000000000001',
+              '{"staffingActions": ["Raised the associate pastor to $52,000"]}', 'b0000000-0000-0000-0000-000000000010') $q$,
+  'P0001', 'personnel: a dollar figure is refused');
+insert into report (id, kind, body_id, meeting_id, payload, created_by)
+  values ('d1000000-0000-0000-0000-000000000004', 'committee', (select id from body where slug = 'committee:personnel'), 'c1000000-0000-0000-0000-000000000001',
+          '{"reviewsCompleted": ["Senior Pastor, annual"], "staffingActions": ["Posted the part-time custodian role"]}', 'b0000000-0000-0000-0000-000000000010');
+select test.refused(
+  $q$ update report set payload = '{"staffingActions": ["$ 900 stipend"]}' where id = 'd1000000-0000-0000-0000-000000000004' $q$,
+  'P0001', 'personnel: a figure cannot be slipped in by update either');
+
+-- Minutes: any Board member writes them; one per meeting.
+insert into report (id, kind, body_id, meeting_id, payload, created_by)
+  values ('d1000000-0000-0000-0000-000000000005', 'minutes', (select id from body where slug = 'deacon-board'), 'c1000000-0000-0000-0000-000000000001',
+          '{"opening": "Opened with prayer."}', 'b0000000-0000-0000-0000-000000000010');
+select test.refused(
+  $q$ insert into report (kind, body_id, meeting_id, created_by)
+      values ('minutes', (select id from body where slug = 'deacon-board'), 'c1000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000010') $q$,
+  '23505', 'minutes: one record per meeting');
+select test.refused(
+  $q$ insert into report (kind, body_id, created_by) values ('minutes', (select id from body where slug = 'deacon-board'), 'b0000000-0000-0000-0000-000000000010') $q$,
+  '23514', 'minutes: are always of a meeting');
+reset role;
+
+-- 8d. Everyone else.
+
+-- The Senior Pastor, ex officio on the Board: reads, does not write.
+select test.sign_in('a0000000-0000-0000-0000-000000000003', 'other@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from report where kind = 'committee' and body_id = (select id from body where slug = 'committee:finance')) = 1, 'ex officio: reads the Finance report');
+select test.refused(
+  $q$ insert into report (kind, body_id, created_by) values ('committee', (select id from body where slug = 'committee:finance'), 'b0000000-0000-0000-0000-000000000003') $q$,
+  '42501', 'ex officio: cannot write a committee''s report');
+reset role;
+
+-- A committee chair who sits on no other body: files, sees the meeting, and nothing of the room.
+select test.sign_in('a0000000-0000-0000-0000-000000000011', 'grounds@memorial.test');
+set role authenticated;
+select test.assert(is_on_deacon_side() and not is_member_of('deacon-board'), 'grounds chair: on the deacon side, not on the Board');
+select test.assert((select count(*) from board_meeting) = 1,      'grounds chair: sees that the meeting exists, to file against it');
+select test.assert((select count(*) from agenda_item) = 0,        'grounds chair: reads zero agenda items');
+select test.assert((select count(*) from meeting_attendance) = 0, 'grounds chair: reads ZERO attendance rows');
+select test.assert((select count(*) from motion) = 0,             'grounds chair: reads zero motions');
+select test.assert((select count(*) from report) = 0,             'grounds chair: reads zero reports of other committees — not on the Board, not in their rooms');
+select test.assert((select count(*) from reports_filed('c1000000-0000-0000-0000-000000000001')) = 0, 'grounds chair: reports_filed() answers only the Board');
+insert into report (kind, body_id, meeting_id, payload, created_by)
+  values ('committee', (select id from body where slug = 'committee:building-grounds'), 'c1000000-0000-0000-0000-000000000001',
+          '{"projectsOpen": ["North lot resurfacing"]}', 'b0000000-0000-0000-0000-000000000011');
+select test.assert((select count(*) from report) = 1, 'grounds chair: files his own committee''s report');
+reset role;
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from report) = 0,         'staff: reads ZERO reports');
+select test.assert((select count(*) from report_version) = 0, 'staff: reads zero versions');
+reset role;
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from report) = 0, 'limited: reads zero reports');
+reset role;
+
+select test.sign_out();
+set role anon;
+select test.assert((select count(*) from report) = 0,         'signed out: no reports');
+select test.assert((select count(*) from report_version) = 0, 'signed out: no versions');
+reset role;

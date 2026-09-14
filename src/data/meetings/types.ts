@@ -1,3 +1,5 @@
+import type { FiledPointer, Report, ReportVersion } from './reports'
+
 /* The meeting, as the screens read it. Mirrors supabase/migrations/0005_meeting.sql.
 
    Ids are the database's uuids as strings. The deacon side never went through
@@ -25,6 +27,9 @@ export interface Meeting {
   status: MeetingStatus
   agendaLockedAt: string | null
   agendaLockedBy: string | null
+  /** Stamped by the calls to order and to adjourn. The minutes' header. */
+  calledToOrderAt: string | null
+  adjournedAt: string | null
   minutesStatus: MinutesStatus
   approvedAt: string | null
 }
@@ -91,6 +96,13 @@ export interface MeetingsData {
   attendance: Attendance[]
   motions: Motion[]
   roster: BoardMember[]
+  /** Every report this person may read, all states. */
+  reports: Report[]
+  versions: ReportVersion[]
+  /** What was filed against each meeting, as pointers. Board members only. */
+  filed: FiledPointer[]
+  /** The people the reports name — chairs, recorders — by id. */
+  names: Record<string, string>
   /** Who is signed in, as the roster knows them. Null until the roster loads. */
   me: string | null
   /** Month the deacon year begins in (1 = calendar year). From church_settings. */

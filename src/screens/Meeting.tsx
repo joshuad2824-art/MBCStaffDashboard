@@ -10,7 +10,6 @@ import {
   REQUIRED_MEETINGS,
   agendaFor,
   attendanceFor,
-  carriedForward,
   currentMeeting,
   deaconYearLabel,
   motionsFor,
@@ -21,6 +20,8 @@ import {
   sortedByDate,
 } from '../data/meetings/derive'
 import type { AttendanceCount, AttendanceStatus, Meeting as MeetingRecord, MeetingsData, Motion, MotionDisposition, Phase } from '../data/meetings/types'
+import { COMMITTEES, boardItems, emptyPayload } from '../data/meetings/reports'
+import { assembleFor } from '../data/meetings/render'
 import { formatLong, formatShort, parseDate, startOfToday, todayIso } from '../lib/date'
 import { useSession } from '../session/session'
 import { SURFACES } from './surfaces'
@@ -92,7 +93,12 @@ function MeetingView({ data }: { data: MeetingsData }) {
               {meeting.status === 'cancelled' ? ' · cancelled' : ''}
             </p>
           </div>
-          <BodyBadge bodies={['deacon-board']} />
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+            <Button variant="outline" size="sm" onClick={() => navigate(`/reports/packet/${meeting.id}`)}>
+              Print the packet
+            </Button>
+            <BodyBadge bodies={['deacon-board']} />
+          </div>
         </div>
 
         <div
@@ -163,6 +169,7 @@ function AgendaPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingRe
   const { say } = useStore()
   const [title, setTitle] = useState('')
   const [notes, setNotes] = useState('')
+  const [section, setSection] = useState<'old_business' | 'new_business'>('new_business')
   const agenda = agendaFor(data.agenda, meeting)
   const carried = oldBusiness(data.motions, data.meetings, meeting)
   const locked = meeting.agendaLockedAt !== null
@@ -178,7 +185,7 @@ function AgendaPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingRe
       meetingId: meeting.id,
       position: (agenda[agenda.length - 1]?.position ?? 0) + 1,
       title: title.trim(),
-      source: 'manual',
+      source: section,
       sourceRef: '',
       notes: notes.trim(),
     })
@@ -197,28 +204,58 @@ function AgendaPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingRe
     }
   }
 
-  const rows: { key: string; position: number; title: string; meta: string; tag: string; tagColour: string; remove?: () => void }[] = [
-    ...agenda.map((item, index) => ({
+  const navigate = useNavigate()
+  const filed = data.filed.filter((f) => f.meetingId === meeting.id && f.kind !== 'minutes')
+  /* The agenda assembles itself: stored items, then what the committees
+     filed, then what those reports ask the Board to vote on, then old
+     business carried from the last meeting. Only the first is typed. */
+  const rows: { key: string; position: number; title: string; meta: string; tag: string; tagColour: string; remove?: () => void; open?: () => void }[] = [
+    ...agenda.map((item) => ({
       key: item.id,
-      position: index + 1,
       title: item.title,
       meta: [item.sourceRef, item.notes].filter(Boolean).join(' · '),
       tag: item.source === 'old_business' ? 'old business' : item.source === 'new_business' ? 'new business' : item.source,
       tagColour: item.source === 'report' ? 'var(--mbc-yale-sage)' : item.source === 'old_business' ? 'var(--text-eyebrow)' : 'var(--text-muted)',
-      remove: !locked && !closed && item.source === 'manual' ? () => void removeAgendaItem(item.id).then(() => say('Removed from the agenda. It stays in the record.')) : undefined,
+      remove: !locked && !closed && item.source !== 'recurring' ? () => void removeAgendaItem(item.id).then(() => say('Removed from the agenda. It stays in the record.')) : undefined,
     })),
-    ...carried.map((motion, index) => {
+    ...filed.map((pointer) => ({
+      key: 'filed-' + pointer.bodySlug + pointer.kind,
+      title: pointer.kind === 'treasurer' ? 'Treasurer’s report filed' : `${pointer.bodyName.replace(/ Committee$/, '')} committee reported`,
+      meta:
+        pointer.reportId === null
+          ? 'That it reported is the whole record here. Nothing inside it is on this agenda.'
+          : `Filed ${pointer.submittedAt ? formatShort(parseDate(pointer.submittedAt.slice(0, 10))) : ''}${pointer.status === 'published' ? ' · published' : ''}`,
+      tag: 'report',
+      tagColour: 'var(--mbc-yale-sage)',
+      open: pointer.reportId ? () => navigate(`/reports/${pointer.reportId}`) : undefined,
+    })),
+    ...filed
+      .filter((pointer) => pointer.reportId)
+      .flatMap((pointer) => {
+        const report = data.reports.find((r) => r.id === pointer.reportId)
+        return report
+          ? boardItems(report.payload)
+              .filter((item) => item.needsVote)
+              .map((item, index) => ({
+                key: `${pointer.reportId}-item-${index}`,
+                title: item.text,
+                meta: `From the ${pointer.bodyName.replace(/ Committee$/, '')} report · a vote is asked for`,
+                tag: 'new business',
+                tagColour: 'var(--text-eyebrow)',
+              }))
+          : []
+      }),
+    ...carried.map((motion) => {
       const from = data.meetings.find((m) => m.id === motion.meetingId)
       return {
         key: motion.id,
-        position: agenda.length + index + 1,
         title: motion.text,
         meta: `Tabled ${from ? formatShort(parseDate(from.meetsOn)) : 'earlier'}${motion.tabledToMeetingId === meeting.id ? ' · taken up tonight' : ''}`,
         tag: 'old business',
         tagColour: 'var(--text-eyebrow)',
       }
     }),
-  ]
+  ].map((row, index) => ({ ...row, position: index + 1 }))
 
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20 }}>
@@ -240,6 +277,11 @@ function AgendaPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingRe
                     Remove
                   </button>
                 ) : null}
+                {row.open ? (
+                  <button type="button" onClick={row.open} style={linkButton}>
+                    Open the report
+                  </button>
+                ) : null}
               </div>
               <span style={{ font: '700 10px/1 var(--mbc-font-sans)', letterSpacing: '.16em', textTransform: 'uppercase', color: row.tagColour, whiteSpace: 'nowrap', paddingTop: 6 }}>
                 {row.tag}
@@ -255,6 +297,12 @@ function AgendaPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingRe
             </Field>
             <Field label="A line of context, if it helps">
               <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" style={fieldStyle} />
+            </Field>
+            <Field label="Where it goes on the agenda" group>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <Pill selected={section === 'old_business'} onClick={() => setSection('old_business')}>IV. Old business</Pill>
+                <Pill selected={section === 'new_business'} onClick={() => setSection('new_business')}>V. New business</Pill>
+              </div>
             </Field>
             <div>
               <Button variant="outline" size="md" onClick={() => void add()}>
@@ -296,11 +344,27 @@ function AgendaPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingRe
             ))
           )}
         </Card>
-        <Card radius="card" pad="22px 24px" style={{ display: 'grid', gap: 12 }}>
-          <Eyebrow size="sm">Committee reports due</Eyebrow>
-          <p style={{ ...bodyText, margin: 0 }}>
-            The report builders arrive with the next phase. When they do, a filed report lands on this agenda on its own — that it reported is the whole record here.
-          </p>
+        <Card tone="panel" radius="card" pad="22px 24px" style={{ display: 'grid', gap: 0 }}>
+          <Eyebrow size="sm" style={{ marginBottom: 12 }}>Committee reports due</Eyebrow>
+          <div style={{ display: 'grid', gap: 1, background: 'var(--border-section)' }}>
+            {COMMITTEES.map((slug) => {
+              const pointer = filed.find((f) => f.bodySlug === slug && f.kind === 'committee')
+              const name = { 'committee:finance': 'Finance', 'committee:building-grounds': 'Building & Grounds', 'committee:personnel': 'Personnel', 'committee:family-assistance': 'Family Assistance' }[slug]
+              return (
+                <div key={slug} style={{ display: 'grid', gap: 4, padding: '12px 2px', background: 'var(--surface-panel)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}>
+                    <span style={{ font: '400 16px/1.4 var(--mbc-font-sans)', color: 'var(--text-heading)' }}>{name}</span>
+                    <span style={{ font: '700 10px/1 var(--mbc-font-sans)', letterSpacing: '.16em', textTransform: 'uppercase', color: pointer ? 'var(--mbc-yale-sage)' : 'var(--text-eyebrow)' }}>
+                      {pointer ? 'Filed' : 'Not filed'}
+                    </span>
+                  </div>
+                  {pointer && pointer.reportId === null ? (
+                    <p style={{ ...metaText, margin: 0 }}>You are not on this committee. That it filed is all you can see.</p>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
         </Card>
       </div>
     </div>
@@ -315,11 +379,11 @@ function SessionPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingR
   const closed = meeting.status === 'held' || meeting.status === 'cancelled'
 
   const callToOrder = async () => {
-    await updateMeeting(meeting.id, { status: 'in_session' })
+    await updateMeeting(meeting.id, { status: 'in_session', calledToOrderAt: new Date().toISOString() })
     say('Called to order. Call the roll.')
   }
   const adjourn = async () => {
-    await updateMeeting(meeting.id, { status: 'held' })
+    await updateMeeting(meeting.id, { status: 'held', adjournedAt: new Date().toISOString() })
     say('Adjourned. The minutes assemble from what was recorded.')
   }
 
@@ -652,43 +716,40 @@ function MotionRow({ motion, nameOf }: { motion: Motion; nameOf: (id: string | n
 /* ---------------------------------------------------------- phase three */
 
 function MinutesPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingRecord }) {
-  const roll = attendanceFor(data.attendance, meeting)
-  const tonight = motionsFor(data.motions, meeting)
-  const carried = carriedForward(data.motions, meeting)
-  const nameOf = (personId: string | null) => data.roster.find((m) => m.personId === personId)?.name ?? '—'
-  const present = data.roster.filter((m) => roll.get(m.personId)?.status === 'present')
-  const absent = data.roster.filter((m) => roll.get(m.personId)?.status === 'absent')
-  const excused = data.roster.filter((m) => roll.get(m.personId)?.status === 'excused')
-
+  const { createReport, updateMeeting } = useMeetings()
+  const { say } = useStore()
+  const navigate = useNavigate()
+  const a = assembleFor(data, meeting)
   const blocks: { title: string; from: string; lines: string[] }[] = [
     {
       title: 'Attendance',
       from: 'from phase two',
-      lines:
-        roll.size === 0
-          ? ['The roll was not called.']
-          : [
-              `${present.length} of ${data.roster.length} present${present.length ? ': ' + present.map((m) => m.name).join(', ') : ''}.`,
-              ...(absent.length ? [`Absent: ${absent.map((m) => m.name).join(', ')}.`] : []),
-              ...(excused.length ? [`Excused: ${excused.map((m) => m.name).join(', ')}.`] : []),
-            ],
+      lines: [
+        `Deacons present: ${a.present.length ? a.present.join(', ') : '—'}`,
+        `Deacons not present: ${a.absent.length ? a.absent.join(', ') : '—'}`,
+        `Meeting opened: ${a.opened ?? '—'} · adjourned: ${a.adjourned ?? '—'}`,
+      ],
     },
-    {
-      title: 'Committee reports received',
-      from: 'from the report builders',
-      lines: ['The report builders arrive with the next phase. Reports filed against this meeting will be listed here on their own.'],
-    },
-    {
-      title: 'Motions',
-      from: 'derived from dispositions',
-      lines: tonight.length === 0 ? ['No motions were recorded.'] : tonight.map((motion) => `${motion.text} — ${motion.disposition}${motion.movedBy ? `, moved by ${nameOf(motion.movedBy)}` : ''}${motion.secondedBy ? `, seconded by ${nameOf(motion.secondedBy)}` : ''}${motion.voteFor !== null ? ` (${motion.voteFor}–${motion.voteAgainst ?? 0})` : ''}.`),
-    },
-    {
-      title: 'Carried to the next meeting',
-      from: 'derived from dispositions',
-      lines: carried.length === 0 ? ['Nothing was tabled.'] : carried.map((motion) => motion.text),
-    },
+    { title: 'VII. Deacon committee reports', from: 'from the report builders', lines: a.committees.map((c) => `${c.letter}. ${c.name} – ${c.filed ? `See Appendix ${c.letter}` : 'not filed'}`) },
+    { title: 'Motions recorded in session', from: 'derived from dispositions', lines: a.motions.length ? a.motions : ['No motions were recorded.'] },
+    { title: 'IV. Old business, carried in', from: 'derived from dispositions', lines: a.carriedIn.length ? a.carriedIn : ['Nothing was carried in.'] },
   ]
+  const minutes = data.reports.find((r) => r.kind === 'minutes' && r.meetingId === meeting.id) ?? null
+
+  const openMinutes = async () => {
+    if (minutes) {
+      navigate(`/reports/${minutes.id}`)
+      return
+    }
+    const created = await createReport({ kind: 'minutes', bodySlug: 'deacon-board', meetingId: meeting.id, periodStart: null, periodEnd: null, payload: emptyPayload('minutes', 'deacon-board') })
+    if (!created) return
+    await updateMeeting(meeting.id, { minutesStatus: 'draft' })
+    navigate(`/reports/${created.id}`)
+  }
+  const recordApproval = async () => {
+    await updateMeeting(meeting.id, { minutesStatus: 'approved', approvedAt: new Date().toISOString() })
+    say('Recorded: the Board approved these minutes.')
+  }
 
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20 }}>
@@ -696,7 +757,7 @@ function MinutesPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingR
         <div>
           <Eyebrow size="sm">Already in the record — nobody retypes this</Eyebrow>
           <p style={{ font: '600 24px/1.25 var(--mbc-font-serif)', color: 'var(--text-heading)', margin: '10px 0 0' }}>
-            {meeting.status === 'held' ? 'Assembled from the meeting.' : 'Assembling as the meeting goes.'}
+            {meeting.status === 'held' ? 'Assembled from the meeting, in the Board’s own template.' : 'Assembling as the meeting goes.'}
           </p>
         </div>
         <div style={{ display: 'grid', gap: 1, background: 'var(--border-hairline)' }}>
@@ -716,14 +777,32 @@ function MinutesPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingR
 
       <div style={{ flex: '2 1 380px', display: 'grid', gap: 20, alignContent: 'start', minWidth: 0 }}>
         <Card tone="panel" radius="card" pad="24px 26px" style={{ display: 'grid', gap: 12 }}>
-          <Eyebrow size="sm">What only the secretary writes</Eyebrow>
-          <p style={{ font: '600 22px/1.25 var(--mbc-font-serif)', color: 'var(--text-heading)', margin: 0 }}>The narrative, and the publishing, come with the builders.</p>
+          <Eyebrow size="sm">What only you can write</Eyebrow>
+          <p style={{ font: '600 22px/1.25 var(--mbc-font-serif)', color: 'var(--text-heading)', margin: 0 }}>
+            The remarks, the updates, the business, the pastoral report, the closing.
+          </p>
           <p style={{ ...bodyText, margin: 0 }}>
-            The opening and prayer, the pastor’s word to the Board and the closing are the three things nobody can derive. They are written here in the next phase, and publishing then makes a version — an edit after publication creates a new one and leaves the prior readable.
+            The attendance, the times, the committee reports and the motions are already in the record and assemble themselves into the Brotherhood of Deacons template. The narrative sections are written in the minutes builder, and publishing there makes a version — an edit after publication creates a new one and leaves the prior readable.
           </p>
           <p style={{ ...metaText, margin: 0 }}>
-            Minutes status: {meeting.minutesStatus === 'none' ? 'nothing written' : meeting.minutesStatus}.
+            {minutes
+              ? `Minutes ${minutes.status}${meeting.minutesStatus === 'approved' ? ' · approved by the Board' : ''}.`
+              : meeting.status === 'held'
+                ? 'Nothing written yet.'
+                : 'The minutes are written after the meeting is adjourned.'}
           </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {meeting.status === 'held' || minutes ? (
+              <Button variant={minutes ? 'outline' : 'primary'} size="md" onClick={() => void openMinutes()}>
+                {minutes ? 'Open the minutes' : 'Write the minutes'}
+              </Button>
+            ) : null}
+            {minutes && minutes.status !== 'draft' && meeting.minutesStatus !== 'approved' ? (
+              <Button variant="outline" size="md" onClick={() => void recordApproval()}>
+                Record the Board’s approval
+              </Button>
+            ) : null}
+          </div>
         </Card>
         <Card radius="card" pad="24px 26px" style={{ display: 'grid', gap: 10 }}>
           <Eyebrow size="sm">One thing to settle with the Board</Eyebrow>
@@ -792,7 +871,7 @@ function OtherMeetings({ data, meeting }: { data: MeetingsData; meeting: Meeting
 }
 
 function NoMeetingYet() {
-  const { createMeeting, addAgendaItem } = useMeetings()
+  const { createMeeting } = useMeetings()
   const { say } = useStore()
   const navigate = useNavigate()
   const [meetsOn, setMeetsOn] = useState('')
@@ -801,16 +880,15 @@ function NoMeetingYet() {
       say('Pick the date.')
       return
     }
-    const created = await createMeeting({ meetsOn, kind: 'regular', timeLabel: '7:00 PM', location: 'fellowship hall' })
+    const created = await createMeeting({ meetsOn, kind: 'regular', timeLabel: '4:00 PM', location: 'fellowship hall' })
     if (!created) return
-    await addAgendaItem({ meetingId: created.id, position: 1, title: 'Treasurer’s report', source: 'recurring', sourceRef: 'Art. II.C ¶2', notes: '' })
     navigate(meetingPath(created.id))
   }
   return (
     <Card tone="panel" radius="card" pad="26px clamp(22px,2vw,30px)" style={{ display: 'grid', gap: 14, maxWidth: 640 }}>
       <Eyebrow size="sm">No meeting on record yet</Eyebrow>
       <p style={{ font: '600 24px/1.25 var(--mbc-font-serif)', color: 'var(--text-heading)', margin: 0 }}>Schedule the first one.</p>
-      <p style={{ ...bodyText, margin: 0 }}>The Board convenes monthly (Art. II.B §3 ¶5). The Treasurer’s report is on every regular agenda by rule (Art. II.C ¶2).</p>
+      <p style={{ ...bodyText, margin: 0 }}>The Board convenes monthly (Art. II.B §3 ¶5). The agenda’s ten sections are fixed; what you add here goes under old or new business.</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'end' }}>
         <Field label="Meets on">
           <input type="date" value={meetsOn} onChange={(e) => setMeetsOn(e.target.value)} style={{ ...fieldStyle, width: 'auto' }} />

@@ -95,6 +95,18 @@ button { margin: 0; }
     page-break-after: auto;
   }
 
+  /* A report prints on portrait letter, one per page, in the MBC styling.
+     The page size is set by the report view itself, after this rule. */
+  .print-only .print-report {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .print-only .print-report:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
   /* The panels carry real ink; the browser must not helpfully drop it. */
   * {
     -webkit-print-color-adjust: exact;

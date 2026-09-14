@@ -2,7 +2,9 @@ import { supabase, supabaseConfigured } from '../../lib/supabase'
 import { SEED_SEATS } from '../seed'
 import type { Person } from '../types'
 import { attendanceCounts } from './derive'
-import { seedAgenda, seedAttendance, seedMeetings, seedMotions } from './seed'
+import { normalisePayload } from './reports'
+import type { FiledPointer, Report, ReportKind, ReportPayload, ReportStatus, ReportVersion } from './reports'
+import { seedAgenda, seedAttendance, seedMeetings, seedMotions, seedReports, seedVersions } from './seed'
 import type {
   AgendaItem,
   Attendance,
@@ -32,7 +34,7 @@ export interface StubContext {
 export interface MeetingRepository {
   load(stub: StubContext): Promise<MeetingsData>
   createMeeting(input: { meetsOn: string; kind: MeetingKind; timeLabel: string; location: string }, me: string): Promise<Meeting>
-  updateMeeting(id: string, patch: Partial<Pick<Meeting, 'status' | 'agendaLockedAt' | 'agendaLockedBy' | 'minutesStatus' | 'approvedAt' | 'timeLabel' | 'location'>>): Promise<void>
+  updateMeeting(id: string, patch: Partial<Pick<Meeting, 'status' | 'agendaLockedAt' | 'agendaLockedBy' | 'calledToOrderAt' | 'adjournedAt' | 'minutesStatus' | 'approvedAt' | 'timeLabel' | 'location'>>): Promise<void>
   addAgendaItem(item: Omit<AgendaItem, 'id' | 'removedAt'>, me: string): Promise<AgendaItem>
   removeAgendaItem(id: string): Promise<void>
   recordAttendance(meetingId: string, personId: string, status: AttendanceStatus, note: string, me: string): Promise<Attendance>
@@ -40,6 +42,13 @@ export interface MeetingRepository {
   takeUp(motionId: string, meetingId: string): Promise<void>
   /** The chairman's count. Empty for anyone else — the database decides. */
   attendanceCounts(data: MeetingsData, meeting: Meeting): Promise<AttendanceCount[]>
+
+  /* Reports. The lifecycle is draft → submitted → published → archived and
+     nothing goes backwards except a draft reopened from submitted. */
+  createReport(input: { kind: ReportKind; bodySlug: string; meetingId: string | null; periodStart: string | null; periodEnd: string | null; payload: ReportPayload }, me: string): Promise<Report>
+  saveReport(id: string, patch: { payload?: ReportPayload; meetingId?: string | null; status?: ReportStatus; submittedAt?: string | null; submittedBy?: string | null; publishedAt?: string | null; archivedAt?: string | null }, me: string): Promise<void>
+  /** Publishing writes a version. Never updates one. */
+  addVersion(input: { reportId: string; versionNo: number; payload: ReportPayload; rendered: string; supersedesVersionId: string | null }, me: string): Promise<ReportVersion>
 }
 
 const STORAGE_KEY = 'mbc.deacons.meetings.v1'
@@ -49,7 +58,18 @@ interface Stored {
   agenda: AgendaItem[]
   attendance: Attendance[]
   motions: Motion[]
+  reports: Report[]
+  versions: ReportVersion[]
 }
+
+const BODY_NAMES: Record<string, string> = {
+  'deacon-board': 'Deacon Board',
+  'committee:finance': 'Finance Committee',
+  'committee:personnel': 'Personnel Committee',
+  'committee:building-grounds': 'Building & Grounds Committee',
+  'committee:family-assistance': 'Family Assistance Committee',
+}
+const CONFIDENTIAL = new Set(['committee:family-assistance'])
 
 function newId(): string {
   return crypto.randomUUID()
@@ -66,10 +86,10 @@ export class LocalMeetingRepository implements MeetingRepository {
 
   private read(): Stored {
     if (this.stored) return this.stored
-    let data: Stored = { meetings: seedMeetings, agenda: seedAgenda, attendance: seedAttendance, motions: seedMotions }
+    let data: Stored = { meetings: seedMeetings, agenda: seedAgenda, attendance: seedAttendance, motions: seedMotions, reports: seedReports, versions: seedVersions }
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY)
-      if (raw) data = JSON.parse(raw) as Stored
+      if (raw) data = { ...data, ...(JSON.parse(raw) as Partial<Stored>) }
     } catch {
       // A corrupt store is not worth failing the room over.
     }
@@ -86,6 +106,14 @@ export class LocalMeetingRepository implements MeetingRepository {
     }
   }
 
+  /** The stub's version of the read policy: members of the body, and the
+      Board unless the body is confidential. */
+  private readable(stub: StubContext, bodySlug: string): boolean {
+    const seats = stub.meId === null ? [] : (SEED_SEATS[stub.meId] ?? [])
+    const mine = new Set(seats.map((s) => s.slug))
+    return mine.has(bodySlug) || (mine.has('deacon-board') && !CONFIDENTIAL.has(bodySlug))
+  }
+
   async load(stub: StubContext): Promise<MeetingsData> {
     const data = this.read()
     this.roster = stub.people
@@ -94,8 +122,27 @@ export class LocalMeetingRepository implements MeetingRepository {
         const seat = (SEED_SEATS[person.id] ?? []).find((s) => s.slug === 'deacon-board')
         return seat ? [{ personId: String(person.id), name: person.name, role: person.role, seat: seat.role }] : []
       })
+    const onBoard = stub.meId !== null && (SEED_SEATS[stub.meId] ?? []).some((s) => s.slug === 'deacon-board')
+    const reports = data.reports.filter((r) => this.readable(stub, r.bodySlug))
+    const readableIds = new Set(reports.map((r) => r.id))
+    const filed: FiledPointer[] = onBoard
+      ? data.reports
+          .filter((r) => r.status !== 'draft' && r.meetingId)
+          .map((r) => ({
+            meetingId: r.meetingId as string,
+            reportId: readableIds.has(r.id) ? r.id : null, kind: r.kind, bodySlug: r.bodySlug, bodyName: r.bodyName,
+            confidential: CONFIDENTIAL.has(r.bodySlug), status: r.status, submittedAt: r.submittedAt, publishedAt: r.publishedAt,
+          }))
+      : []
     return {
-      ...data,
+      meetings: data.meetings,
+      agenda: data.agenda,
+      attendance: data.attendance,
+      motions: data.motions,
+      reports,
+      versions: data.versions.filter((v) => readableIds.has(v.reportId)),
+      filed,
+      names: Object.fromEntries(stub.people.map((p) => [String(p.id), p.name])),
       roster: this.roster,
       me: stub.meId === null ? null : String(stub.meId),
       deaconYearStartMonth: 1,
@@ -104,7 +151,7 @@ export class LocalMeetingRepository implements MeetingRepository {
 
   async createMeeting(input: { meetsOn: string; kind: MeetingKind; timeLabel: string; location: string }, _me: string): Promise<Meeting> {
     const meeting: Meeting = {
-      id: newId(), ...input, status: 'planned', agendaLockedAt: null, agendaLockedBy: null, minutesStatus: 'none', approvedAt: null,
+      id: newId(), ...input, status: 'planned', agendaLockedAt: null, agendaLockedBy: null, calledToOrderAt: null, adjournedAt: null, minutesStatus: 'none', approvedAt: null,
     }
     const data = this.read()
     this.write({ ...data, meetings: [...data.meetings, meeting] })
@@ -157,6 +204,33 @@ export class LocalMeetingRepository implements MeetingRepository {
     // The stub has no chairman-only query, so the screen decides who asks.
     return attendanceCounts(data, meeting)
   }
+
+  async createReport(input: { kind: ReportKind; bodySlug: string; meetingId: string | null; periodStart: string | null; periodEnd: string | null; payload: ReportPayload }, me: string): Promise<Report> {
+    const now = nowIso()
+    const report: Report = {
+      id: newId(), kind: input.kind, bodySlug: input.bodySlug, bodyName: BODY_NAMES[input.bodySlug] ?? input.bodySlug,
+      meetingId: input.meetingId, periodStart: input.periodStart, periodEnd: input.periodEnd, status: 'draft', payload: input.payload,
+      createdBy: me, updatedBy: me, updatedAt: now, submittedBy: null, submittedAt: null, publishedAt: null, archivedAt: null,
+    }
+    const data = this.read()
+    this.write({ ...data, reports: [...data.reports, report] })
+    return report
+  }
+
+  async saveReport(id: string, patch: Parameters<MeetingRepository['saveReport']>[1], me: string): Promise<void> {
+    const data = this.read()
+    this.write({
+      ...data,
+      reports: data.reports.map((r) => (r.id === id ? { ...r, ...patch, updatedBy: me, updatedAt: nowIso() } : r)),
+    })
+  }
+
+  async addVersion(input: { reportId: string; versionNo: number; payload: ReportPayload; rendered: string; supersedesVersionId: string | null }, me: string): Promise<ReportVersion> {
+    const version: ReportVersion = { id: newId(), ...input, createdBy: me, publishedAt: nowIso() }
+    const data = this.read()
+    this.write({ ...data, versions: [...data.versions, version] })
+    return version
+  }
 }
 
 type Row = Record<string, unknown>
@@ -176,6 +250,7 @@ function readMeeting(row: Row): Meeting {
     id: text(row.id), meetsOn: text(row.meets_on), timeLabel: text(row.time_label), location: text(row.location),
     kind: text(row.kind) as MeetingKind, status: text(row.status) as Meeting['status'],
     agendaLockedAt: nullableText(row.agenda_locked_at), agendaLockedBy: nullableText(row.agenda_locked_by),
+    calledToOrderAt: nullableText(row.called_to_order_at), adjournedAt: nullableText(row.adjourned_at),
     minutesStatus: text(row.minutes_status) as Meeting['minutesStatus'], approvedAt: nullableText(row.approved_at),
   }
 }
@@ -202,6 +277,39 @@ function readMotion(row: Row): Motion {
   }
 }
 
+/* A report row carries body_id. The body's row itself is invisible to a
+   non-member when the body is confidential, so the slug and name are looked
+   up from the bodies this person can read plus the filed pointers, which
+   name every filed report's body to the Board. */
+function readReport(row: Row, names: Map<string, { slug: string; name: string }>): Report {
+  const body = names.get(text(row.body_id)) ?? { slug: '', name: '' }
+  const kind = text(row.kind) as ReportKind
+  const bodySlug = body.slug
+  return {
+    id: text(row.id), kind, bodySlug, bodyName: body.name, meetingId: nullableText(row.meeting_id),
+    periodStart: nullableText(row.period_start), periodEnd: nullableText(row.period_end),
+    status: text(row.status) as ReportStatus, payload: normalisePayload(kind, bodySlug, row.payload),
+    createdBy: nullableText(row.created_by), updatedBy: nullableText(row.updated_by), updatedAt: text(row.updated_at),
+    submittedBy: nullableText(row.submitted_by), submittedAt: nullableText(row.submitted_at),
+    publishedAt: nullableText(row.published_at), archivedAt: nullableText(row.archived_at),
+  }
+}
+function readVersion(row: Row): ReportVersion {
+  return {
+    id: text(row.id), reportId: text(row.report_id), versionNo: Number(row.version_no ?? 0),
+    payload: (row.payload ?? {}) as ReportPayload, rendered: text(row.rendered), createdBy: nullableText(row.created_by),
+    publishedAt: text(row.published_at), supersedesVersionId: nullableText(row.supersedes_version_id),
+  }
+}
+function readFiled(row: Row, meetingId: string): FiledPointer {
+  return {
+    meetingId,
+    reportId: nullableText(row.report_id), kind: text(row.kind) as ReportKind, bodySlug: text(row.body_slug), bodyName: text(row.body_name),
+    confidential: row.confidential === true, status: text(row.status) as ReportStatus,
+    submittedAt: nullableText(row.submitted_at), publishedAt: nullableText(row.published_at),
+  }
+}
+
 function fail(what: string, error: { message: string } | null): never {
   throw new Error(`Could not ${what}: ${error?.message ?? 'no row came back'}`)
 }
@@ -216,7 +324,7 @@ export class SupabaseMeetingRepository implements MeetingRepository {
 
   async load(): Promise<MeetingsData> {
     const client = this.client()
-    const [meetings, agenda, attendance, motions, seats, settings, me] = await Promise.all([
+    const [meetings, agenda, attendance, motions, seats, settings, me, reports, versions, people, bodies] = await Promise.all([
       client.from('board_meeting').select('*').order('meets_on'),
       client.from('agenda_item').select('*').order('position'),
       client.from('meeting_attendance').select('*'),
@@ -228,9 +336,27 @@ export class SupabaseMeetingRepository implements MeetingRepository {
         .eq('active', true),
       client.from('church_settings').select('deacon_year_start_month').limit(1),
       client.rpc('claim_account'),
+      client.from('report').select('*').order('updated_at', { ascending: false }),
+      client.from('report_version').select('*').order('version_no'),
+      client.from('person').select('id, name'),
+      client.from('body').select('id, slug, name'),
     ])
-    for (const [what, result] of [['read meetings', meetings], ['read the agenda', agenda], ['read attendance', attendance], ['read motions', motions], ['read the roll', seats]] as const) {
+    for (const [what, result] of [['read meetings', meetings], ['read the agenda', agenda], ['read attendance', attendance], ['read motions', motions], ['read the roll', seats], ['read reports', reports], ['read versions', versions], ['read names', people]] as const) {
       if (result.error) fail(what, result.error)
+    }
+    // What was filed against each meeting: pointers, Board members only.
+    const meetingRows = ((meetings.data ?? []) as Row[]).map(readMeeting)
+    const filedRows = await Promise.all(meetingRows.map((m) => client.rpc('reports_filed', { for_meeting: m.id })))
+    const filed = filedRows.flatMap((result, index) =>
+      result.error ? [] : ((result.data ?? []) as Row[]).map((row) => readFiled(row, meetingRows[index].id)),
+    )
+    const bodyNames = new Map<string, { slug: string; name: string }>()
+    for (const row of (bodies.data ?? []) as Row[]) bodyNames.set(text(row.id), { slug: text(row.slug), name: text(row.name) })
+    const bodyIdOf = new Map<string, string>() // report id → body id, so a pointer can name a body the reader cannot see
+    for (const row of (reports.data ?? []) as Row[]) bodyIdOf.set(text(row.id), text(row.body_id))
+    for (const pointer of filed) {
+      const bodyId = pointer.reportId ? bodyIdOf.get(pointer.reportId) : undefined
+      if (bodyId && !bodyNames.has(bodyId)) bodyNames.set(bodyId, { slug: pointer.bodySlug, name: pointer.bodyName })
     }
     const today = new Date().toISOString().slice(0, 10)
     const roster: BoardMember[] = ((seats.data ?? []) as Row[])
@@ -248,10 +374,14 @@ export class SupabaseMeetingRepository implements MeetingRepository {
     const settingsRow = ((settings.data ?? []) as Row[])[0]
     const meRow = (Array.isArray(me.data) ? me.data[0] : me.data) as Row | null
     return {
-      meetings: ((meetings.data ?? []) as Row[]).map(readMeeting),
+      meetings: meetingRows,
       agenda: ((agenda.data ?? []) as Row[]).map(readAgenda),
       attendance: ((attendance.data ?? []) as Row[]).map(readAttendance),
       motions: ((motions.data ?? []) as Row[]).map(readMotion),
+      reports: ((reports.data ?? []) as Row[]).map((row) => readReport(row, bodyNames)),
+      versions: ((versions.data ?? []) as Row[]).map(readVersion),
+      filed,
+      names: Object.fromEntries(((people.data ?? []) as Row[]).map((row) => [text(row.id), text(row.name)])),
       roster,
       me: meRow ? text(meRow.id) || null : null,
       deaconYearStartMonth: Number(settingsRow?.deacon_year_start_month ?? 1) || 1,
@@ -273,6 +403,8 @@ export class SupabaseMeetingRepository implements MeetingRepository {
     if (patch.status !== undefined) fields.status = patch.status
     if (patch.agendaLockedAt !== undefined) fields.agenda_locked_at = patch.agendaLockedAt
     if (patch.agendaLockedBy !== undefined) fields.agenda_locked_by = patch.agendaLockedBy
+    if (patch.calledToOrderAt !== undefined) fields.called_to_order_at = patch.calledToOrderAt
+    if (patch.adjournedAt !== undefined) fields.adjourned_at = patch.adjournedAt
     if (patch.minutesStatus !== undefined) fields.minutes_status = patch.minutesStatus
     if (patch.approvedAt !== undefined) fields.approved_at = patch.approvedAt
     if (patch.timeLabel !== undefined) fields.time_label = patch.timeLabel
@@ -323,6 +455,46 @@ export class SupabaseMeetingRepository implements MeetingRepository {
   async takeUp(motionId: string, meetingId: string): Promise<void> {
     const { error } = await this.client().from('motion').update({ tabled_to_meeting_id: meetingId }).eq('id', motionId)
     if (error) fail('take up the motion', error)
+  }
+
+  async createReport(input: { kind: ReportKind; bodySlug: string; meetingId: string | null; periodStart: string | null; periodEnd: string | null; payload: ReportPayload }, me: string): Promise<Report> {
+    const client = this.client()
+    const body = await client.from('body').select('id').eq('slug', input.bodySlug).single()
+    if (body.error || !body.data) fail('find the committee', body.error)
+    const { data, error } = await client
+      .from('report')
+      .insert({
+        kind: input.kind, body_id: (body.data as Row).id, meeting_id: input.meetingId, period_start: input.periodStart, period_end: input.periodEnd,
+        payload: input.payload, created_by: me, updated_by: me,
+      })
+      .select('*')
+      .single()
+    if (error || !data) fail('start the report', error)
+    const names = new Map([[text((body.data as Row).id), { slug: input.bodySlug, name: BODY_NAMES[input.bodySlug] ?? input.bodySlug }]])
+    return readReport(data as Row, names)
+  }
+
+  async saveReport(id: string, patch: Parameters<MeetingRepository['saveReport']>[1], me: string): Promise<void> {
+    const fields: Row = { updated_by: me, updated_at: nowIso() }
+    if (patch.payload !== undefined) fields.payload = patch.payload
+    if (patch.meetingId !== undefined) fields.meeting_id = patch.meetingId
+    if (patch.status !== undefined) fields.status = patch.status
+    if (patch.submittedAt !== undefined) fields.submitted_at = patch.submittedAt
+    if (patch.submittedBy !== undefined) fields.submitted_by = patch.submittedBy
+    if (patch.publishedAt !== undefined) fields.published_at = patch.publishedAt
+    if (patch.archivedAt !== undefined) fields.archived_at = patch.archivedAt
+    const { error } = await this.client().from('report').update(fields).eq('id', id)
+    if (error) fail('save the report', error)
+  }
+
+  async addVersion(input: { reportId: string; versionNo: number; payload: ReportPayload; rendered: string; supersedesVersionId: string | null }, me: string): Promise<ReportVersion> {
+    const { data, error } = await this.client()
+      .from('report_version')
+      .insert({ report_id: input.reportId, version_no: input.versionNo, payload: input.payload, rendered: input.rendered, supersedes_version_id: input.supersedesVersionId, created_by: me })
+      .select('*')
+      .single()
+    if (error || !data) fail('publish the version', error)
+    return readVersion(data as Row)
   }
 
   async attendanceCounts(_data: MeetingsData, meeting: Meeting): Promise<AttendanceCount[]> {

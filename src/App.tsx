@@ -14,12 +14,14 @@ import { People } from './screens/People'
 import { NoticeLog } from './screens/NoticeLog'
 import { WhichSide } from './screens/WhichSide'
 import { Meeting } from './screens/Meeting'
+import { Reports } from './screens/Reports'
 import { useSession } from './session/session'
 
 /** The screen behind each surface. Keyed the same way as SURFACES. */
 const SCREENS: Record<string, ReactNode> = {
   whichSide: <WhichSide />,
   meeting: <Meeting />,
+  reports: <Reports />,
   today: <Today />,
   huddle: <Huddle />,
   cadence: <Cadence />,
