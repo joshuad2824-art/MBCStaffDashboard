@@ -9,10 +9,16 @@ Three migrations for a fresh project. Configured builds use them through
 0003_claim_account.sql how an invited person's first sign-in finds their roster row
 ```
 
-## Verified
+## Tested
 
-All three were applied to a clean PostgreSQL 16 and the policies exercised
-against three sessions — a `staff` account, a `limited` account, and no account:
+`tests/policies.sql` applies all three to a clean PostgreSQL 16 and exercises
+the policies as each kind of session — a `staff` account, a `limited` account,
+an invited person on their first sign-in, a roster-only person, somebody marked
+inactive, a stranger with a valid token, and no account at all. CI runs it on
+every pull request (`.github/workflows/ci.yml`, the `policies` job), and
+`npm run test:policies` runs it locally against whatever Postgres the standard
+`PG*` variables point at. Each assertion prints its name as it passes; the first
+one that does not stops the run. It asserts that:
 
 - `limited` reads **no rows** from `care_entry`, `thread`, `post` or `mention`,
   and an insert into `care_entry` is refused by the policy, not by the interface
@@ -32,8 +38,16 @@ against three sessions — a `staff` account, a `limited` account, and no accoun
 - nobody widens their own access, and nobody attaches their `auth_id` to a
   second row — the unique constraint refuses it
 
-The harness stubbed the two things Supabase supplies — `auth.users` and
-`auth.uid()`. Nothing else was changed.
+`tests/00_supabase_stub.sql` rebuilds the slice of a Supabase project the
+migrations lean on — the `anon`, `authenticated` and `service_role` roles,
+`auth.users`, `auth.uid()` and `auth.jwt()` reading the same claims setting
+PostgREST fills from a verified token, and the default grants Supabase puts on
+`public`. Nothing else is faked: signing in is setting the role and the claims,
+which is all PostgREST does either.
+
+Loosening a policy fails the run. That is the point of it, and it is why Phase 1
+— which reimplements `is_staff_role()` on top of membership — extends this file
+with the deacon cases before it merges rather than after.
 
 ## Running them
 
@@ -41,6 +55,10 @@ The harness stubbed the two things Supabase supplies — `auth.users` and
 supabase link --project-ref <ref>
 supabase db push
 ```
+
+`0001` uses the `citext` type for addresses and relies on the extension being
+enabled already; on a fresh project enable it under Database → Extensions (or
+`create extension citext;`) before the first push. The test stub does the same.
 
 Then seed `notice_category`, `care_type` and `church_settings` from
 `src/data/seed.ts`, and insert one row per person in `person`. There is no

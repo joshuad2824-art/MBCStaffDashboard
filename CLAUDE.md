@@ -53,7 +53,7 @@ follows from it. "Just cause" is a note written by a person.
 |---|---|
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
-| CI | `npm run build` on every PR — that is `tsc -b && vite build`, so it is the typecheck too |
+| CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
 | Migrations | Continue the sequence: next is `supabase/migrations/0004_…` |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
@@ -69,13 +69,16 @@ follows from it. "Just cause" is a note written by a person.
 - **`supabase/migrations/0002_rls.sql`** — the role gate. `is_staff_role()` gets reimplemented as
   `is_member_of('staff')` so nothing already written has to change.
 
-## Known gap worth closing
+## The policy test, and what Phase 1 owes it
 
-**CI proves the build compiles. Nothing proves the policies hold.** There is no test that a
-`limited` account gets zero rows from `care_entry`, and after Phase 1 there will be nothing
-proving a deacon gets zero rows from a committee room he is not in.
+**CI proves the build compiles. `supabase/tests/policies.sql` proves the policies hold.** It signs
+in as each kind of account and asserts the negative cases: a `limited` account gets zero rows from
+`care_entry`, a signed-out session reads nothing, a stranger's token claims no row. Loosening a
+policy fails the run. `npm run test:policies` runs it locally.
 
-Phase 1 rewrites the gate that currently protects members' pastoral records. It should not merge
-without either a migration test that asserts the negative cases, or — at minimum — a written
-verification run against a real project with a throwaway account per body. A typecheck is not a
+Phase 1 rewrites the gate that currently protects members' pastoral records. It must not merge
+without extending that file: a deacon gets zero rows from a committee room he is not in, a
+confidential body's membership is unreadable to non-members, and `is_staff_role()` still gives a
+`limited` account nothing from `care_entry` after it is reimplemented as `is_member_of('staff')`.
+Every later migration that adds a table adds its negative case there. A typecheck is not a
 security test.

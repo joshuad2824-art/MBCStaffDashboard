@@ -29,6 +29,10 @@ Three files at the repo root say what this application is becoming, and
 
 The design system the deacon side inherits is in `design_handoff_staff_dashboard/`
 — the guide, the tokens, and the prototypes the staff surfaces were built from.
+`design_handoff_deacons_dashboard/` holds the three deacon screens that were
+designed before they were coded — the meeting, the context toggle and landing,
+and the Finance committee report — plus the body badge, the one addition to the
+design system.
 
 ## Running it
 
@@ -133,9 +137,18 @@ Verified as a real PDF: two pages at 792 × 612pt.
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs `npm ci && npm run build` on every pull request
-and every push to `main`. `npm run build` is `tsc -b && vite build`, so that one
-command is the typecheck as well.
+`.github/workflows/ci.yml` runs two jobs on every pull request and every push
+to `main`:
+
+- **build** — `npm ci && npm run build`. `npm run build` is `tsc -b && vite build`,
+  so that one command is the typecheck as well.
+- **policies** — applies the migrations to a throwaway PostgreSQL 16 and runs
+  `supabase/tests/policies.sql`, which signs in as each kind of account and
+  asserts what it cannot read: a `limited` account gets zero rows from
+  `care_entry`, a signed-out session gets nothing, a stranger's token claims no
+  row. A typecheck cannot say any of that. `npm run test:policies` runs the same
+  thing locally against any Postgres the `PG*` variables point at. See
+  `supabase/README.md`.
 
 ## People, ownership, and access
 

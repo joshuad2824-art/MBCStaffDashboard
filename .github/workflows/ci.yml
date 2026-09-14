@@ -20,3 +20,29 @@ jobs:
 
       # `npm run build` is `tsc -b && vite build`, so this is the typecheck too.
       - run: npm run build
+
+  # The build proves the code compiles. This proves the policies hold: the
+  # migrations are applied to a throwaway Postgres and supabase/tests/policies.sql
+  # signs in as each kind of account and asserts what it cannot read.
+  policies:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: bash supabase/tests/run.sh
