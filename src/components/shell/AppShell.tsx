@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { Card, Eyebrow } from '../ui'
 import { Header } from './Header'
 import { HistoryDrawer } from './HistoryDrawer'
 import { PresentMode } from './PresentMode'
@@ -19,8 +18,6 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
   const narrow = useMediaQuery(NARROW)
 
   const unread = useUnreadThreadIds(member?.id ?? null, data.threads).length
-
-  const locked = Boolean(surface.staffOnly) && viewAs === 'limited'
 
   /* Tables and calendars take the whole monitor. Everything else stops where
      lines stop being comfortable to read — and is centred there, so on a very
@@ -64,7 +61,7 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
             {surface.lead}
           </p>
 
-          {locked ? <RoleGate /> : children}
+          {children}
         </main>
       </div>
 
@@ -72,28 +69,5 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
       <PresentMode />
       <Toast />
     </div>
-  )
-}
-
-/** What a limited account sees in place of Care and Discussion. In production
-    this is a query the database refuses, not a panel the client chooses to draw. */
-function RoleGate() {
-  return (
-    <Card tone="panel" pad="clamp(28px,3vw,44px)" style={{ maxWidth: 640 }}>
-      <Eyebrow>Role</Eyebrow>
-      <p
-        style={{
-          font: '600 24px/1.25 var(--mbc-font-serif)',
-          color: 'var(--text-heading)',
-          margin: '14px 0 12px',
-        }}
-      >
-        This surface is staff-role only.
-      </p>
-      <p style={{ font: '400 15px/1.7 var(--mbc-font-sans)', color: 'var(--text-body)', margin: 0 }}>
-        Care pipelines and the discussion board hold named members’ circumstances. Access is by role, enforced in the
-        database rather than by hiding buttons here.
-      </p>
-    </Card>
   )
 }

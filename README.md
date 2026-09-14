@@ -171,6 +171,13 @@ arrive with an account attached, inviting requires an email address, and a
 trigger refuses to let anyone change their own access — including a staff
 member. See `docs/LOGIN-SETUP.md` for turning login on.
 
+Which surfaces a signed-in person gets is assembled from which **bodies** they
+belong to (`body` and `membership`, `supabase/migrations/0004_bodies.sql`).
+Everyone who signs in on the staff side sits in the `staff` body; inside it,
+`access` still separates the staff role from a limited account. A surface a
+person cannot open is not in the sidebar and its route refuses — not disabled,
+not dimmed, not there. Neither of those is the gate; Row Level Security is.
+
 ## Data and the Supabase repository
 
 Everything above `src/data/repository.ts` reads and writes `DashboardData` and

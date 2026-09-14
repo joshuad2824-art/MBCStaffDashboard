@@ -62,12 +62,18 @@ follows from it. "Just cause" is a note written by a person.
 
 - **`src/data/repository.ts`** — the persistence seam. `Repository` is two methods. Configured
   builds use `SupabaseRepository`; unconfigured local builds keep `LocalRepository` and seed data.
-- **`src/screens/surfaces.ts`** — currently a static record with `staffOnly?: boolean`. Becomes a
-  function of membership with `bodies: string[]`.
-- **`src/session/`** — `claim_account()` establishes who the signed-in person is. Membership
-  lookup joins here.
-- **`supabase/migrations/0002_rls.sql`** — the role gate. `is_staff_role()` gets reimplemented as
-  `is_member_of('staff')` so nothing already written has to change.
+- **`src/screens/surfaces.ts`** — every surface names its `bodies`; `surfacesFor(bodies, viewAs)`
+  is what the sidebar and the router are assembled from. `staffOnly` survives inside the staff
+  body: it is the staff role versus a limited account, as before.
+- **`src/session/`** — `claim_account()` establishes who the signed-in person is and `my_bodies()`
+  which bodies they sit in. Both are read in `account.ts`; `session.tsx` exposes `bodies`.
+- **`supabase/migrations/0004_bodies.sql`** — `body`, `membership`, `my_bodies()`, `is_member_of()`,
+  `is_chair_of()`, and `is_staff_role()` reimplemented on top of them. It is membership in `staff`
+  *and* `access = 'staff'`, not membership alone: the staff body is the whole staff roster, limited
+  accounts included, and a bare `is_member_of('staff')` would have opened care records to them.
+- **Seating.** Memberships change by SQL, by one administrator. The one automatic seat: an active
+  person granted access who sits in no body yet is put in `staff`, so the People page keeps
+  working. Seat a deacon first, grant access second, and the trigger adds nothing.
 
 ## The policy test, and what Phase 1 owes it
 

@@ -3,34 +3,23 @@ import { NavLink } from 'react-router-dom'
 import { Rule } from '../ui'
 import { useSession } from '../../session/session'
 import { NARROW, useMediaQuery } from '../../lib/media'
+import { SURFACES, surfacesFor } from '../../screens/surfaces'
 import { ChangePasswordDialog } from './ChangePasswordDialog'
 
 interface NavItem {
   to: string
   label: string
   badge?: number
-  /** Staff-role surfaces. A limited account sees the label and a LOCKED tag. */
-  staffOnly?: boolean
 }
 
 const ITEM_HEIGHT = 44
 
-function Item({ item, locked }: { item: NavItem; locked: boolean }) {
+function Item({ item }: { item: NavItem }) {
   const badge = item.badge && item.badge > 0 ? item.badge : null
   const content = (active: boolean) => (
     <>
       <span style={{ fontWeight: active ? 700 : 400 }}>{item.label}</span>
-      {locked ? (
-        <span
-          style={{
-            font: '700 9px/1 var(--mbc-font-sans)',
-            letterSpacing: '.18em',
-            color: 'var(--text-muted)',
-          }}
-        >
-          LOCKED
-        </span>
-      ) : badge ? (
+      {badge ? (
         <span
           className="tabular"
           style={{
@@ -61,10 +50,6 @@ function Item({ item, locked }: { item: NavItem; locked: boolean }) {
     border: '1px solid transparent',
   } as const
 
-  if (locked) {
-    return <div style={{ ...base, color: 'var(--text-muted)', cursor: 'not-allowed' }}>{content(false)}</div>
-  }
-
   return (
     <NavLink
       to={item.to}
@@ -88,26 +73,18 @@ function Item({ item, locked }: { item: NavItem; locked: boolean }) {
 }
 
 export function Sidebar({ unread }: { unread: number }) {
-  const { member, viewAs, signOut, auth } = useSession()
+  const { member, bodies, viewAs, signOut, auth } = useSession()
   const narrow = useMediaQuery(NARROW)
-  const limited = viewAs === 'limited'
   const [passwordOpen, setPasswordOpen] = useState(false)
 
-  const groups: NavItem[][] = [
-    [{ to: '/today', label: 'Today' }],
-    [
-      { to: '/huddle', label: 'Huddle' },
-      { to: '/cadence', label: 'Cadence ledger' },
-      { to: '/notice', label: 'Notice log' },
-      { to: '/discussion', label: 'Discussion', badge: unread, staffOnly: true },
-    ],
-    [
-      { to: '/communicator', label: 'Communicator' },
-      { to: '/care', label: 'Care pipelines', staffOnly: true },
-      { to: '/goals', label: 'Goals' },
-      { to: '/people', label: 'People', staffOnly: true },
-    ],
-  ]
+  /* Assembled from membership. A surface this person cannot open is not here
+     — not locked, not dimmed, not there. The router gives the same answer. */
+  const groups: NavItem[][] = []
+  for (const surface of surfacesFor(bodies, viewAs)) {
+    const item: NavItem = { to: surface.path, label: surface.nav }
+    if (surface === SURFACES.discussion) item.badge = unread
+    ;(groups[surface.group] ??= []).push(item)
+  }
 
   return (
     <div
@@ -163,7 +140,7 @@ export function Sidebar({ unread }: { unread: number }) {
             : { display: 'grid', gap: 14, flex: 1, alignContent: 'start' }
         }
       >
-        {groups.map((group, index) => (
+        {groups.filter(Boolean).map((group, index) => (
           <div
             key={index}
             style={
@@ -175,7 +152,7 @@ export function Sidebar({ unread }: { unread: number }) {
             {index > 0 && !narrow ? <Rule tone="hair" /> : null}
             <div style={narrow ? { display: 'flex', flexWrap: 'wrap', gap: 4 } : { display: 'grid', gap: 2 }}>
               {group.map((item) => (
-                <Item key={item.to} item={item} locked={Boolean(item.staffOnly) && limited} />
+                <Item key={item.to} item={item} />
               ))}
             </div>
           </div>
