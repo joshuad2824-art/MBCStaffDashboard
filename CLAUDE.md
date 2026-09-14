@@ -55,7 +55,7 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0008_…` |
+| Migrations | Continue the sequence: next is `supabase/migrations/0009_…` |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -92,6 +92,15 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   `file_path` on `report` and `report_version`, the private `reports` bucket whose policies ask the
   report's own questions, and `can_write_report(kind, body, created_by)`: the chair, any Board
   member for the minutes, and any Board member for a report he created on a committee's behalf.
+- **`supabase/migrations/0008_audience.sql`** — the shared surfaces. `event` and `thread` carry
+  `audience text[]` and `announcement` is new; every policy on them is `in_audience(audience)`,
+  the brief's `audience && array(select my_bodies())`, with one twist for the discussion:
+  `in_discussion_audience()` reads the `staff` slug as the staff *role*, so a limited account still
+  gets nothing from the board. Writing is by overlap too — you may widen a record to a room you
+  are not in but never narrow it to one. `published_at` on `event` is the calendar's draft state:
+  null is a staff working draft, and the check refuses a stamp on a `{staff}` audience, because
+  publishing *is* widening. `src/lib/audience.ts` is the client's half: which room a row is shown
+  in and what a composer proposes. It decides nothing about what anyone may read.
 - **Seating.** Memberships change by SQL, by one administrator. The one automatic seat: an active
   person granted access who sits in no body yet is put in `staff`, so the People page keeps
   working. Seat a deacon first, grant access second, and the trigger adds nothing.

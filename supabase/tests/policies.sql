@@ -820,3 +820,171 @@ select test.assert((select count(*) from report) = 0,         'signed out: no re
 select test.assert((select count(*) from report_version) = 0, 'signed out: no versions');
 select test.assert((select count(*) from storage.objects) = 0,  'signed out: no files');
 reset role;
+
+-- ------------------------------------------------- 9. shared surfaces (0008)
+--
+-- One record, two audiences. The shape of every shared-surface policy is
+-- `audience && array(select my_bodies())`, with one twist for the discussion:
+-- there `staff` means the staff role, so a limited account still reads
+-- nothing from the board. Every case below is the negative one first.
+
+reset role;
+
+-- Rooms: a Board thread, a joint thread, and the staff thread from section 2.
+insert into thread (id, subject, created_by, audience) values
+  ('f0000000-0000-0000-0000-000000000003', 'Board thread', 'b0000000-0000-0000-0000-000000000009', '{deacon-board}'),
+  ('f0000000-0000-0000-0000-000000000004', 'Joint thread', 'b0000000-0000-0000-0000-000000000001', '{staff,deacon-board}');
+
+insert into post (id, thread_id, body, author_id) values
+  ('f1000000-0000-0000-0000-000000000004', 'f0000000-0000-0000-0000-000000000003', 'For the Board only',     'b0000000-0000-0000-0000-000000000009'),
+  ('f1000000-0000-0000-0000-000000000005', 'f0000000-0000-0000-0000-000000000004', 'For both rooms @Deacon A', 'b0000000-0000-0000-0000-000000000001');
+
+insert into mention (id, post_id, person_id) values
+  ('f2000000-0000-0000-0000-000000000003', 'f1000000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000009');
+
+-- Calendar: a staff working draft, a published event, and one the Board keeps to itself.
+insert into event (id, name, ministry, starts_at, audience, published_at) values
+  ('e1000000-0000-0000-0000-000000000001', 'Staff draft',  'All', current_date + 7,  '{staff}',              null),
+  ('e1000000-0000-0000-0000-000000000002', 'Shared event', 'All', current_date + 14, '{staff,deacon-board}', now()),
+  ('e1000000-0000-0000-0000-000000000003', 'Board only',   'All', current_date + 21, '{deacon-board}',       null);
+
+insert into announcement (id, body, audience, author_id, expires_on) values
+  ('e2000000-0000-0000-0000-000000000001', 'Staff only',        '{staff}',              'b0000000-0000-0000-0000-000000000001', current_date + 7),
+  ('e2000000-0000-0000-0000-000000000002', 'To both sides',     '{staff,deacon-board}', 'b0000000-0000-0000-0000-000000000009', current_date + 7),
+  ('e2000000-0000-0000-0000-000000000003', 'Board only',        '{deacon-board}',       'b0000000-0000-0000-0000-000000000010', current_date + 7),
+  ('e2000000-0000-0000-0000-000000000004', 'Long expired',      '{staff}',              'b0000000-0000-0000-0000-000000000001', current_date - 20),
+  ('e2000000-0000-0000-0000-000000000005', 'Recently expired',  '{staff}',              'b0000000-0000-0000-0000-000000000001', current_date - 5);
+
+-- 9a. Audience is never empty, and it names bodies.
+
+select test.refused(
+  $q$ insert into thread (subject, created_by, audience) values ('Nobody', 'b0000000-0000-0000-0000-000000000001', '{}') $q$,
+  '23514', 'audience: an empty thread audience is refused');
+select test.refused(
+  $q$ insert into event (name, ministry, starts_at, audience) values ('Nobody', 'All', current_date, '{}') $q$,
+  '23514', 'audience: an empty event audience is refused');
+select test.refused(
+  $q$ insert into announcement (body, audience, author_id) values ('Nobody', '{}', 'b0000000-0000-0000-0000-000000000001') $q$,
+  '23514', 'audience: an empty announcement audience is refused');
+select test.refused(
+  $q$ insert into thread (subject, created_by, audience) values ('Nowhere', 'b0000000-0000-0000-0000-000000000001', '{staff,elders}') $q$,
+  'P0001', 'audience: a slug that names no body is refused');
+select test.refused(
+  $q$ update event set published_at = now() where id = 'e1000000-0000-0000-0000-000000000001' $q$,
+  '23514', 'calendar: a staff-only event cannot be stamped published — publishing is widening');
+
+-- 9b. A deacon: the Board's rooms and the joint ones, nothing of the staff's.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+
+select test.assert((select count(*) from thread) = 2,                                  'deacon A: reads the Board thread and the joint thread');
+select test.assert((select count(*) from thread where audience = '{staff}') = 0,       'deacon A: reads ZERO staff-only threads');
+select test.assert((select count(*) from post where thread_id = 'f0000000-0000-0000-0000-000000000001') = 0, 'deacon A: reads zero posts on the staff thread');
+select test.assert((select count(*) from post) = 2,                                    'deacon A: reads the posts in his rooms');
+select test.assert((select count(*) from mention) = 1,                                 'deacon A: reads the mention on the joint thread and none from the staff thread');
+select test.assert((select count(*) from care_entry) = 0,                              'deacon A: still reads ZERO rows from care_entry');
+select test.assert((select count(*) from event) = 2,                                   'deacon A: reads the published event and the Board''s own');
+select test.assert((select count(*) from event where id = 'e1000000-0000-0000-0000-000000000001') = 0, 'deacon A: reads ZERO staff drafts');
+select test.assert((select count(*) from announcement) = 2,                            'deacon A: reads the joint and Board announcements');
+select test.assert((select count(*) from announcement where audience = '{staff}') = 0, 'deacon A: reads zero staff-only announcements');
+
+select test.refused(
+  $q$ insert into thread (subject, created_by, audience) values ('Into the staff room', 'b0000000-0000-0000-0000-000000000009', '{staff}') $q$,
+  '42501', 'deacon A: cannot start a thread addressed to staff only');
+select test.refused(
+  $q$ insert into post (thread_id, body, author_id) values ('f0000000-0000-0000-0000-000000000001', 'Hello staff', 'b0000000-0000-0000-0000-000000000009') $q$,
+  '42501', 'deacon A: cannot post to the staff thread');
+select test.refused(
+  $q$ insert into post (thread_id, body, author_id) values ('f0000000-0000-0000-0000-000000000004', 'As someone else', 'b0000000-0000-0000-0000-000000000001') $q$,
+  '42501', 'deacon A: cannot post as someone else');
+select test.refused(
+  $q$ insert into announcement (body, audience, author_id) values ('Staff only', '{staff}', 'b0000000-0000-0000-0000-000000000009') $q$,
+  '42501', 'deacon A: cannot announce to staff only');
+select test.refused(
+  $q$ insert into event (name, ministry, starts_at, audience) values ('Staff only', 'All', current_date, '{staff}') $q$,
+  '42501', 'deacon A: cannot put an event on the staff calendar alone');
+
+insert into thread (subject, created_by, audience) values ('Board only', 'b0000000-0000-0000-0000-000000000009', '{deacon-board}');
+insert into thread (subject, created_by, audience) values ('Both rooms', 'b0000000-0000-0000-0000-000000000009', '{deacon-board,staff}');
+insert into post (thread_id, body, author_id) values ('f0000000-0000-0000-0000-000000000004', 'A reply from the Board', 'b0000000-0000-0000-0000-000000000009');
+insert into announcement (body, audience, author_id) values ('From the Board to both', '{staff,deacon-board}', 'b0000000-0000-0000-0000-000000000009');
+insert into event (name, ministry, starts_at, audience) values ('Board retreat', 'All', current_date + 30, '{deacon-board}');
+select test.assert((select count(*) from thread) = 4, 'deacon A: may start a thread for the Board, and one addressed to both rooms');
+
+update announcement set body = 'Rewritten' where id = 'e2000000-0000-0000-0000-000000000003';
+reset role;
+select test.assert((select body from announcement where id = 'e2000000-0000-0000-0000-000000000003') = 'Board only',
+  'deacon A: cannot edit another author''s announcement');
+
+-- 9c. A committee chair who is not on the Board: nothing addressed to the Board reaches him.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000011', 'grounds@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from thread) = 0,       'grounds chair: reads zero threads — none is addressed to his committee');
+select test.assert((select count(*) from event) = 0,        'grounds chair: reads zero events');
+select test.assert((select count(*) from announcement) = 0, 'grounds chair: reads zero announcements');
+reset role;
+
+-- 9d. A limited account: the calendar and the announcements, as before, and still nothing from the board.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from thread) = 0,       'limited: reads ZERO threads — the joint thread included; staff means the staff role');
+select test.assert((select count(*) from post) = 0,         'limited: reads zero posts');
+select test.assert((select count(*) from event) = 2,        'limited: reads the staff calendar, drafts and published alike, and nothing the Board keeps');
+select test.assert((select count(*) from event where audience = '{deacon-board}') = 0, 'limited: reads zero Board-only events');
+select test.assert((select count(*) from announcement where expires_on >= current_date) = 3, 'limited: reads staff and joint announcements');
+select test.refused(
+  $q$ insert into thread (subject, created_by, audience) values ('Mine', 'b0000000-0000-0000-0000-000000000002', '{staff,deacon-board}') $q$,
+  '42501', 'limited: cannot start a thread, joint or otherwise');
+reset role;
+
+-- 9e. Staff: the staff room and the joint one, nothing the Board keeps to itself; publishing widens.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from thread) = 3,                                    'staff: reads the staff thread and the two joint threads');
+select test.assert((select count(*) from thread where audience = '{deacon-board}') = 0, 'staff: reads ZERO Board-only threads');
+select test.assert((select count(*) from post where thread_id = 'f0000000-0000-0000-0000-000000000003') = 0, 'staff: reads zero posts on the Board thread');
+select test.assert((select count(*) from event) = 2,                                     'staff: reads the staff calendar and the shared event');
+select test.assert((select count(*) from event where audience = '{deacon-board}') = 0,  'staff: reads ZERO Board-only events');
+select test.assert((select count(*) from announcement where audience = '{deacon-board}') = 0, 'staff: reads zero Board-only announcements');
+
+select test.refused(
+  $q$ insert into thread (subject, created_by, audience) values ('Into the Board room', 'b0000000-0000-0000-0000-000000000001', '{deacon-board}') $q$,
+  '42501', 'staff: cannot start a thread addressed to the Board only');
+select test.refused(
+  $q$ update thread set audience = '{deacon-board}' where id = 'f0000000-0000-0000-0000-000000000004' $q$,
+  '42501', 'staff: cannot narrow a joint thread to a room they are not in');
+select test.refused(
+  $q$ update event set audience = '{deacon-board}' where id = 'e1000000-0000-0000-0000-000000000001' $q$,
+  '42501', 'staff: cannot hand an event to the Board and lose it');
+
+-- Publishing: widen the audience and stamp the date, in one statement.
+update event set audience = '{staff,deacon-board}', published_at = now() where id = 'e1000000-0000-0000-0000-000000000001';
+select test.assert((select published_at is not null from event where id = 'e1000000-0000-0000-0000-000000000001'), 'staff: publishes the draft to the Board');
+insert into thread (subject, created_by, audience) values ('From staff to both', 'b0000000-0000-0000-0000-000000000001', '{staff,deacon-board}');
+insert into announcement (body, audience, author_id) values ('From staff to both', '{staff,deacon-board}', 'b0000000-0000-0000-0000-000000000001');
+reset role;
+
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from event where id = 'e1000000-0000-0000-0000-000000000001') = 1, 'deacon A: sees the event once it is published, and not before');
+select test.assert((select count(*) from thread) = 5, 'deacon A: reads the thread staff addressed to both rooms');
+reset role;
+
+-- 9f. Announcements are purged fourteen days after they expire, like the board.
+
+select test.assert(purge_expired_announcements() = 1, 'purge: removes exactly the long-expired announcement');
+select test.assert((select count(*) from announcement where id = 'e2000000-0000-0000-0000-000000000005') = 1, 'purge: a recently expired announcement waits its fourteen days');
+
+-- 9g. Signed out: nothing.
+
+select test.sign_out();
+set role anon;
+select test.assert((select count(*) from event) = 0,        'signed out: no events');
+select test.assert((select count(*) from announcement) = 0, 'signed out: no announcements');
+select test.assert((select count(*) from thread) = 0,       'signed out: still no threads');
+select test.refused($q$ select purge_expired_announcements() $q$, '42501', 'signed out: cannot call the purge');
+reset role;

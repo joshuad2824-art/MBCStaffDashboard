@@ -1,28 +1,49 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, Rule } from '../components/ui'
+import { BodyBadge, Button, Card, Rule } from '../components/ui'
 import { useData, useStore } from '../data/store'
 import { useSession } from '../session/session'
+import type { Side } from '../session/session'
 import { markThreadRead, useUnreadThreadIds } from '../lib/unread'
 import { nextId, parseMentions, quotedPost, personName, threadForgetsIn } from '../lib/derive'
 import { countDays, formatShort, parseDate, startOfToday, todayIso } from '../lib/date'
+import { composedAudience, otherRoom, reaches, roomOf } from '../lib/audience'
 import type { Person, Post } from '../data/types'
 import { canSignIn } from '../data/types'
+import { Announcements } from './discussion/Announcements'
+import { PromoteToAgenda } from './discussion/PromoteToAgenda'
 
 /* Posts are a flat chronological list, not a nested tree — a staff of seven does
    not need indentation levels. A reply carries a reference to the post it
    answers and the quoted strip is rendered from that reference every time.
    Nothing is copied: edit the original and the quote follows it; delete the
-   original and the strip says so. */
+   original and the strip says so.
 
-export function Discussion() {
+   One board, two rooms. A thread carries an audience; the staff room shows the
+   threads addressed to the staff, the Board's room the ones addressed to the
+   Board, and a thread addressed to both is the same row in each. Which rows
+   are here at all was decided by Row Level Security before they arrived —
+   the room is a view, not a gate. Composing inherits the room: a thread
+   started here is addressed here, and adding the other room is a deliberate
+   second act with the badge changing to say so. */
+
+export function Discussion({ side }: { side: Side }) {
   const data = useData()
   const { mutate, say } = useStore()
-  const { member } = useSession()
+  const { member, bodies, viewAs } = useSession()
   const navigate = useNavigate()
   const today = startOfToday()
 
-  const [activeThreadId, setActiveThreadId] = useState<number | null>(data.threads[0]?.id ?? null)
+  const room = roomOf(side)
+  const other = otherRoom(side)
+  /* Widening is offered only to a person who sits in the other room too —
+     and, for the staff room, holds the staff role, since that is what reads
+     it. The policy would refuse anyone else; the checkbox is not shown. */
+  const canWiden = bodies.includes(other) && (other !== 'staff' || viewAs === 'staff')
+  const threads = useMemo(() => data.threads.filter((thread) => reaches(thread.audience, room)), [data.threads, room])
+
+  const [activeThreadId, setActiveThreadId] = useState<number | null>(threads[0]?.id ?? null)
+  const [alsoOther, setAlsoOther] = useState(false)
   const [draft, setDraft] = useState('')
   const [replyTo, setReplyTo] = useState<number | null>(null)
   const [editing, setEditing] = useState<number | null>(null)
@@ -32,10 +53,10 @@ export function Discussion() {
   const [mentionQuery, setMentionQuery] = useState<string | null>(null)
   const composer = useRef<HTMLTextAreaElement>(null)
 
-  const unreadIds = useUnreadThreadIds(member?.id ?? null, data.threads)
+  const unreadIds = useUnreadThreadIds(member?.id ?? null, threads)
   const unread = useMemo(() => new Set(unreadIds), [unreadIds])
 
-  const thread = data.threads.find((t) => t.id === activeThreadId) ?? data.threads[0] ?? null
+  const thread = threads.find((t) => t.id === activeThreadId) ?? threads[0] ?? null
   const posts = useMemo(
     () =>
       thread
@@ -133,11 +154,13 @@ export function Discussion() {
     const subject = newSubject.trim()
     if (!subject) return
     const threadId = nextId(data.threads)
+    const audience = composedAudience(side, canWiden && alsoOther)
     setNewSubject('')
+    setAlsoOther(false)
     setActiveThreadId(threadId)
-    mutate('Started a thread.', (current) => ({
+    mutate(audience.length > 1 ? 'Started a thread both rooms can read.' : 'Started a thread.', (current) => ({
       ...current,
-      threads: [...current.threads, { id: threadId, subject, createdBy: member.id, lastActivity: todayIso() }],
+      threads: [...current.threads, { id: threadId, subject, createdBy: member.id, lastActivity: todayIso(), audience }],
     }))
   }
 
@@ -199,6 +222,8 @@ export function Discussion() {
       : mentionable.filter((person) => person.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6)
 
   return (
+    <div style={{ display: 'grid', gap: 20 }}>
+    <Announcements side={side} compose />
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
       <Card radius="card" pad={22} style={{ flex: '1 1 300px', maxWidth: 340, display: 'grid', gap: 16 }}>
         <div style={{ display: 'grid', gap: 12 }}>
@@ -214,19 +239,19 @@ export function Discussion() {
               Threads
             </span>
             <span className="tabular" style={{ font: '400 12px/1 var(--mbc-font-sans)', color: 'var(--text-muted)' }}>
-              {data.threads.length}
+              {threads.length}
             </span>
           </div>
           <Rule tone="hair" />
         </div>
 
         <div style={{ display: 'grid' }}>
-          {data.threads.length === 0 ? (
+          {threads.length === 0 ? (
             <p style={{ font: '400 14px/1.6 var(--mbc-font-sans)', color: 'var(--text-muted)', margin: 0 }}>
-              The board is empty. Everything on it has aged out.
+              {side === 'deacon' ? 'The Board’s room is empty. Everything in it has aged out.' : 'The board is empty. Everything on it has aged out.'}
             </p>
           ) : (
-            data.threads.map((item) => {
+            threads.map((item) => {
               const active = thread?.id === item.id
               const forgets = threadForgetsIn(item, today)
               return (
@@ -254,6 +279,7 @@ export function Discussion() {
                   >
                     {item.subject}
                   </span>
+                  {item.audience.length > 1 ? <BodyBadge bodies={item.audience} style={{ justifySelf: 'start' }} /> : null}
                   <span style={{ font: '400 12px/1.4 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
                     {personName(data.people, item.createdBy)} · {countPosts(data.posts, item.id)}
                   </span>
@@ -285,15 +311,31 @@ export function Discussion() {
               color: 'var(--text-heading)',
             }}
           />
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={newSubject.trim().length === 0}
-            onClick={startThread}
-            style={{ justifySelf: 'start' }}
-          >
-            Start it
-          </Button>
+          {canWiden ? (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, font: '400 13px/1.5 var(--mbc-font-sans)', color: 'var(--text-body)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={alsoOther} onChange={(event) => setAlsoOther(event.target.checked)} style={{ marginTop: 3 }} />
+              <span>
+                {other === 'staff' ? 'Also the staff' : 'Also the Board'}
+                {alsoOther ? (
+                  <span style={{ display: 'block', color: 'var(--mbc-yale-sage)' }}>
+                    Both rooms will read this thread, and the badge on it will say so.
+                  </span>
+                ) : null}
+              </span>
+            </label>
+          ) : null}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={newSubject.trim().length === 0}
+              onClick={startThread}
+              style={{ justifySelf: 'start' }}
+            >
+              Start it
+            </Button>
+            <BodyBadge bodies={composedAudience(side, canWiden && alsoOther)} />
+          </div>
         </div>
       </Card>
 
@@ -316,10 +358,13 @@ export function Discussion() {
               >
                 {thread.subject}
               </h2>
-              <p style={{ font: '400 13px/1.5 var(--mbc-font-sans)', color: 'var(--text-meta)', margin: 0 }}>
-                Started by {personName(data.people, thread.createdBy)} · forgets in{' '}
-                {countDays(Math.max(threadForgetsIn(thread, today), 0))} unless somebody posts
-              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+                <p style={{ font: '400 13px/1.5 var(--mbc-font-sans)', color: 'var(--text-meta)', margin: 0 }}>
+                  Started by {personName(data.people, thread.createdBy)} · forgets in{' '}
+                  {countDays(Math.max(threadForgetsIn(thread, today), 0))} unless somebody posts
+                </p>
+                <BodyBadge bodies={thread.audience} />
+              </div>
               <Rule tone="hair" />
             </div>
 
@@ -413,26 +458,32 @@ export function Discussion() {
                         }}
                       >
                         <p style={{ font: '400 13px/1.6 var(--mbc-font-sans)', color: 'var(--text-body)', margin: 0 }}>
-                          This board forgets. Move anything that became a commitment somewhere that does not.
+                          {side === 'deacon'
+                            ? 'This room forgets. Anything that became business belongs on the agenda, which does not.'
+                            : 'This board forgets. Move anything that became a commitment somewhere that does not.'}
                         </p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                          <Button variant="outline" size="sm" onClick={() => promoteToTension(post)}>
-                            Post as a tension
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => promoteToNotice(post)}>
-                            Record the decision
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              say('A mention is not an assignment. Name the owner on the ledger.')
-                              navigate('/cadence')
-                            }}
-                          >
-                            Open the ledger
-                          </Button>
-                        </div>
+                        {side === 'deacon' ? (
+                          <PromoteToAgenda post={post} onDone={() => setPromoting(null)} />
+                        ) : (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                            <Button variant="outline" size="sm" onClick={() => promoteToTension(post)}>
+                              Post as a tension
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => promoteToNotice(post)}>
+                              Record the decision
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                say('A mention is not an assignment. Name the owner on the ledger.')
+                                navigate('/cadence')
+                              }}
+                            >
+                              Open the ledger
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ) : null}
                   </article>
@@ -509,6 +560,7 @@ export function Discussion() {
           </>
         )}
       </Card>
+    </div>
     </div>
   )
 }

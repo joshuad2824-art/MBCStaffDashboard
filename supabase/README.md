@@ -17,6 +17,9 @@ deacon side); unconfigured local builds keep the seed-data repositories.
 0007_reports_revised   no attendance tracker; reports may be uploaded files; the private
                        `reports` storage bucket and its policies; Board members may file
                        a report on a committee's behalf
+0008_audience.sql      shared surfaces: audience text[] on event and thread, the new
+                       announcement table, in_audience() and in_discussion_audience();
+                       the calendar's draft state (published_at); purge_expired_announcements()
 ```
 
 The application reads `my_seats()` at sign-in and the report tables in the
@@ -77,6 +80,14 @@ one that does not stops the run. It asserts that:
   be taken over, and `anon` may not call the function at all
 - nobody widens their own access, and nobody attaches their `auth_id` to a
   second row — the unique constraint refuses it
+- a deacon reads the Board's threads, events and announcements and the ones
+  addressed to both rooms, and zero of the staff's; staff read zero of what the
+  Board keeps to itself; a limited account still reads zero threads, the joint
+  ones included; a committee chair off the Board reads none of it
+- nobody starts a thread, an event or an announcement in a room they are not
+  in, or narrows a joint one to a room they are not in; an empty audience and
+  a slug that names no body are refused; a staff-only event cannot be stamped
+  published, because publishing is widening
 
 `tests/00_supabase_stub.sql` rebuilds the slice of a Supabase project the
 migrations lean on — the `anon`, `authenticated` and `service_role` roles,
@@ -127,6 +138,7 @@ is a user under Authentication → Users — and `auth_id` is filled in by
   ```sql
   select cron.schedule('purge-threads', '0 3 * * *', $$select purge_expired_threads()$$);
   select cron.schedule('archive-care', '20 3 * * *', $$select archive_closed_care()$$);
+  select cron.schedule('purge-announcements', '10 3 * * *', $$select purge_expired_announcements()$$);
   ```
 
   Until that is scheduled, the board's fourteen-day promise is only being kept
