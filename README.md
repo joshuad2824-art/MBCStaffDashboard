@@ -85,7 +85,8 @@ src/
   components/
     ui/             Button, Card, Chip, Eyebrow, Input, Rule
     shell/          sidebar, header, toast, history drawer, present mode
-  screens/          one file per surface
+    meetings/       THE DEACON SEAM — the Board meeting: types, derivations, both repositories
+  screens/          one file per surface; Meeting.tsx and WhichSide.tsx are the deacon side's
   styles/tokens.css the design system's tokens, verbatim
 ```
 
@@ -177,6 +178,11 @@ Everyone who signs in on the staff side sits in the `staff` body; inside it,
 `access` still separates the staff role from a limited account. A surface a
 person cannot open is not in the sidebar and its route refuses — not disabled,
 not dimmed, not there. Neither of those is the gate; Row Level Security is.
+
+The deacon side begins with the Board meeting (`/meeting`), visible to seats on
+`deacon-board`. The two people who hold both sides land on "Which side today?"
+and carry a context bar that says which side they are on; the choice narrows
+what is drawn and changes nothing about what the database returns.
 
 ## Data and the Supabase repository
 

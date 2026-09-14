@@ -4,6 +4,7 @@ import { Header } from './Header'
 import { HistoryDrawer } from './HistoryDrawer'
 import { PresentMode } from './PresentMode'
 import { Sidebar } from './Sidebar'
+import { ContextBar } from './ContextBar'
 import { Toast } from './Toast'
 import { useData } from '../../data/store'
 import { useSession } from '../../session/session'
@@ -13,7 +14,7 @@ import { NARROW, useMediaQuery } from '../../lib/media'
 
 export function AppShell({ surface, children }: { surface: Surface; children: ReactNode }) {
   const data = useData()
-  const { member, viewAs } = useSession()
+  const { member, viewAs, context } = useSession()
   const [historyOpen, setHistoryOpen] = useState(false)
   const narrow = useMediaQuery(NARROW)
 
@@ -30,12 +31,14 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
       style={{
         minHeight: '100vh',
         display: 'grid',
-        gridTemplateColumns: narrow ? 'minmax(0,1fr)' : 'minmax(0,244px) minmax(0,1fr)',
+        // The deacon side's nav labels are 15px, so its column is 258px.
+        gridTemplateColumns: narrow ? 'minmax(0,1fr)' : `minmax(0,${context === 'deacon' ? 258 : 244}px) minmax(0,1fr)`,
       }}
     >
       <Sidebar unread={viewAs === 'limited' ? 0 : unread} />
 
       <div style={{ minWidth: 0 }}>
+        <ContextBar />
         <Header
           eyebrow={surface.eyebrow}
           title={surface.title}
@@ -52,10 +55,11 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
         >
           <p
             style={{
-              font: '400 16px/1.7 var(--mbc-font-sans)',
+              // Raised for the deacon side: monthly users, some in their seventies.
+              font: context === 'deacon' ? '400 17px/1.7 var(--mbc-font-sans)' : '400 16px/1.7 var(--mbc-font-sans)',
               color: 'var(--text-meta)',
-              maxWidth: '66ch',
-              margin: '0 0 28px',
+              maxWidth: context === 'deacon' ? '64ch' : '66ch',
+              margin: context === 'deacon' ? '0 0 30px' : '0 0 28px',
             }}
           >
             {surface.lead}

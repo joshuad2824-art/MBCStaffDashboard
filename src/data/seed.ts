@@ -50,6 +50,13 @@ export const seed: DashboardData = {
     { id: 6, name: 'Andrew McGuire', role: 'Campus Minister', email: 'andrew@memorialbaptist.com', access: 'staff', active: true },
     { id: 7, name: 'Sherry Kitchens', role: 'Office Administrator', email: 'sherry@memorialbaptist.com', access: 'staff', active: true },
     { id: 8, name: 'Joshua Davis', role: 'Office Administrator', email: 'joshua@memorialbaptist.com', access: 'staff', active: true },
+    // Sample deacons. Invented names, as in the design handoff; the real Board
+    // is seated in Postgres by the administrator, never from here.
+    { id: 9, name: 'Curtis Nolen', role: 'Deacon', email: 'curtis@memorialbaptist.com', access: 'limited', active: true },
+    { id: 10, name: 'Arthur Simms', role: 'Deacon', email: 'arthur@memorialbaptist.com', access: 'limited', active: true },
+    { id: 11, name: 'Lowell Bracken', role: 'Deacon', email: 'lowell@memorialbaptist.com', access: 'limited', active: true },
+    { id: 12, name: 'Marvin Hollis', role: 'Deacon', email: 'marvin@memorialbaptist.com', access: 'limited', active: true },
+    { id: 13, name: 'Dale Whitcomb', role: 'Deacon', email: 'dale@memorialbaptist.com', access: 'limited', active: true },
   ],
 
   cadence: [
@@ -201,4 +208,23 @@ export const seed: DashboardData = {
       'Offering boxes in the sanctuary',
     ],
   },
+}
+
+/** Which bodies the sample people sit in, for the stub. In a configured build
+    this is the `membership` table and `my_seats()`; here it is what 0004 would
+    have seated: everyone who signs in on the staff side is in `staff`, and the
+    sample deacons sit where the handoff drew them. */
+export interface SeedSeat {
+  slug: string
+  role: 'chair' | 'member' | 'ex_officio'
+}
+
+export const SEED_SEATS: Record<number, SeedSeat[]> = {
+  1: [{ slug: 'staff', role: 'member' }, { slug: 'deacon-board', role: 'ex_officio' }, { slug: 'committee:finance', role: 'ex_officio' }],
+  8: [{ slug: 'staff', role: 'member' }, { slug: 'deacon-board', role: 'chair' }],
+  9: [{ slug: 'deacon-board', role: 'member' }, { slug: 'committee:finance', role: 'chair' }],
+  10: [{ slug: 'deacon-board', role: 'member' }],
+  11: [{ slug: 'deacon-board', role: 'member' }, { slug: 'committee:finance', role: 'member' }],
+  12: [{ slug: 'deacon-board', role: 'member' }],
+  13: [{ slug: 'deacon-board', role: 'member' }],
 }

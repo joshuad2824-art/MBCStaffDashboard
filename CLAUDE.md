@@ -54,23 +54,32 @@ follows from it. "Just cause" is a note written by a person.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0004_…` |
+| Migrations | Continue the sequence: next is `supabase/migrations/0006_…` |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
 ## Where the seams are
 
-- **`src/data/repository.ts`** — the persistence seam. `Repository` is two methods. Configured
-  builds use `SupabaseRepository`; unconfigured local builds keep `LocalRepository` and seed data.
+- **`src/data/repository.ts`** — the staff side's persistence seam. `Repository` is two methods.
+  Configured builds use `SupabaseRepository`; unconfigured local builds keep `LocalRepository` and
+  seed data.
+- **`src/data/meetings/repository.ts`** — the deacon side's seam, deliberately separate: a handful
+  of named operations rather than one blob, because what it writes are records. No undo, no
+  delete. `MeetingsProvider` loads it only for a person seated on the Board.
 - **`src/screens/surfaces.ts`** — every surface names its `bodies`; `surfacesFor(bodies, viewAs)`
   is what the sidebar and the router are assembled from. `staffOnly` survives inside the staff
   body: it is the staff role versus a limited account, as before.
-- **`src/session/`** — `claim_account()` establishes who the signed-in person is and `my_bodies()`
-  which bodies they sit in. Both are read in `account.ts`; `session.tsx` exposes `bodies`.
+- **`src/session/`** — `claim_account()` establishes who the signed-in person is and `my_seats()`
+  which bodies they sit in and in what role. Both are read in `account.ts`; `session.tsx` exposes
+  `seats`, `bodies`, `isChairOf()`, `sides` and the `context` — the side the interface is drawn
+  for, a view filter that narrows and never reaches a query.
 - **`supabase/migrations/0004_bodies.sql`** — `body`, `membership`, `my_bodies()`, `is_member_of()`,
   `is_chair_of()`, and `is_staff_role()` reimplemented on top of them. It is membership in `staff`
   *and* `access = 'staff'`, not membership alone: the staff body is the whole staff roster, limited
   accounts included, and a bare `is_member_of('staff')` would have opened care records to them.
+- **`supabase/migrations/0005_meeting.sql`** — `board_meeting`, `agenda_item`, `meeting_attendance`,
+  `motion`; `my_seats()`; `board_attendance_summary()`, which returns rows only to the chairman of
+  the Board and is the only place the ¾ count is computed. No delete policy on any of the four.
 - **Seating.** Memberships change by SQL, by one administrator. The one automatic seat: an active
   person granted access who sits in no body yet is put in `staff`, so the People page keeps
   working. Seat a deacon first, grant access second, and the trigger adds nothing.

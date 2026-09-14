@@ -10,13 +10,20 @@ import type { Access } from '../data/types'
    address got through the mail but is not on the roster, or is at 'none', or is
    marked as no longer here. Any of those is a closed door. */
 
+export interface Seat {
+  slug: string
+  role: 'chair' | 'member' | 'ex_officio'
+}
+
 export interface Account {
+  /** The roster row's id. What the deacon side writes under. */
+  id: string
   name: string
   role: string
   email: string
   access: Access
-  /** Slugs of the bodies this person sits in, from `my_bodies()`. */
-  bodies: string[]
+  /** The bodies this person sits in, and the role in each, from `my_seats()`. */
+  seats: Seat[]
 }
 
 export type AccountLookup =
@@ -40,14 +47,15 @@ export async function loadAccount(): Promise<AccountLookup> {
   }
 
   const row = (Array.isArray(data) ? data[0] : data) as
-    | { name?: string; role?: string; email?: string; access?: Access }
+    | { id?: string; name?: string; role?: string; email?: string; access?: Access }
     | null
     | undefined
   if (!row || !row.email) return { state: 'not-on-roster' }
 
-  // Which bodies they sit in — supabase/migrations/0004_bodies.sql. The nav is
-  // assembled from this list; the policies consult the same function.
-  const seats = await supabase.rpc('my_bodies')
+  // Which bodies they sit in, and in what role — supabase/migrations/
+  // 0004_bodies.sql and 0005_meeting.sql. The nav is assembled from the slugs;
+  // the policies consult the same tables through is_member_of().
+  const seats = await supabase.rpc('my_seats')
   if (seats.error) {
     if (NOT_SET_UP.has(seats.error.code ?? '')) return { state: 'not-set-up' }
     return { state: 'failed', message: seats.error.message }
@@ -56,20 +64,26 @@ export async function loadAccount(): Promise<AccountLookup> {
   return {
     state: 'account',
     account: {
+      id: row.id ?? '',
       name: row.name ?? row.email,
       role: row.role ?? '',
       email: row.email.trim().toLowerCase(),
       access: row.access ?? 'none',
-      bodies: readSlugs(seats.data),
+      seats: readSeats(seats.data),
     },
   }
 }
 
-/* PostgREST returns a `setof text` as a plain array of strings; an older
-   client shape wraps each in an object. Read either. */
-function readSlugs(data: unknown): string[] {
+function readSeats(data: unknown): Seat[] {
   if (!Array.isArray(data)) return []
   return data
-    .map((item) => (typeof item === 'string' ? item : (item as { my_bodies?: string } | null)?.my_bodies ?? ''))
-    .filter((slug) => slug.length > 0)
+    .map((item) => {
+      const row = item as { slug?: string; role_in_body?: string } | null
+      const role = row?.role_in_body
+      return {
+        slug: row?.slug ?? '',
+        role: (role === 'chair' || role === 'ex_officio' ? role : 'member') as Seat['role'],
+      }
+    })
+    .filter((seat) => seat.slug.length > 0)
 }
