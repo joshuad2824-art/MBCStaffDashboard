@@ -1,8 +1,7 @@
 # Supabase
 
-Three migrations, ready to run against a fresh project. Sign-in reads them; the
-records do not yet — `src/data/repository.ts` is still `LocalRepository` — but
-the schema and the policies are what that swap lands on.
+Three migrations for a fresh project. Configured builds use them through
+`SupabaseRepository`; unconfigured local builds keep the seed-data repository.
 
 ```
 0001_schema.sql        tables, the thread-activity trigger, the retention functions
@@ -75,15 +74,11 @@ is a user under Authentication → Users — and `auth_id` is filled in by
 
 ## Where the application stands
 
-Sign-in is wired: `src/lib/supabase.ts` builds the client, `src/session/
-account.ts` calls `claim_account()`, and `src/session/session.tsx` holds the
-session. The records are not — `LocalRepository` still keeps them in the
-browser.
-
-What is left is a `SupabaseRepository implements Repository` beside
-`LocalRepository` and the one export at the bottom of `src/data/repository.ts`.
-At that point delete `purgeExpired` from the client path — the scheduled job
-owns it — and drop the `viewAs` preview's ability to be mistaken for the gate.
+Sign-in and shared records are wired. `src/lib/supabase.ts` builds the client,
+`claim_account()` links an invited user to the roster, and
+`src/data/repository.ts` translates `DashboardData` to the normalized tables.
+The client-side purge remains only in the unconfigured local repository; the
+configured project relies on the scheduled job.
 
 Environment: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. With neither set
 the app falls back to seed data and the stubbed sign-in, which is what a local

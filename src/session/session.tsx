@@ -235,6 +235,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    // In a configured build the repository reload triggered by SIGNED_IN is
+    // the source of the roster. Do not manufacture a second person row while
+    // that RLS-protected reload is still in flight.
+    if (supabaseConfigured) return
+
     if (claimedFor.current === account.email) return
     claimedFor.current = account.email
     const id = nextId(people)

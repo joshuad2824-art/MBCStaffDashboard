@@ -60,8 +60,8 @@ follows from it. "Just cause" is a note written by a person.
 
 ## Where the seams are
 
-- **`src/data/repository.ts`** — the persistence seam. `Repository` is two methods. Replacing
-  `LocalRepository` with `SupabaseRepository` is Phase 0 and blocks everything collaborative.
+- **`src/data/repository.ts`** — the persistence seam. `Repository` is two methods. Configured
+  builds use `SupabaseRepository`; unconfigured local builds keep `LocalRepository` and seed data.
 - **`src/screens/surfaces.ts`** — currently a static record with `staffOnly?: boolean`. Becomes a
   function of membership with `bodies: string[]`.
 - **`src/session/`** — `claim_account()` establishes who the signed-in person is. Membership

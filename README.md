@@ -158,33 +158,31 @@ arrive with an account attached, inviting requires an email address, and a
 trigger refuses to let anyone change their own access — including a staff
 member. See `docs/LOGIN-SETUP.md` for turning login on.
 
-## Data, and the Supabase seam
+## Data and the Supabase repository
 
-The app runs on seed data held in `localStorage`. Everything above
-`src/data/repository.ts` reads and writes `DashboardData` and knows nothing
-about where it lives, so swapping in Postgres is one file:
+Everything above `src/data/repository.ts` reads and writes `DashboardData` and
+knows nothing about where it lives. A configured build uses
+`SupabaseRepository`; a checkout without the two Supabase variables keeps using
+`LocalRepository` with movable sample data, so visual work needs no secrets.
 
 ```ts
-export class SupabaseRepository implements Repository {
+export interface Repository {
   load(): Promise<DashboardData>
   persist(data: DashboardData): Promise<void>
 }
 ```
 
-Two things move to the server at that point, and they are the two that cannot
-be trusted to a client:
+Two things live on the server because they cannot be trusted to a client:
 
-- **The role gate becomes Row Level Security.** `staff` sees everything;
+- **The role gate is Row Level Security.** `staff` sees everything;
   `limited` loses Care pipelines and the Discussion board. The "Viewing as
   limited" toggle in the header is a preview of that, nothing more.
-- **The purge becomes a scheduled job.** `DELETE FROM thread WHERE
+- **The purge is a scheduled job.** `DELETE FROM thread WHERE
   last_activity_at < now() - interval '14 days'`, cascading to posts and
-  mentions. It runs on load here so the behaviour is real in development, but a
-  board that says it forgets has to actually forget.
+  mentions. Unconfigured local development performs the same purge on load.
 
-The schema and those policies are written and waiting in `supabase/` — see
-`supabase/README.md` for what has to be true before they are wired up. Nothing
-in the application reads them yet.
+The schema, policies and account-claim function are in `supabase/`; see
+`supabase/README.md` for project setup and the retention schedule.
 
 Nothing derived is ever stored: `next_due`, `announce_by`, `notice_gap_days` and
 `days_open` are computed on read, every time. That is what keeps the ledger
