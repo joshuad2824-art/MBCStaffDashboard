@@ -46,14 +46,16 @@ export function itemsForDay(data: DashboardData, day: Date, includeCare: boolean
     }
   }
 
+  // Today is a staff surface: the staff's calendar, and on it which entries
+  // the Board can see too. What the Board keeps to itself is not drawn here.
   for (const event of data.events) {
-    if (event.startsAt === iso) {
+    if (event.startsAt === iso && event.audience.includes('staff')) {
       items.push({
         key: 'event-' + event.id,
         source: 'event',
         slot: event.time,
         label: event.name,
-        meta: event.location + ' · ' + event.ministry,
+        meta: event.location + ' · ' + event.ministry + (event.audience.includes('deacon-board') ? ' · shared with the Board' : ''),
       })
     }
   }

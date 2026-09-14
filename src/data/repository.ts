@@ -51,7 +51,7 @@ export class LocalRepository implements Repository {
     let data = freshenSeed(seed)
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY)
-      if (stored) data = { ...seed, ...(JSON.parse(stored) as DashboardData) }
+      if (stored) data = withAudiences({ ...seed, ...(JSON.parse(stored) as DashboardData) })
     } catch {
       // A corrupt or unavailable store is not worth failing the app over.
     }
@@ -70,6 +70,21 @@ export class LocalRepository implements Repository {
   }
 }
 
+/* A board stored before 0008 has threads and events with no audience. They were
+   the staff's, so that is what they become. */
+function withAudiences(data: DashboardData): DashboardData {
+  return {
+    ...data,
+    threads: data.threads.map((thread) => ({ ...thread, audience: thread.audience?.length ? thread.audience : ['staff'] })),
+    events: data.events.map((event) => ({
+      ...event,
+      audience: event.audience?.length ? event.audience : ['staff'],
+      publishedAt: event.publishedAt ?? null,
+    })),
+    announcements: data.announcements ?? [],
+  }
+}
+
 type Entity =
   | 'person'
   | 'cadence'
@@ -80,6 +95,7 @@ type Entity =
   | 'thread'
   | 'post'
   | 'mention'
+  | 'announcement'
   | 'goal'
   | 'week'
 
@@ -87,13 +103,13 @@ type Row = Record<string, unknown>
 
 const entities: Entity[] = [
   'person', 'cadence', 'event', 'huddle', 'notice', 'care',
-  'thread', 'post', 'mention', 'goal', 'week',
+  'thread', 'post', 'mention', 'announcement', 'goal', 'week',
 ]
 
 function emptyDashboard(): DashboardData {
   return {
     people: [], cadence: [], huddle: [], notices: [], care: [], goals: [],
-    threads: [], posts: [], mentions: [], events: [], weeks: [], settings: seed.settings,
+    threads: [], posts: [], mentions: [], events: [], announcements: [], weeks: [], settings: seed.settings,
   }
 }
 
@@ -111,6 +127,10 @@ function number(value: unknown, fallback = 0): number {
 
 function rows(value: unknown): Row[] {
   return Array.isArray(value) ? (value as Row[]) : []
+}
+
+function slugs(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((slug): slug is string => typeof slug === 'string') : []
 }
 
 function localDateTime(value: unknown): { date: string; time: string } {
@@ -219,17 +239,18 @@ export class SupabaseRepository implements Repository {
     await supabase.rpc('claim_account')
 
     const [peopleRows, cadenceRows, occurrenceRows, eventRows, huddleRows, noticeRows, careRows,
-      threadRows, postRows, mentionRows, goalRows, weekRows, settingsRows] = await Promise.all([
+      threadRows, postRows, mentionRows, announcementRows, goalRows, weekRows, settingsRows] = await Promise.all([
       this.read('person', 'id,name,role,email,access,active'),
       this.read('cadence_item', 'id,name,ministry,owner_id,interval_count,interval_label,notice_days,last_held,notes,archived'),
       this.read('cadence_occurrence', 'cadence_item_id,held_on'),
-      this.read('event', 'id,name,ministry,starts_at,time_label,location,cadence_item_id'),
+      this.read('event', 'id,name,ministry,starts_at,time_label,location,cadence_item_id,audience,published_at'),
       this.read('huddle_post', 'id,column_key,body,author_id,created_at,resolved_at'),
       this.read('notice_entry', 'id,subject,ministry,category,decided_on,notified_on,audience,channel,event_id'),
       this.read('care_entry', 'id,person_name,type,opened_on,owner_id,status,last_touch_on,sensitive,notes'),
-      this.read('thread', 'id,subject,created_by,last_activity_at'),
+      this.read('thread', 'id,subject,created_by,last_activity_at,audience'),
       this.read('post', 'id,thread_id,reply_to_post_id,body,author_id,created_at,edited_at,removed'),
       this.read('mention', 'id,post_id,person_id'),
+      this.read('announcement', 'id,body,audience,author_id,created_at,expires_on'),
       this.read('goal', 'id,title,ministry,owner_id,target,status,year,q1,q2,q3,q4'),
       this.read('communicator_week', 'id,service_date,series,sermon_title,cover_verse,verse_ref,order_json,notes_json,event_ids,prayer_lines,giving_json,status,updated_by,updated_at'),
       this.read('church_settings', 'meeting_times,address,welcome_text,families_text,contact_lines,ways_to_give'),
@@ -254,6 +275,7 @@ export class SupabaseRepository implements Repository {
       id: this.localId('event', row.id), name: text(row.name), ministry: text(row.ministry) as Ministry,
       startsAt: text(row.starts_at), time: text(row.time_label), location: text(row.location),
       cadenceItemId: this.localOptional('cadence', row.cadence_item_id),
+      audience: slugs(row.audience), publishedAt: nullableText(row.published_at)?.slice(0, 10) ?? null,
     }))
     const huddle = huddleRows.map((row) => ({
       id: this.localId('huddle', row.id), col: text(row.column_key) as HuddleColumn,
@@ -274,6 +296,7 @@ export class SupabaseRepository implements Repository {
     const threads = threadRows.map((row) => ({
       id: this.localId('thread', row.id), subject: text(row.subject),
       createdBy: this.localId('person', row.created_by), lastActivity: text(row.last_activity_at).slice(0, 10),
+      audience: slugs(row.audience),
     }))
     const posts = postRows.map((row) => {
       const created = localDateTime(row.created_at)
@@ -287,6 +310,11 @@ export class SupabaseRepository implements Repository {
     const mentions = mentionRows.map((row) => ({
       id: this.localId('mention', row.id), postId: this.localId('post', row.post_id),
       staffId: this.localId('person', row.person_id),
+    }))
+    const announcements = announcementRows.map((row) => ({
+      id: this.localId('announcement', row.id), body: text(row.body), audience: slugs(row.audience),
+      authorId: this.localId('person', row.author_id), createdAt: text(row.created_at).slice(0, 10),
+      expiresOn: text(row.expires_on),
     }))
     const goals = goalRows.map((row) => ({
       id: this.localId('goal', row.id), title: text(row.title), ministry: text(row.ministry) as Ministry,
@@ -325,7 +353,7 @@ export class SupabaseRepository implements Repository {
       waysToGive: Array.isArray(settingsRow.ways_to_give) ? (settingsRow.ways_to_give as string[]) : [],
     } : seed.settings
 
-    const loaded = { people, cadence, huddle, notices, care, goals, threads, posts, mentions, events, weeks, settings }
+    const loaded = { people, cadence, huddle, notices, care, goals, threads, posts, mentions, events, announcements, weeks, settings }
     this.lastSnapshot = loaded
     return loaded
   }
@@ -393,6 +421,7 @@ export class SupabaseRepository implements Repository {
     const changedThreads = changed(data.threads, prior?.threads)
     const changedPosts = changed(data.posts, prior?.posts)
     const changedMentions = changed(data.mentions, prior?.mentions)
+    const changedAnnouncements = changed(data.announcements, prior?.announcements)
     const changedGoals = changed(data.goals, prior?.goals)
     const changedWeeks = changed(data.weeks, prior?.weeks)
     const priorCadence = new Map((prior?.cadence ?? []).map((item) => [item.id, item]))
@@ -411,6 +440,7 @@ export class SupabaseRepository implements Repository {
       id: this.remoteId('event', event.id), name: event.name, ministry: event.ministry,
       starts_at: event.startsAt, time_label: event.time, location: event.location,
       cadence_item_id: this.remoteOptional('cadence', event.cadenceItemId),
+      audience: event.audience, published_at: event.publishedAt,
     }))
     const huddleRows = data.huddle.map((post) => ({
       id: this.remoteId('huddle', post.id), column_key: post.col, body: post.body,
@@ -429,6 +459,7 @@ export class SupabaseRepository implements Repository {
     const threadRows = data.threads.map((thread) => ({
       id: this.remoteId('thread', thread.id), subject: thread.subject,
       created_by: this.remoteId('person', thread.createdBy), last_activity_at: thread.lastActivity,
+      audience: thread.audience,
     }))
     const postRows = data.posts.map((post) => ({
       id: this.remoteId('post', post.id), thread_id: this.remoteId('thread', post.threadId),
@@ -438,6 +469,10 @@ export class SupabaseRepository implements Repository {
     const mentionRows = data.mentions.map((mention) => ({
       id: this.remoteId('mention', mention.id), post_id: this.remoteId('post', mention.postId),
       person_id: this.remoteId('person', mention.staffId),
+    }))
+    const announcementRows = data.announcements.map((item) => ({
+      id: this.remoteId('announcement', item.id), body: item.body, audience: item.audience,
+      author_id: this.remoteId('person', item.authorId), created_at: item.createdAt, expires_on: item.expiresOn,
     }))
     const goalRows = data.goals.map((goal) => ({
       id: this.remoteId('goal', goal.id), title: goal.title, ministry: goal.ministry,
@@ -479,6 +514,7 @@ export class SupabaseRepository implements Repository {
     await this.save('thread', 'thread', threadRows.filter((row) => changedThreads.has(this.localId('thread', row.id))))
     await this.save('post', 'post', postRows.filter((row) => changedPosts.has(this.localId('post', row.id))))
     await this.save('mention', 'mention', mentionRows.filter((row) => changedMentions.has(this.localId('mention', row.id))))
+    await this.save('announcement', 'announcement', announcementRows.filter((row) => changedAnnouncements.has(this.localId('announcement', row.id))))
     await this.save('goal', 'goal', goalRows.filter((row) => changedGoals.has(this.localId('goal', row.id))))
     await this.save('week', 'communicator_week', weekRows.filter((row) => changedWeeks.has(this.localId('week', row.id))))
 
@@ -494,6 +530,7 @@ export class SupabaseRepository implements Repository {
     }
 
     await this.deleteMissing('mention', 'mention', ids('mention', data.mentions))
+    await this.deleteMissing('announcement', 'announcement', ids('announcement', data.announcements))
     await this.deleteMissing('post', 'post', ids('post', data.posts))
     await this.deleteMissing('thread', 'thread', ids('thread', data.threads))
     await this.deleteMissing('care', 'care_entry', ids('care', data.care))

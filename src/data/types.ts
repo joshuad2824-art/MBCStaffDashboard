@@ -94,12 +94,19 @@ export interface Goal {
   q: { q1: string; q2: string; q3: string; q4: string }
 }
 
+/** Body slugs a record is addressed to. Never empty: a record with no audience
+    is a bug, not a private record (mbc-deacons-dashboard-brief.md §3.1). */
+export type Audience = string[]
+
 /** Expires 14 days after lastActivity, not 14 days after it was started. */
 export interface Thread {
   id: Id
   subject: string
   createdBy: Id
   lastActivity: string
+  /** `{staff}` is the staff board; `{deacon-board}` the Board's own;
+      `{staff, deacon-board}` is how the two sides talk. */
+  audience: Audience
 }
 
 export interface Post {
@@ -130,6 +137,21 @@ export interface ChurchEvent {
   time: string
   location: string
   cadenceItemId: Id | null
+  /** Who can read it. A staff working draft is `{staff}`; publishing widens it. */
+  audience: Audience
+  /** Stamped when the audience was widened beyond the staff. Null is a draft. */
+  publishedAt: string | null
+}
+
+/** Short-lived and audience-scoped, authored by either side. Shown until
+    `expiresOn`, purged fourteen days after that, like the board. */
+export interface Announcement {
+  id: Id
+  body: string
+  audience: Audience
+  authorId: Id
+  createdAt: string
+  expiresOn: string
 }
 
 export type OrderKind = 'song' | 'spoken' | 'sermon'
@@ -226,6 +248,7 @@ export interface DashboardData {
   posts: Post[]
   mentions: Mention[]
   events: ChurchEvent[]
+  announcements: Announcement[]
   weeks: CommunicatorWeek[]
   settings: ChurchSettings
 }

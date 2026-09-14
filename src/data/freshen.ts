@@ -31,6 +31,8 @@ const DATE_FIELDS = [
   'lastActivity',
   'editedAt',
   'startsAt',
+  'publishedAt',
+  'expiresOn',
   'serviceDate',
   'updatedAt',
 ] as const

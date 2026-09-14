@@ -114,9 +114,12 @@ export const seed: DashboardData = {
   ],
 
   threads: [
-    { id: 401, subject: 'Fall parent meeting — one night or two?', createdBy: 8, lastActivity: '2026-08-27' },
-    { id: 402, subject: "Who owns men's fellowship this fall?", createdBy: 2, lastActivity: '2026-08-22' },
-    { id: 403, subject: 'Hall B check-in signage', createdBy: 5, lastActivity: '2026-08-18' },
+    { id: 401, subject: 'Fall parent meeting — one night or two?', createdBy: 8, lastActivity: '2026-08-27', audience: ['staff'] },
+    { id: 402, subject: "Who owns men's fellowship this fall?", createdBy: 2, lastActivity: '2026-08-22', audience: ['staff'] },
+    { id: 403, subject: 'Hall B check-in signage', createdBy: 5, lastActivity: '2026-08-18', audience: ['staff'] },
+    // The Board's own room, and the one thread both sides can read.
+    { id: 404, subject: 'North lot resurfacing — bids before the September meeting', createdBy: 9, lastActivity: '2026-08-26', audience: ['deacon-board'] },
+    { id: 405, subject: 'Volunteer appreciation lunch — can the Board serve?', createdBy: 8, lastActivity: '2026-08-27', audience: ['staff', 'deacon-board'] },
   ],
 
   posts: [
@@ -127,16 +130,27 @@ export const seed: DashboardData = {
     { id: 512, threadId: 402, replyTo: null, authorId: 3, body: '', createdAt: '2026-08-21', time: '4:02 PM', editedAt: null, removed: true },
     { id: 513, threadId: 402, replyTo: 512, authorId: 1, body: 'Agreed — put it on the ledger as a named owner rather than settling it here. This thread is gone in a week.', createdAt: '2026-08-22', time: '7:48 AM', editedAt: null, removed: false },
     { id: 521, threadId: 403, replyTo: null, authorId: 5, body: 'Signs need to be up by Sept 6. Two at the Hall B door, one at the old preschool desk pointing across.', createdAt: '2026-08-18', time: '1:15 PM', editedAt: null, removed: false },
+    { id: 531, threadId: 404, replyTo: null, authorId: 9, body: 'Two bids are in. The third contractor wants to walk the lot first; I have him for Thursday. If we have all three by the 6th it goes on the agenda as new business.', createdAt: '2026-08-24', time: '7:40 PM', editedAt: null, removed: false },
+    { id: 532, threadId: 404, replyTo: 531, authorId: 10, body: 'Ask each of them about drainage on the east side. That is what took the last surface out.', createdAt: '2026-08-26', time: '9:02 AM', editedAt: null, removed: false },
+    { id: 541, threadId: 405, replyTo: null, authorId: 8, body: 'The lunch is the 19th. It would say something if the deacons served the tables rather than sat at them. Who can be there by 11:30?', createdAt: '2026-08-27', time: '3:20 PM', editedAt: null, removed: false },
+    { id: 542, threadId: 405, replyTo: 541, authorId: 12, body: 'I can, and I will bring the coffee urns from the fellowship hall closet.', createdAt: '2026-08-27', time: '6:48 PM', editedAt: null, removed: false },
   ],
 
   mentions: [{ id: 601, postId: 503, staffId: 8 }],
 
   events: [
-    { id: 1, name: "Women's fellowship — fall gathering", ministry: 'Women', startsAt: '2026-09-20', time: '6:00 PM', location: 'Fellowship hall', cadenceItemId: 4 },
-    { id: 2, name: 'Fall parent meeting — Students', ministry: 'Students', startsAt: '2026-09-13', time: '4:00 PM', location: 'Youth house', cadenceItemId: 2 },
-    { id: 3, name: 'Volunteer appreciation lunch', ministry: 'All', startsAt: '2026-09-19', time: '12:00 PM', location: 'Fellowship hall', cadenceItemId: 6 },
-    { id: 4, name: 'Preschool check-in moves to Hall B', ministry: 'Children', startsAt: '2026-09-06', time: '9:00 AM', location: 'Hall B', cadenceItemId: null },
-    { id: 5, name: 'Wednesday study and dinner', ministry: 'All', startsAt: '2026-09-02', time: '6:00 PM', location: 'Fellowship hall', cadenceItemId: null },
+    { id: 1, name: "Women's fellowship — fall gathering", ministry: 'Women', startsAt: '2026-09-20', time: '6:00 PM', location: 'Fellowship hall', cadenceItemId: 4, audience: ['staff'], publishedAt: null },
+    { id: 2, name: 'Fall parent meeting — Students', ministry: 'Students', startsAt: '2026-09-13', time: '4:00 PM', location: 'Youth house', cadenceItemId: 2, audience: ['staff'], publishedAt: null },
+    { id: 3, name: 'Volunteer appreciation lunch', ministry: 'All', startsAt: '2026-09-19', time: '12:00 PM', location: 'Fellowship hall', cadenceItemId: 6, audience: ['staff', 'deacon-board'], publishedAt: '2026-08-27' },
+    { id: 4, name: 'Preschool check-in moves to Hall B', ministry: 'Children', startsAt: '2026-09-06', time: '9:00 AM', location: 'Hall B', cadenceItemId: null, audience: ['staff'], publishedAt: null },
+    { id: 5, name: 'Wednesday study and dinner', ministry: 'All', startsAt: '2026-09-02', time: '6:00 PM', location: 'Fellowship hall', cadenceItemId: null, audience: ['staff'], publishedAt: null },
+    { id: 6, name: 'Deacon and family cookout', ministry: 'All', startsAt: '2026-09-26', time: '5:30 PM', location: 'Pavilion', cadenceItemId: null, audience: ['deacon-board'], publishedAt: null },
+  ],
+
+  announcements: [
+    { id: 801, body: 'The copier in the workroom is back. The service call found a worn roller, not the toner.', audience: ['staff'], authorId: 7, createdAt: '2026-08-26', expiresOn: '2026-09-04' },
+    { id: 802, body: 'The September Board meeting is the 13th at 4:00. Committee reports are due to the chairman by the 6th.', audience: ['staff', 'deacon-board'], authorId: 8, createdAt: '2026-08-27', expiresOn: '2026-09-13' },
+    { id: 803, body: 'Deacon of the Week for the 30th is Marvin Hollis. Calls to the office go to him.', audience: ['deacon-board'], authorId: 8, createdAt: '2026-08-28', expiresOn: '2026-09-05' },
   ],
 
   weeks: [

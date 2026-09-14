@@ -7,6 +7,7 @@ import { Today } from './screens/Today'
 import { Huddle } from './screens/Huddle'
 import { Cadence } from './screens/Cadence'
 import { Discussion } from './screens/Discussion'
+import { Calendar } from './screens/Calendar'
 import { CarePipelines } from './screens/ComingLater'
 import { Communicator } from './screens/Communicator'
 import { Goals } from './screens/Goals'
@@ -22,11 +23,14 @@ const SCREENS: Record<string, ReactNode> = {
   whichSide: <WhichSide />,
   meeting: <Meeting />,
   reports: <Reports />,
+  boardCalendar: <Calendar side="deacon" />,
+  boardDiscussion: <Discussion side="deacon" />,
   today: <Today />,
   huddle: <Huddle />,
   cadence: <Cadence />,
   notice: <NoticeLog />,
-  discussion: <Discussion />,
+  discussion: <Discussion side="staff" />,
+  calendar: <Calendar side="staff" />,
   communicator: <Communicator />,
   care: <CarePipelines />,
   goals: <Goals />,

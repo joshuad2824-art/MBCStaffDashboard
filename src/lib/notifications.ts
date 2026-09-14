@@ -168,6 +168,7 @@ export function deriveNotifications(
 
   if (options.includeCare) {
     for (const thread of data.threads) {
+      if (!thread.audience.includes('staff')) continue
       const forgets = threadForgetsIn(thread, today)
       if (forgets > 3) continue
       items.push({

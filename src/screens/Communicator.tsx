@@ -169,7 +169,7 @@ export function Communicator() {
   }
 
   const alreadyPulled = new Set(week.bulletinEvents.map((line) => line.eventId).filter(Boolean))
-  const pullable = data.events.filter((event) => !alreadyPulled.has(event.id))
+  const pullable = data.events.filter((event) => event.audience.includes('staff') && !alreadyPulled.has(event.id))
 
   const preview = {
     cover: <CoverPanel week={week} settings={settings} />,

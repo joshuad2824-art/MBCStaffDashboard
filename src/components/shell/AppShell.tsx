@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Header } from './Header'
 import { HistoryDrawer } from './HistoryDrawer'
@@ -9,6 +9,7 @@ import { Toast } from './Toast'
 import { useData } from '../../data/store'
 import { useSession } from '../../session/session'
 import { useUnreadThreadIds } from '../../lib/unread'
+import { reaches } from '../../lib/audience'
 import type { Surface } from '../../screens/surfaces'
 import { NARROW, useMediaQuery } from '../../lib/media'
 
@@ -18,7 +19,14 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
   const [historyOpen, setHistoryOpen] = useState(false)
   const narrow = useMediaQuery(NARROW)
 
-  const unread = useUnreadThreadIds(member?.id ?? null, data.threads).length
+  /* One count per room. A thread addressed to both rooms counts in each; it is
+     the same thread, unread in both places until it is opened in one. */
+  const staffThreads = useMemo(() => data.threads.filter((thread) => reaches(thread.audience, 'staff')), [data.threads])
+  const boardThreads = useMemo(() => data.threads.filter((thread) => reaches(thread.audience, 'deacon-board')), [data.threads])
+  const unread = {
+    staff: useUnreadThreadIds(member?.id ?? null, staffThreads).length,
+    deacon: useUnreadThreadIds(member?.id ?? null, boardThreads).length,
+  }
 
   /* Tables and calendars take the whole monitor. Everything else stops where
      lines stop being comfortable to read — and is centred there, so on a very
@@ -35,7 +43,7 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
         gridTemplateColumns: narrow ? 'minmax(0,1fr)' : `minmax(0,${context === 'deacon' ? 258 : 244}px) minmax(0,1fr)`,
       }}
     >
-      <Sidebar unread={viewAs === 'limited' ? 0 : unread} />
+      <Sidebar unread={viewAs === 'limited' ? { staff: 0, deacon: unread.deacon } : unread} />
 
       <div style={{ minWidth: 0 }}>
         <ContextBar />

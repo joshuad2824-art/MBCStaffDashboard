@@ -71,7 +71,7 @@ function Item({ item, large }: { item: NavItem; large: boolean }) {
   )
 }
 
-export function Sidebar({ unread }: { unread: number }) {
+export function Sidebar({ unread }: { unread: { staff: number; deacon: number } }) {
   const { member, seats, bodies, viewAs, sides, context, signOut, auth } = useSession()
   const narrow = useMediaQuery(NARROW)
   const [passwordOpen, setPasswordOpen] = useState(false)
@@ -82,7 +82,8 @@ export function Sidebar({ unread }: { unread: number }) {
   const groups: NavItem[][] = []
   for (const surface of surfacesFor({ bodies, viewAs, sides, context })) {
     const item: NavItem = { to: surface.path, label: surface.nav }
-    if (surface === SURFACES.discussion) item.badge = unread
+    if (surface === SURFACES.discussion) item.badge = unread.staff
+    if (surface === SURFACES.boardDiscussion) item.badge = unread.deacon
     ;(groups[surface.group] ??= []).push(item)
   }
 

@@ -4,6 +4,7 @@ import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-do
 import { BodyBadge, Button, Card, Eyebrow } from '../components/ui'
 import { useStore } from '../data/store'
 import { useMeetings } from '../data/meetings/store'
+import { Announcements } from './discussion/Announcements'
 import {
   MEETINGS_PER_YEAR,
   agendaFor,
@@ -36,10 +37,14 @@ export function Meeting() {
   if (!data) return <Note>Opening the Board’s room…</Note>
   const current = currentMeeting(data.meetings, startOfToday())
   return (
-    <Routes>
-      <Route path=":meetingId/:phase?" element={<MeetingView data={data} />} />
-      <Route index element={current ? <Navigate to={meetingPath(current.id)} replace /> : <NoMeetingYet />} />
-    </Routes>
+    <div style={{ display: 'grid', gap: 20 }}>
+      {/* What either side has announced to the Board, on the Board's landing screen. */}
+      <Announcements side="deacon" />
+      <Routes>
+        <Route path=":meetingId/:phase?" element={<MeetingView data={data} />} />
+        <Route index element={current ? <Navigate to={meetingPath(current.id)} replace /> : <NoMeetingYet />} />
+      </Routes>
+    </div>
   )
 }
 
