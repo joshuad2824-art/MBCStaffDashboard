@@ -229,8 +229,7 @@ their user under Authentication → Users. Either one alone shuts the door; doin
 both is tidy. What they owned goes back to unclaimed on the ledger, which is
 where it belongs until somebody takes it.
 
-**What is still to come.** Sign-in is live, but the records themselves still
-live in the browser rather than in Postgres — see `supabase/README.md`. Until
-that lands, the role gate you are relying on is the one drawn by the interface;
-after it lands, it is the one enforced in the database, which is the only kind
-that counts.
+**Where records live.** A deployed build with both Supabase variables reads and
+writes Postgres, where Row Level Security is the role gate. An unconfigured
+local checkout deliberately keeps browser seed data so screen work requires no
+project credentials.

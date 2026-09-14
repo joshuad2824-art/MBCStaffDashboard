@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { supabase } from '../lib/supabase'
 import { repository } from './repository'
 import type { DashboardData } from './types'
 
@@ -40,6 +41,7 @@ const StoreContext = createContext<Store | null>(null)
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<DashboardData | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [toast, setToast] = useState<Toast | null>(null)
   const historyId = useRef(1)
@@ -47,11 +49,34 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false
-    repository.load().then((loaded) => {
-      if (!cancelled) setData(loaded)
+    let revision = 0
+
+    const load = async () => {
+      const mine = ++revision
+      try {
+        const loaded = await repository.load()
+        if (!cancelled && mine === revision) {
+          setData(loaded)
+          setLoadError(null)
+        }
+      } catch (error) {
+        if (!cancelled && mine === revision) {
+          setLoadError(error instanceof Error ? error.message : 'The board could not reach its database.')
+        }
+      }
+    }
+
+    void load()
+    const listener = supabase?.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        // Supabase advises against calling another client method directly in
+        // its auth callback. Queue the reload outside that callback instead.
+        window.setTimeout(() => void load(), 0)
+      }
     })
     return () => {
       cancelled = true
+      listener?.data.subscription.unsubscribe()
     }
   }, [])
 
@@ -123,7 +148,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   if (!value) {
     return (
       <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--surface-page)' }}>
-        <p style={{ font: '400 15px/1.6 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>Opening the board…</p>
+        <p style={{ font: '400 15px/1.6 var(--mbc-font-sans)', color: 'var(--text-meta)', maxWidth: 520 }}>
+          {loadError ?? 'Opening the board…'}
+        </p>
       </div>
     )
   }
