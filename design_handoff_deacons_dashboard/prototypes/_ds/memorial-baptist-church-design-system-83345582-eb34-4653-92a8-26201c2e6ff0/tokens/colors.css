@@ -1,0 +1,68 @@
+/* MBC palette — every value taken from the brand guide and the published site. */
+:root{
+  /* Core five */
+  --mbc-steeple-brown:#3A322B;
+  --mbc-bulletin-cream:#F8F3EB;
+  --mbc-lamplight:#A8613F;
+  --mbc-yale-sage:#4F7A5A;
+  --mbc-brass:#DBAE84;
+
+  /* Lamplight steps */
+  --mbc-lamplight-deep:#8A4C2E;
+  --mbc-lamplight-tint:#F6E3D2;
+
+  /* Warm neutrals — grounds */
+  --mbc-parchment:#FFFDF9;
+  --mbc-paper:#FDFBF7;
+  --mbc-panel:#F1E9DB;
+  --mbc-field:#FBF7EF;
+  --mbc-warm-gray:#F1EEE8;
+
+  /* Warm neutrals — ink */
+  --mbc-ink:#3A322B;
+  --mbc-ink-soft:#4A4139;
+  --mbc-bark:#6B6058;
+  --mbc-bark-light:#5C5249;
+  --mbc-stone:#8A7C6C;
+  --mbc-stone-light:#9A8B7B;
+  --mbc-stone-pale:#A2937F;
+  --mbc-slot-label:#8B7E6E;
+
+  /* Warm neutrals — rules & borders */
+  --mbc-rule:#E4D8C4;
+  --mbc-rule-paper:#E7DCC9;
+  --mbc-rule-hair:#EDE3D3;
+  --mbc-rule-faint:#F0E7D8;
+  --mbc-border-photo:#E0D5C2;
+  --mbc-border-panel:#DED2BC;
+  --mbc-border-control:#CFC1AB;
+  --mbc-border-control-strong:#C6B69E;
+  --mbc-border-chip:#D6C9B4;
+  --mbc-border-input:#DCCFB9;
+  --mbc-underline:#D9C6AE;
+  --mbc-underline-soft:#E0D0B8;
+
+  /* On dark ground */
+  --mbc-dark:#3A322B;
+  --mbc-dark-deep:#2B2521;
+  --mbc-dark-press:#241E1A;
+  --mbc-dark-card:#332C26;
+  --mbc-dark-rule:#55493F;
+  --mbc-dark-rule-soft:#453C35;
+  --mbc-dark-border:#6B5E52;
+  --mbc-on-dark:#F4EDE2;
+  --mbc-on-dark-strong:#E4D9C8;
+  --mbc-on-dark-soft:#C8BAA8;
+  --mbc-on-dark-muted:#B8A48C;
+  --mbc-on-accent:#FFF9F0;
+
+  /* Photo placeholder stripes */
+  --mbc-stripe-a:#EFE6D6;
+  --mbc-stripe-b:#E7DCC8;
+  --mbc-stripe-dark-a:#4A4139;
+  --mbc-stripe-dark-b:#413A32;
+
+  /* Semantic status */
+  --mbc-error:#A8342A;
+  --mbc-selection:#E9D7C2;
+}

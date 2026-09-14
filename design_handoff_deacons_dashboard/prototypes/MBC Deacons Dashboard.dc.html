@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/radii.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/shadows.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/semantic.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/styles.css">
+  <script src="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/_ds_bundle.js"></script>
+  <style>
+    body { margin: 0; background: var(--surface-page); color: var(--text-body); font-family: var(--mbc-font-sans); }
+    * { box-sizing: border-box; }
+    textarea, input, select, button { font-family: var(--mbc-font-sans); }
+    a { color: var(--text-link); text-decoration: none; }
+    a:hover { color: var(--text-link-hover); }
+  </style>
+</helmet>
+
+<div style="min-height: 100vh; background: var(--surface-page); font-family: var(--mbc-font-sans); color: var(--text-body); -webkit-font-smoothing: antialiased;">
+
+  <div style="background: var(--surface-dark); padding: 10px 26px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: baseline; justify-content: center;">
+    <span style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .2em; text-transform: uppercase; color: var(--text-on-dark-accent);">Prototype</span>
+    <span style="font: 400 13px/1.4 var(--mbc-font-sans); color: var(--text-on-dark-soft);">Every name, figure, motion and quoted bylaw below is seed data. Signed in as the chairman, who belongs to the Board and to Finance — so no other committee room appears in the nav at all.</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 258px) minmax(0, 1fr); align-items: start;">
+
+    <aside style="position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; background: var(--surface-card); border-right: 1px solid var(--border-section); padding: 24px 16px; display: flex; flex-direction: column; gap: 24px;">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 0 8px;">
+        <img src="assets/mbc-mark.png" alt="" style="width: 38px; height: 38px; object-fit: contain; flex: none;">
+        <span style="display: flex; flex-direction: column; line-height: 1;">
+          <span style="font: 600 18px/1 var(--mbc-font-serif); letter-spacing: -.015em; color: var(--text-heading);">Memorial</span>
+          <span style="font: 700 8px/1 var(--mbc-font-sans); letter-spacing: .26em; color: var(--text-muted); margin-top: 4px;">{{ lockupLine }}</span>
+        </span>
+      </div>
+
+      <nav style="display: grid; gap: 3px;">
+        <sc-for list="{{ nav }}" as="item" hint-placeholder-count="5">
+          <sc-if value="{{ item.isDivider }}">
+            <div style="height: 1px; background: var(--border-card); margin: 12px 8px;"></div>
+          </sc-if>
+          <sc-if value="{{ item.active }}">
+            <button type="button" onClick="{{ item.onClick }}" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: 10px; padding: 13px 14px; cursor: pointer; font: 700 15px/1.25 var(--mbc-font-sans); color: var(--text-heading); min-height: 48px;">
+              <span>{{ item.label }}</span>
+              <sc-if value="{{ item.hasTag }}">
+                <span style="font: 700 9px/1 var(--mbc-font-sans); letter-spacing: .16em; text-transform: uppercase; color: var(--text-eyebrow);">{{ item.tag }}</span>
+              </sc-if>
+            </button>
+          </sc-if>
+          <sc-if value="{{ item.inactive }}">
+            <button type="button" onClick="{{ item.onClick }}" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: 10px; padding: 13px 14px; cursor: pointer; font: 400 15px/1.25 var(--mbc-font-sans); color: var(--text-body); min-height: 48px; transition: var(--motion-hover);" style-hover="background: var(--surface-panel);">
+              <span>{{ item.label }}</span>
+              <sc-if value="{{ item.hasTag }}">
+                <span style="font: 700 9px/1 var(--mbc-font-sans); letter-spacing: .16em; text-transform: uppercase; color: var(--text-eyebrow);">{{ item.tag }}</span>
+              </sc-if>
+            </button>
+          </sc-if>
+        </sc-for>
+      </nav>
+
+      <p style="font: 400 12px/1.6 var(--mbc-font-mono); color: var(--text-muted); margin: 0; padding: 14px 8px 0; border-top: 1px solid var(--border-card);">{{ navFootnote }}</p>
+
+      <div style="margin-top: auto; border-top: 1px solid var(--border-card); padding: 18px 8px 0; display: grid; gap: 12px;">
+        <div>
+          <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="stone" size="sm" hint-size="auto,12px">Signed in as</x-import>
+          <p style="font: 700 15px/1.3 var(--mbc-font-sans); color: var(--text-heading); margin: 8px 0 3px;">Wendell Harper</p>
+          <p style="font: 400 13px/1.5 var(--mbc-font-sans); color: var(--text-meta); margin: 0;">{{ myBodiesLine }}</p>
+        </div>
+        <button type="button" style="background: none; border: none; padding: 0; cursor: pointer; font: 400 13px/1 var(--mbc-font-sans); color: var(--text-link); justify-self: start;">Sign out</button>
+      </div>
+    </aside>
+
+    <main style="min-width: 0;">
+
+      <sc-if value="{{ markerIsBar }}" hint-placeholder-val="{{ true }}">
+        <div style="position: sticky; top: 0; z-index: 6; background: var(--surface-dark); padding: 14px clamp(20px, 3vw, 40px); display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between;">
+          <p style="margin: 0; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline;">
+            <span style="font: 700 20px/1 var(--mbc-font-serif); letter-spacing: -.01em; color: var(--text-on-dark-strong);">{{ contextName }}</span>
+            <span style="font: 400 14px/1.4 var(--mbc-font-sans); color: var(--text-on-dark-label);">{{ contextExplain }}</span>
+          </p>
+          <button type="button" onClick="{{ onSwitchContext }}" style="background: none; border: 1px solid var(--mbc-dark-border); border-radius: 999px; padding: 0 20px; min-height: 44px; cursor: pointer; font: 700 14px/1 var(--mbc-font-sans); color: var(--text-on-dark); transition: var(--motion-hover);" style-hover="border-color: var(--mbc-on-dark);">{{ switchLabel }}</button>
+        </div>
+      </sc-if>
+
+      <header style="position: sticky; top: 0; z-index: 5; background: rgba(248, 243, 235, .94); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-section); padding: 20px clamp(20px, 3vw, 40px); display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between;">
+        <div style="min-width: 0;">
+          <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="lamplight" size="sm" hint-size="auto,12px">{{ surfaceEyebrow }}</x-import>
+          <h1 style="font: 600 clamp(24px, 2.4vw, 32px)/1.1 var(--mbc-font-serif); letter-spacing: -.02em; color: var(--text-heading); margin: 9px 0 0;">{{ surfaceTitle }}</h1>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+          <sc-if value="{{ markerIsPill }}">
+            <span style="display: inline-flex; align-items: center; gap: 9px; background: var(--action-dark); color: var(--text-on-dark); border-radius: 999px; padding: 0 18px; min-height: 44px; font: 700 14px/1 var(--mbc-font-sans);">{{ contextName }}</span>
+          </sc-if>
+          <sc-if value="{{ markerIsPill }}">
+            <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="outline" size="sm" on-click="{{ onSwitchContext }}" hint-size="auto,44px">{{ switchLabel }}</x-import>
+          </sc-if>
+          <span style="font: 400 13px/1 var(--mbc-font-sans); color: var(--text-muted); font-variant-numeric: tabular-nums;">Monday, September 14, 2026</span>
+          <sc-if value="{{ showPrint }}">
+            <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="outline" size="sm" hint-size="auto,44px">{{ printLabel }}</x-import>
+          </sc-if>
+        </div>
+      </header>
+
+      <div style="padding: clamp(24px, 3vw, 40px) clamp(20px, 3vw, 40px) 96px; max-width: 1380px;">
+        <p style="font: 400 17px/1.7 var(--mbc-font-sans); color: var(--text-meta); margin: 0 0 30px; max-width: 64ch; text-wrap: pretty;">{{ surfaceLead }}</p>
+
+        <sc-if value="{{ atLanding }}" hint-placeholder-val="{{ true }}">
+          <div style="display: grid; gap: 20px;">
+
+            <sc-if value="{{ landingChoice }}" hint-placeholder-val="{{ true }}">
+              <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 20px;">
+                <div style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-panel); padding: 30px clamp(24px, 2vw, 32px); display: flex; flex-direction: column; gap: 20px;">
+                  <div>
+                    <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="sage" size="sm" hint-size="auto,12px">Two bodies · twelve men</x-import>
+                    <p style="font: 600 30px/1.1 var(--mbc-font-serif); letter-spacing: -.02em; color: var(--text-heading); margin: 12px 0 0;">Deacon view</p>
+                    <p style="font: 400 16px/1.65 var(--mbc-font-sans); color: var(--text-body); margin: 10px 0 0; max-width: 42ch;">The monthly Board meeting and the Finance committee room. Records you write here default to the Board.</p>
+                  </div>
+                  <div style="display: grid; gap: 1px; background: var(--border-hairline); border-top: 1px solid var(--border-hairline); border-bottom: 1px solid var(--border-hairline);">
+                    <sc-for list="{{ deaconWaiting }}" as="w" hint-placeholder-count="3">
+                      <div style="background: var(--surface-card); display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; justify-content: space-between; padding: 13px 2px;">
+                        <span style="font: 400 16px/1.45 var(--mbc-font-sans); color: var(--text-heading);">{{ w.label }}</span>
+                        <span style="font: 400 14px/1.4 var(--mbc-font-sans); color: var(--text-meta);">{{ w.meta }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="margin-top: auto;">
+                    <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="primary" size="md" on-click="{{ onOpenDeacon }}" hint-size="auto,48px">Open the deacon view</x-import>
+                  </div>
+                </div>
+
+                <div style="background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: var(--mbc-radius-panel); padding: 30px clamp(24px, 2vw, 32px); display: flex; flex-direction: column; gap: 20px;">
+                  <div>
+                    <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="stone" size="sm" hint-size="auto,12px">Eight on staff</x-import>
+                    <p style="font: 600 30px/1.1 var(--mbc-font-serif); letter-spacing: -.02em; color: var(--text-heading); margin: 12px 0 0;">Staff view</p>
+                    <p style="font: 400 16px/1.65 var(--mbc-font-sans); color: var(--text-body); margin: 10px 0 0; max-width: 42ch;">Today at Memorial, the huddle, the ledger, the notice log, the bulletin. Records you write there default to staff.</p>
+                  </div>
+                  <div style="display: grid; gap: 1px; background: var(--border-section); border-top: 1px solid var(--border-section); border-bottom: 1px solid var(--border-section);">
+                    <sc-for list="{{ staffWaiting }}" as="w" hint-placeholder-count="3">
+                      <div style="background: var(--surface-panel); display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; justify-content: space-between; padding: 13px 2px;">
+                        <span style="font: 400 16px/1.45 var(--mbc-font-sans); color: var(--text-heading);">{{ w.label }}</span>
+                        <span style="font: 400 14px/1.4 var(--mbc-font-sans); color: var(--text-meta);">{{ w.meta }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="margin-top: auto;">
+                    <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="outline" size="md" on-click="{{ onOpenStaff }}" hint-size="auto,48px">Open the staff view</x-import>
+                  </div>
+                </div>
+              </section>
+            </sc-if>
+
+            <section style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 30px);">
+              <div style="padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">
+                <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="lamplight" size="sm" hint-size="auto,12px">Why the toggle has three rules</x-import>
+                <p style="font: 600 24px/1.25 var(--mbc-font-serif); color: var(--text-heading); margin: 12px 0 0;">The failure it prevents is saying something in the wrong room.</p>
+              </div>
+              <div style="display: grid; gap: 1px; background: var(--border-hairline);">
+                <sc-for list="{{ toggleRules }}" as="r" hint-placeholder-count="3">
+                  <div style="background: var(--surface-card); display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 16px; padding: 18px 2px;">
+                    <span style="font: 600 22px/1.2 var(--mbc-font-serif); color: var(--text-eyebrow); font-variant-numeric: tabular-nums;">{{ r.n }}</span>
+                    <div>
+                      <p style="font: 700 16px/1.5 var(--mbc-font-sans); color: var(--text-heading); margin: 0;">{{ r.title }}</p>
+                      <p style="font: 400 15px/1.65 var(--mbc-font-sans); color: var(--text-body); margin: 6px 0 0; max-width: 72ch; text-wrap: pretty;">{{ r.body }}</p>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+
+            <section style="display: flex; flex-wrap: wrap; gap: 20px;">
+              <div style="flex: 3 1 520px; background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 30px);">
+                <div style="padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">
+                  <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="lamplight" size="sm" hint-size="auto,12px">Composing inherits the context</x-import>
+                  <p style="font: 600 24px/1.25 var(--mbc-font-serif); color: var(--text-heading); margin: 12px 0 0;">Start a thread here and the Board is the audience.</p>
+                </div>
+                <div style="display: grid; gap: 18px; padding-top: 20px;">
+                  <label style="display: grid; gap: 8px;">
+                    <span style="font: 700 13px/1 var(--mbc-font-sans); letter-spacing: .04em; color: var(--text-heading);">Subject</span>
+                    <input type="text" value="{{ composeSubject }}" onChange="{{ onComposeSubject }}" style="background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 0 14px; min-height: 48px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading);">
+                  </label>
+                  <label style="display: grid; gap: 8px;">
+                    <span style="font: 700 13px/1 var(--mbc-font-sans); letter-spacing: .04em; color: var(--text-heading);">First post</span>
+                    <textarea rows="3" value="{{ composeBody }}" onChange="{{ onComposeBody }}" style="background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 13px 14px; font: 400 16px/1.6 var(--mbc-font-sans); color: var(--text-heading); resize: vertical;"></textarea>
+                  </label>
+                  <div style="display: grid; gap: 12px;">
+                    <span style="font: 700 13px/1 var(--mbc-font-sans); letter-spacing: .04em; color: var(--text-heading);">Who can read it</span>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                      <span style="display: inline-flex; align-items: center; gap: 10px; background: var(--surface-panel); border: 1px solid var(--mbc-border-control); border-radius: 999px; padding: 0 18px; min-height: 44px; font: 700 15px/1 var(--mbc-font-sans); color: var(--text-heading);">Deacon Board <span style="font: 400 13px/1 var(--mbc-font-sans); color: var(--text-meta);">inherited</span></span>
+                      <button type="button" onClick="{{ onToggleStaffAudience }}" style="display: inline-flex; align-items: center; gap: 10px; border-radius: 999px; padding: 0 18px; min-height: 44px; cursor: pointer; font: 700 15px/1 var(--mbc-font-sans); transition: var(--motion-hover); background: {{ staffChipBg }}; border: 1px solid {{ staffChipBorder }}; color: {{ staffChipInk }};">{{ staffChipLabel }}</button>
+                    </div>
+                    <sc-if value="{{ audienceStaff }}">
+                      <p style="font: 400 15px/1.65 var(--mbc-font-sans); color: var(--text-heading); background: var(--mbc-lamplight-tint); border-radius: 14px; padding: 15px 17px; margin: 0; max-width: 62ch;">Widening is a second act, and it is deliberate. Eight staff members will be able to read this thread, and the badge on the record now says so on every screen it appears.</p>
+                    </sc-if>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; padding-top: 18px; border-top: 1px solid var(--border-hairline);">
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                      <span style="font: 400 14px/1.4 var(--mbc-font-sans); color: var(--text-meta);">This record will carry</span>
+                      <span style="display: inline-flex; align-items: center; gap: 8px; background: var(--surface-panel); border: 1px solid var(--mbc-border-chip); border-radius: 999px; padding: 7px 13px; font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .16em; text-transform: uppercase; color: {{ badgeInk }};">{{ badgeText }}</span>
+                    </div>
+                    <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="dark" size="sm" on-click="{{ onPostThread }}" hint-size="auto,44px">Post the thread</x-import>
+                  </div>
+                </div>
+              </div>
+
+              <div style="flex: 1 1 320px; background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 28px);">
+                <div style="padding-bottom: 16px; border-bottom: 1px solid var(--border-section);">
+                  <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="lamplight" size="sm" hint-size="auto,12px">The one new component</x-import>
+                  <p style="font: 600 22px/1.25 var(--mbc-font-serif); color: var(--text-heading); margin: 12px 0 0;">The body badge.</p>
+                  <p style="font: 400 15px/1.65 var(--mbc-font-sans); color: var(--text-body); margin: 10px 0 0;">On any record visible to more than one body, say so on the record. People need to know who else is reading before they type.</p>
+                </div>
+                <div style="display: grid; gap: 1px; background: var(--border-section);">
+                  <sc-for list="{{ badgeSpecimens }}" as="b" hint-placeholder-count="3">
+                    <div style="background: var(--surface-panel); display: grid; gap: 9px; padding: 17px 2px;">
+                      <span style="display: inline-flex; align-items: center; gap: 8px; background: var(--surface-card); border: 1px solid var(--mbc-border-chip); border-radius: 999px; padding: 7px 13px; font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .16em; text-transform: uppercase; color: {{ b.ink }}; justify-self: start;">{{ b.text }}</span>
+                      <span style="font: 400 12px/1.5 var(--mbc-font-mono); color: var(--text-muted);">{{ b.caption }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <p style="font: 400 14px/1.65 var(--mbc-font-sans); color: var(--text-meta); margin: 18px 0 0; padding-top: 16px; border-top: 1px solid var(--border-section);">A confidential body never appears in a badge on a record it does not own — including the roster filed with the church in October.</p>
+              </div>
+            </section>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ atMeeting }}">
+          <div style="display: grid; gap: 20px;">
+
+            <section style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 30px); display: grid; gap: 22px;">
+              <div style="display: flex; flex-wrap: wrap; gap: 14px 30px; align-items: baseline; justify-content: space-between;">
+                <div>
+                  <p style="font: 600 26px/1.2 var(--mbc-font-serif); letter-spacing: -.015em; color: var(--text-heading); margin: 0;">Monday, September 14, 2026 · 7:00 PM · fellowship hall</p>
+                  <p style="font: 400 15px/1.6 var(--mbc-font-sans); color: var(--text-meta); margin: 8px 0 0;">Regular monthly meeting · ninth of twelve in the 2026 deacon year · thirteen men on the roll, including the Senior Pastor ex officio</p>
+                </div>
+                <span style="display: inline-flex; align-items: center; gap: 8px; background: var(--surface-panel); border: 1px solid var(--mbc-border-chip); border-radius: 999px; padding: 7px 13px; font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .16em; text-transform: uppercase; color: var(--text-meta);">Deacons</span>
+              </div>
+
+              <div style="display: flex; flex-wrap: wrap; gap: 1px; background: var(--border-hairline); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); overflow: hidden;">
+                <sc-for list="{{ phases }}" as="p" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ p.onClick }}" style="flex: 1 1 230px; text-align: left; border: none; cursor: pointer; padding: 20px 22px; display: grid; gap: 9px; align-content: start; min-height: 116px; transition: var(--motion-hover); background: {{ p.bg }}; box-shadow: {{ p.ring }};">
+                    <span style="font: 700 10px/1.3 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow);">{{ p.step }}</span>
+                    <span style="font: 600 24px/1.15 var(--mbc-font-serif); color: var(--text-heading);">{{ p.name }}</span>
+                    <span style="font: 400 14px/1.45 var(--mbc-font-sans); color: var(--text-meta);">{{ p.state }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </section>
+
+            <sc-if value="{{ phaseAgenda }}" hint-placeholder-val="{{ true }}">
+              <section style="display: flex; flex-wrap: wrap; gap: 20px;">
+                <div style="flex: 3 1 560px; background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 30px);">
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: baseline; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">
+                    <span style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow);">The agenda assembles itself</span>
+                    <span style="font: 400 14px/1.4 var(--mbc-font-sans); color: var(--text-meta);">{{ agendaMeta }}</span>
+                  </div>
+                  <div style="display: grid; gap: 1px; background: var(--border-hairline);">
+                    <sc-for list="{{ agenda }}" as="a" hint-placeholder-count="8">
+                      <div style="background: var(--surface-card); display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 8px 16px; align-items: baseline; padding: 16px 2px;">
+                        <span style="font: 600 17px/1.3 var(--mbc-font-serif); color: var(--text-meta); font-variant-numeric: tabular-nums;">{{ a.n }}</span>
+                        <div style="min-width: 0;">
+                          <p style="font: 400 17px/1.5 var(--mbc-font-sans); color: var(--text-heading); margin: 0; text-wrap: pretty;">{{ a.title }}</p>
+                          <p style="font: 400 14px/1.5 var(--mbc-font-sans); color: var(--text-meta); margin: 5px 0 0;">{{ a.meta }}</p>
+                        </div>
+                        <span style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .16em; text-transform: uppercase; color: {{ a.tagInk }}; white-space: nowrap;">{{ a.tag }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; padding-top: 20px; margin-top: 4px; border-top: 1px solid var(--border-hairline);">
+                    <p style="font: 400 15px/1.6 var(--mbc-font-sans); color: var(--text-meta); margin: 0; max-width: 46ch;">{{ agendaFoot }}</p>
+                    <sc-if value="{{ agendaOpen }}" hint-placeholder-val="{{ true }}">
+                      <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="primary" size="md" on-click="{{ onLockAgenda }}" hint-size="auto,48px">Lock the agenda</x-import>
+                    </sc-if>
+                    <sc-if value="{{ agendaLocked }}">
+                      <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="outline" size="md" on-click="{{ onUnlockAgenda }}" hint-size="auto,48px">Unlock it</x-import>
+                    </sc-if>
+                  </div>
+                </div>
+
+                <div style="flex: 1 1 320px; display: grid; gap: 20px; align-content: start;">
+                  <div style="background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: var(--mbc-radius-card); padding: 24px 26px;">
+                    <p style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow); margin: 0 0 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-section);">Committee reports due</p>
+                    <div style="display: grid; gap: 1px; background: var(--border-section);">
+                      <sc-for list="{{ committeeStatus }}" as="c" hint-placeholder-count="4">
+                        <div style="background: var(--surface-panel); display: grid; gap: 5px; padding: 14px 2px;">
+                          <div style="display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; justify-content: space-between;">
+                            <span style="font: 400 16px/1.4 var(--mbc-font-sans); color: var(--text-heading);">{{ c.name }}</span>
+                            <span style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .16em; text-transform: uppercase; color: {{ c.ink }};">{{ c.state }}</span>
+                          </div>
+                          <span style="font: 400 14px/1.5 var(--mbc-font-sans); color: var(--text-meta);">{{ c.meta }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+
+                  <div style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 24px 26px;">
+                    <p style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow); margin: 0 0 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">Carried from 11 August</p>
+                    <div style="display: grid; gap: 1px; background: var(--border-hairline);">
+                      <sc-for list="{{ oldBusiness }}" as="o" hint-placeholder-count="2">
+                        <p style="background: var(--surface-card); font: 400 15px/1.6 var(--mbc-font-sans); color: var(--text-body); margin: 0; padding: 14px 2px; text-wrap: pretty;">{{ o.text }}</p>
+                      </sc-for>
+                    </div>
+                    <p style="font: 400 14px/1.6 var(--mbc-font-sans); color: var(--text-meta); margin: 16px 0 0;">Anything tabled tonight lands here next month without anyone retyping it.</p>
+                  </div>
+                </div>
+              </section>
+            </sc-if>
+
+            <sc-if value="{{ phaseSession }}">
+              <section style="display: grid; gap: 20px;">
+                <div style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 30px);">
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: baseline; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">
+                    <span style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow);">Attendance · call the roll</span>
+                    <span style="font: 400 15px/1.4 var(--mbc-font-sans); color: var(--text-meta); font-variant-numeric: tabular-nums;">{{ rollMeta }}</span>
+                  </div>
+                  <div style="display: grid; gap: 1px; background: var(--border-hairline);">
+                    <sc-for list="{{ roll }}" as="p" hint-placeholder-count="13">
+                      <div style="background: var(--surface-card); display: grid; gap: 12px; padding: 14px 2px;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between;">
+                          <div style="min-width: 190px;">
+                            <p style="font: 400 17px/1.4 var(--mbc-font-sans); color: var(--text-heading); margin: 0;">{{ p.name }}</p>
+                            <p style="font: 400 14px/1.4 var(--mbc-font-sans); color: var(--text-meta); margin: 4px 0 0;">{{ p.role }}</p>
+                          </div>
+                          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button type="button" onClick="{{ p.onPresent }}" style="border-radius: 999px; padding: 0 20px; min-height: 48px; cursor: pointer; font: {{ p.presentFont }}; transition: var(--motion-hover); background: {{ p.presentBg }}; border: 1px solid {{ p.presentBorder }}; color: var(--text-heading);">Present</button>
+                            <button type="button" onClick="{{ p.onAbsent }}" style="border-radius: 999px; padding: 0 20px; min-height: 48px; cursor: pointer; font: {{ p.absentFont }}; transition: var(--motion-hover); background: {{ p.absentBg }}; border: 1px solid {{ p.absentBorder }}; color: var(--text-heading);">Absent</button>
+                            <button type="button" onClick="{{ p.onExcused }}" style="border-radius: 999px; padding: 0 20px; min-height: 48px; cursor: pointer; font: {{ p.excusedFont }}; transition: var(--motion-hover); background: {{ p.excusedBg }}; border: 1px solid {{ p.excusedBorder }}; color: var(--text-heading);">Excused</button>
+                          </div>
+                        </div>
+                        <sc-if value="{{ p.needsCause }}">
+                          <label style="display: grid; gap: 7px; max-width: 74ch;">
+                            <span style="font: 400 14px/1.5 var(--mbc-font-sans); color: var(--text-meta);">Just cause — a note written by a person, in his own words. Optional, and never a checkbox.</span>
+                            <textarea rows="2" value="{{ p.cause }}" onChange="{{ p.onCause }}" placeholder="Why, if you know it, and who you heard it from." style="background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 12px 14px; font: 400 15px/1.6 var(--mbc-font-sans); color: var(--text-heading); resize: vertical;"></textarea>
+                          </label>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 30px);">
+                  <div style="padding-bottom: 16px; border-bottom: 1px solid var(--border-section);">
+                    <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="lamplight" size="sm" hint-size="auto,12px">Chairman only · this panel is not on anyone else's screen</x-import>
+                    <p style="font: 600 24px/1.25 var(--mbc-font-serif); color: var(--text-heading); margin: 12px 0 0;">The count, and the threshold. Nothing else.</p>
+                    <p style="font: 400 16px/1.7 var(--mbc-font-sans); color: var(--text-body); margin: 10px 0 0; max-width: 70ch; text-wrap: pretty;">Three-fourths of twelve meetings is nine. A man may miss three and still meet the rule. The dashboard raises this at a second absence so the conversation is pastoral rather than procedural — it does not act on the number, and no man's standing changes here.</p>
+                  </div>
+                  <div style="display: grid; gap: 1px; background: var(--border-section);">
+                    <sc-for list="{{ attendanceRule }}" as="a" hint-placeholder-count="4">
+                      <div style="background: var(--surface-panel); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 20px; align-items: baseline; padding: 15px 2px;">
+                        <div>
+                          <p style="font: 400 17px/1.4 var(--mbc-font-sans); color: var(--text-heading); margin: 0;">{{ a.name }}</p>
+                          <p style="font: 400 14px/1.55 var(--mbc-font-sans); color: var(--text-meta); margin: 5px 0 0; max-width: 64ch; text-wrap: pretty;">{{ a.note }}</p>
+                        </div>
+                        <span style="font: 600 20px/1 var(--mbc-font-serif); color: var(--text-heading); font-variant-numeric: tabular-nums; white-space: nowrap;">{{ a.count }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <p style="font: 400 15px/1.65 var(--mbc-font-sans); color: var(--text-meta); margin: 18px 0 0; padding-top: 16px; border-top: 1px solid var(--border-section);">The other eight have missed none. Present mode is available in this phase with the same exclusions as the staff side: no committee room, no care assignment, no deacon-audience thread goes on a wall.</p>
+                </div>
+
+                <div style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 30px);">
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: baseline; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">
+                    <span style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow);">Motions</span>
+                    <span style="font: 400 14px/1.4 var(--mbc-font-sans); color: var(--text-meta);">{{ motionsMeta }}</span>
+                  </div>
+                  <div style="display: grid; gap: 1px; background: var(--border-hairline);">
+                    <sc-for list="{{ motions }}" as="m" hint-placeholder-count="2">
+                      <div style="background: var(--surface-card); display: grid; gap: 10px; padding: 18px 2px;">
+                        <p style="font: 400 17px/1.6 var(--mbc-font-sans); color: var(--text-heading); margin: 0; max-width: 84ch; text-wrap: pretty;">{{ m.text }}</p>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline;">
+                          <span style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .16em; text-transform: uppercase; color: {{ m.ink }};">{{ m.disposition }}</span>
+                          <span style="font: 400 14px/1.5 var(--mbc-font-sans); color: var(--text-meta);">{{ m.meta }}</span>
+                        </div>
+                        <sc-if value="{{ m.amends }}">
+                          <div style="display: grid; gap: 12px; background: var(--surface-panel); border-radius: 14px; padding: 16px 18px;">
+                            <p style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .16em; text-transform: uppercase; color: var(--text-eyebrow); margin: 0;">{{ m.bylaw }} · the sentence, quoted both ways</p>
+                            <p style="font: 400 15px/1.65 var(--mbc-font-sans); color: var(--text-meta); margin: 0;"><span style="font-weight: 700; color: var(--text-heading);">Before. </span>{{ m.before }}</p>
+                            <p style="font: 400 15px/1.65 var(--mbc-font-sans); color: var(--text-meta); margin: 0;"><span style="font-weight: 700; color: var(--text-heading);">After. </span>{{ m.after }}</p>
+                            <p style="font: 400 14px/1.6 var(--mbc-font-sans); color: var(--text-meta); margin: 0;">A ledger that quotes the sentence cannot drift the way a ledger that cites a paragraph number does.</p>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+
+                  <div style="display: grid; gap: 18px; padding-top: 22px; margin-top: 4px; border-top: 1px solid var(--border-hairline);">
+                    <p style="font: 600 22px/1.25 var(--mbc-font-serif); color: var(--text-heading); margin: 0;">Capture a motion</p>
+                    <label style="display: grid; gap: 8px;">
+                      <span style="font: 700 13px/1 var(--mbc-font-sans); letter-spacing: .04em; color: var(--text-heading);">Text moved — write it as it was moved</span>
+                      <textarea rows="2" value="{{ draftText }}" onChange="{{ onDraftText }}" style="background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 13px 14px; font: 400 16px/1.6 var(--mbc-font-sans); color: var(--text-heading); resize: vertical;"></textarea>
+                    </label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;">
+                      <label style="display: grid; gap: 8px;">
+                        <span style="font: 700 13px/1 var(--mbc-font-sans); letter-spacing: .04em; color: var(--text-heading);">Moved by</span>
+                        <select value="{{ draftMovedBy }}" onChange="{{ onDraftMovedBy }}" style="background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 0 12px; min-height: 48px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading);">
+                          <sc-for list="{{ nameOptions }}" as="o" hint-placeholder-count="4">
+                            <option value="{{ o.value }}">{{ o.label }}</option>
+                          </sc-for>
+                        </select>
+                      </label>
+                      <label style="display: grid; gap: 8px;">
+                        <span style="font: 700 13px/1 var(--mbc-font-sans); letter-spacing: .04em; color: var(--text-heading);">Seconded by</span>
+                        <select value="{{ draftSecondedBy }}" onChange="{{ onDraftSecondedBy }}" style="background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 0 12px; min-height: 48px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading);">
+                          <sc-for list="{{ nameOptions }}" as="o" hint-placeholder-count="4">
+                            <option value="{{ o.value }}">{{ o.label }}</option>
+                          </sc-for>
+                        </select>
+                      </label>
+                      <label style="display: grid; gap: 8px;">
+                        <span style="font: 700 13px/1 var(--mbc-font-sans); letter-spacing: .04em; color: var(--text-heading);">The count, if one was taken</span>
+                        <div style="display: flex; gap: 10px;">
+                          <input type="text" value="{{ draftFor }}" onChange="{{ onDraftFor }}" placeholder="For" style="min-width: 0; flex: 1; background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 0 14px; min-height: 48px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading); font-variant-numeric: tabular-nums;">
+                          <input type="text" value="{{ draftAgainst }}" onChange="{{ onDraftAgainst }}" placeholder="Against" style="min-width: 0; flex: 1; background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 0 14px; min-height: 48px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading); font-variant-numeric: tabular-nums;">
+                        </div>
+                      </label>
+                    </div>
+                    <div style="display: grid; gap: 10px;">
+                      <span style="font: 700 13px/1 var(--mbc-font-sans); letter-spacing: .04em; color: var(--text-heading);">Disposition</span>
+                      <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <sc-for list="{{ dispositions }}" as="d" hint-placeholder-count="4">
+                          <button type="button" onClick="{{ d.onClick }}" style="border-radius: 999px; padding: 0 20px; min-height: 48px; cursor: pointer; font: {{ d.font }}; transition: var(--motion-hover); background: {{ d.bg }}; border: 1px solid {{ d.border }}; color: var(--text-heading);">{{ d.label }}</button>
+                        </sc-for>
+                      </div>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;">
+                      <p style="font: 400 15px/1.6 var(--mbc-font-sans); color: var(--text-meta); margin: 0; max-width: 52ch;">{{ motionHint }}</p>
+                      <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="dark" size="md" on-click="{{ onAddMotion }}" hint-size="auto,48px">Record this motion</x-import>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </sc-if>
+
+            <sc-if value="{{ phaseMinutes }}">
+              <section style="display: flex; flex-wrap: wrap; gap: 20px;">
+                <div style="flex: 3 1 540px; background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 30px);">
+                  <div style="padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">
+                    <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="lamplight" size="sm" hint-size="auto,12px">Already in the record — nobody retypes this</x-import>
+                    <p style="font: 600 24px/1.25 var(--mbc-font-serif); color: var(--text-heading); margin: 12px 0 0;">Assembled from tonight.</p>
+                  </div>
+                  <div style="display: grid; gap: 1px; background: var(--border-hairline);">
+                    <sc-for list="{{ assembled }}" as="s" hint-placeholder-count="4">
+                      <div style="background: var(--surface-card); display: grid; gap: 10px; padding: 18px 2px;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between;">
+                          <span style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-heading);">{{ s.title }}</span>
+                          <span style="font: 400 13px/1.4 var(--mbc-font-mono); color: var(--text-muted);">{{ s.source }}</span>
+                        </div>
+                        <sc-for list="{{ s.lines }}" as="l" hint-placeholder-count="3">
+                          <p style="font: 400 16px/1.65 var(--mbc-font-sans); color: var(--text-body); margin: 0; max-width: 80ch; text-wrap: pretty;">{{ l.text }}</p>
+                        </sc-for>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="flex: 2 1 380px; display: grid; gap: 20px; align-content: start;">
+                  <div style="background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 28px);">
+                    <div style="padding-bottom: 16px; border-bottom: 1px solid var(--border-section);">
+                      <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="lamplight" size="sm" hint-size="auto,12px">What only you can write</x-import>
+                      <p style="font: 600 22px/1.25 var(--mbc-font-serif); color: var(--text-heading); margin: 12px 0 0;">Three boxes, Dale.</p>
+                    </div>
+                    <div style="display: grid; gap: 18px; padding-top: 18px;">
+                      <sc-for list="{{ narrative }}" as="n" hint-placeholder-count="3">
+                        <label style="display: grid; gap: 8px;">
+                          <span style="font: 700 13px/1.4 var(--mbc-font-sans); letter-spacing: .04em; color: var(--text-heading);">{{ n.label }}</span>
+                          <textarea rows="3" value="{{ n.value }}" onChange="{{ n.onChange }}" placeholder="{{ n.placeholder }}" style="background: var(--surface-card); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 13px 14px; font: 400 16px/1.65 var(--mbc-font-sans); color: var(--text-heading); resize: vertical;"></textarea>
+                        </label>
+                      </sc-for>
+                    </div>
+                    <div style="display: grid; gap: 14px; padding-top: 20px; margin-top: 18px; border-top: 1px solid var(--border-section);">
+                      <p style="font: 400 15px/1.65 var(--mbc-font-sans); color: var(--text-meta); margin: 0;">{{ minutesStateLine }}</p>
+                      <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="outline" size="md" on-click="{{ onSaveMinutes }}" hint-size="auto,48px">Save the draft</x-import>
+                        <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="primary" size="md" on-click="{{ onPublishMinutes }}" hint-size="auto,48px">{{ publishMinutesLabel }}</x-import>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 24px 26px;">
+                    <p style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow); margin: 0 0 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">One thing to settle with the Board</p>
+                    <p style="font: 400 16px/1.7 var(--mbc-font-sans); color: var(--text-body); margin: 0; text-wrap: pretty;">Article II.E makes the Church Clerk the keeper of the church's records, not the Board Secretary. These minutes are the Board's working record and its printed output. Whether this copy or the Clerk's is the record of file is a decision for the Board — worth asking before the first set is published, not after.</p>
+                  </div>
+                </div>
+              </section>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ atReport }}">
+          <div style="display: grid; gap: 20px;">
+
+            <section style="display: flex; flex-wrap: wrap; gap: 1px; background: var(--border-hairline); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); overflow: hidden;">
+              <sc-for list="{{ lifecycle }}" as="s" hint-placeholder-count="4">
+                <div style="flex: 1 1 190px; padding: 18px 22px; display: grid; gap: 7px; align-content: start; min-height: 104px; background: {{ s.bg }};">
+                  <span style="font: 700 10px/1.3 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: {{ s.labelInk }};">{{ s.step }}</span>
+                  <span style="font: 600 21px/1.15 var(--mbc-font-serif); color: var(--text-heading);">{{ s.name }}</span>
+                  <span style="font: 400 14px/1.45 var(--mbc-font-sans); color: var(--text-meta);">{{ s.meta }}</span>
+                </div>
+              </sc-for>
+            </section>
+
+            <section style="display: flex; flex-wrap: wrap; gap: 20px;">
+              <div style="flex: 3 1 560px; display: grid; gap: 20px; align-content: start;">
+
+                <div style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 30px);">
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: baseline; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">
+                    <span style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow);">One · budget position</span>
+                    <span style="font: 400 14px/1.4 var(--mbc-font-sans); color: var(--text-meta);">August 2026 · eight months of twelve</span>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; padding-top: 20px;">
+                    <sc-for list="{{ moneyFields }}" as="f" hint-placeholder-count="3">
+                      <label style="display: grid; gap: 8px;">
+                        <span style="font: 700 13px/1.4 var(--mbc-font-sans); letter-spacing: .04em; color: var(--text-heading);">{{ f.label }}</span>
+                        <input type="text" value="{{ f.value }}" onChange="{{ f.onChange }}" style="background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 0 14px; min-height: 48px; font: 400 17px/1 var(--mbc-font-sans); color: var(--text-heading); font-variant-numeric: tabular-nums;">
+                      </label>
+                    </sc-for>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 14px 30px; align-items: baseline; justify-content: space-between; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border-hairline);">
+                    <p style="font: 400 16px/1.65 var(--mbc-font-sans); color: var(--text-body); margin: 0; max-width: 56ch; text-wrap: pretty;">{{ positionSentence }}</p>
+                    <span style="font: 600 30px/1 var(--mbc-font-serif); color: var(--text-heading); font-variant-numeric: tabular-nums;">{{ positionFigure }}</span>
+                  </div>
+                </div>
+
+                <div style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 30px);">
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: baseline; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">
+                    <span style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow);">Two · notable variances</span>
+                    <span style="font: 400 14px/1.4 var(--mbc-font-sans); color: var(--text-meta);">One line, one figure, one sentence.</span>
+                  </div>
+                  <div style="display: grid; gap: 18px; padding-top: 20px;">
+                    <sc-for list="{{ variances }}" as="v" hint-placeholder-count="2">
+                      <div style="display: grid; gap: 12px; background: var(--surface-panel); border-radius: 14px; padding: 16px 18px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+                          <input type="text" value="{{ v.line }}" onChange="{{ v.onLine }}" placeholder="Budget line" style="background: var(--surface-card); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 0 14px; min-height: 48px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading);">
+                          <input type="text" value="{{ v.amount }}" onChange="{{ v.onAmount }}" placeholder="Over or under by" style="background: var(--surface-card); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 0 14px; min-height: 48px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading); font-variant-numeric: tabular-nums;">
+                        </div>
+                        <textarea rows="2" value="{{ v.note }}" onChange="{{ v.onNote }}" placeholder="One sentence on why." style="background: var(--surface-card); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 12px 14px; font: 400 16px/1.6 var(--mbc-font-sans); color: var(--text-heading); resize: vertical;"></textarea>
+                      </div>
+                    </sc-for>
+                    <button type="button" onClick="{{ onAddVariance }}" style="justify-self: start; background: none; border: 1px solid var(--mbc-border-control); border-radius: 999px; padding: 0 20px; min-height: 48px; cursor: pointer; font: 700 15px/1 var(--mbc-font-sans); color: var(--text-heading); transition: var(--motion-hover);" style-hover="background: var(--surface-panel); border-color: var(--text-heading);">Add a variance</button>
+                  </div>
+                </div>
+
+                <div style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 30px);">
+                  <div style="padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">
+                    <span style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow);">Three · actions the committee took</span>
+                  </div>
+                  <div style="display: grid; gap: 12px; padding-top: 20px;">
+                    <sc-for list="{{ actions }}" as="a" hint-placeholder-count="2">
+                      <input type="text" value="{{ a.text }}" onChange="{{ a.onChange }}" placeholder="What the committee did, in one sentence." style="background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 0 14px; min-height: 48px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading);">
+                    </sc-for>
+                    <button type="button" onClick="{{ onAddAction }}" style="justify-self: start; background: none; border: 1px solid var(--mbc-border-control); border-radius: 999px; padding: 0 20px; min-height: 48px; cursor: pointer; font: 700 15px/1 var(--mbc-font-sans); color: var(--text-heading); transition: var(--motion-hover);" style-hover="background: var(--surface-panel); border-color: var(--text-heading);">Add an action</button>
+                  </div>
+                </div>
+
+                <div style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 30px);">
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: baseline; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">
+                    <span style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow);">Four · items for the Board</span>
+                    <span style="font: 400 14px/1.4 var(--mbc-font-sans); color: var(--text-meta);">{{ boardItemsMeta }}</span>
+                  </div>
+                  <div style="display: grid; gap: 14px; padding-top: 20px;">
+                    <sc-for list="{{ boardItems }}" as="b" hint-placeholder-count="2">
+                      <div style="display: grid; gap: 12px; background: var(--surface-panel); border-radius: 14px; padding: 16px 18px;">
+                        <input type="text" value="{{ b.text }}" onChange="{{ b.onChange }}" placeholder="What the Board is being asked to consider." style="background: var(--surface-card); border: 1px solid var(--mbc-border-input); border-radius: 10px; padding: 0 14px; min-height: 48px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading);">
+                        <button type="button" onClick="{{ b.onToggleVote }}" style="justify-self: start; display: inline-flex; align-items: center; gap: 12px; border-radius: 999px; padding: 0 18px; min-height: 44px; cursor: pointer; font: {{ b.voteFont }}; transition: var(--motion-hover); background: {{ b.voteBg }}; border: 1px solid {{ b.voteBorder }}; color: var(--text-heading);">{{ b.voteLabel }}</button>
+                      </div>
+                    </sc-for>
+                    <button type="button" onClick="{{ onAddBoardItem }}" style="justify-self: start; background: none; border: 1px solid var(--mbc-border-control); border-radius: 999px; padding: 0 20px; min-height: 48px; cursor: pointer; font: 700 15px/1 var(--mbc-font-sans); color: var(--text-heading); transition: var(--motion-hover);" style-hover="background: var(--surface-panel); border-color: var(--text-heading);">Add an item</button>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-hairline);">
+                    <p style="font: 400 15px/1.6 var(--mbc-font-sans); color: var(--text-meta); margin: 0; max-width: 50ch;">{{ reportFootHint }}</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                      <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="outline" size="md" on-click="{{ onSaveReport }}" hint-size="auto,48px">Save the draft</x-import>
+                      <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="primary" size="md" on-click="{{ onAdvanceReport }}" hint-size="auto,48px">{{ reportPrimaryLabel }}</x-import>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="flex: 2 1 360px; display: grid; gap: 20px; align-content: start;">
+                <div style="background: var(--surface-print); border: 1px solid var(--mbc-border-photo); border-radius: 4px; box-shadow: var(--mbc-shadow-print); padding: 30px 32px;">
+                  <p style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .2em; text-transform: uppercase; color: var(--text-meta); margin: 0;">As it will be filed and printed</p>
+                  <p style="font: 600 24px/1.25 var(--mbc-font-serif); color: var(--text-heading); margin: 14px 0 0;">Finance committee report</p>
+                  <p style="font: 400 14px/1.5 var(--mbc-font-sans); color: var(--text-meta); margin: 7px 0 0;">August 2026 · Curtis Nolen, chair · for the meeting of 14 September 2026</p>
+                  <div style="display: grid; gap: 1px; background: var(--border-hairline); margin-top: 20px; border-top: 1px solid var(--border-hairline);">
+                    <sc-for list="{{ preview }}" as="p" hint-placeholder-count="4">
+                      <div style="background: var(--surface-print); display: grid; gap: 8px; padding: 15px 0;">
+                        <span style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-heading);">{{ p.title }}</span>
+                        <sc-for list="{{ p.lines }}" as="l" hint-placeholder-count="2">
+                          <p style="font: 400 15px/1.65 var(--mbc-font-sans); color: var(--text-body); margin: 0; text-wrap: pretty;">{{ l.text }}</p>
+                        </sc-for>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <p style="font: 400 13px/1.6 var(--mbc-font-sans); color: var(--text-muted); margin: 18px 0 0; padding-top: 14px; border-top: 1px solid var(--border-hairline);">{{ previewFoot }}</p>
+                </div>
+
+                <div style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 24px 26px;">
+                  <p style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow); margin: 0 0 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">Versions · nothing overwrites</p>
+                  <div style="display: grid; gap: 1px; background: var(--border-hairline);">
+                    <sc-for list="{{ versions }}" as="v" hint-placeholder-count="3">
+                      <div style="background: var(--surface-card); display: grid; gap: 5px; padding: 14px 2px;">
+                        <span style="font: 400 16px/1.4 var(--mbc-font-sans); color: var(--text-heading);">{{ v.label }}</span>
+                        <span style="font: 400 14px/1.5 var(--mbc-font-sans); color: var(--text-meta);">{{ v.meta }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <p style="font: 400 14px/1.65 var(--mbc-font-sans); color: var(--text-meta); margin: 16px 0 0;">An edit after publication creates a new version and leaves the prior one readable. That is what lets the edit button exist at all.</p>
+                </div>
+
+                <sc-if value="{{ patternNotes }}" hint-placeholder-val="{{ true }}">
+                  <div style="background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: var(--mbc-radius-card); padding: 24px 26px;">
+                    <p style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow); margin: 0 0 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-section);">The pattern the other builders follow</p>
+                    <div style="display: grid; gap: 1px; background: var(--border-section);">
+                      <sc-for list="{{ patterns }}" as="p" hint-placeholder-count="5">
+                        <p style="background: var(--surface-panel); font: 400 15px/1.65 var(--mbc-font-sans); color: var(--text-body); margin: 0; padding: 14px 2px; text-wrap: pretty;">{{ p.text }}</p>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </section>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ atStaff }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-panel); padding: 34px clamp(24px, 2vw, 38px); max-width: 720px; display: grid; gap: 16px;">
+            <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="stone" size="sm" hint-size="auto,12px">The toggle narrows, it never widens</x-import>
+            <p style="font: 600 26px/1.2 var(--mbc-font-serif); letter-spacing: -.015em; color: var(--text-heading); margin: 0;">You are on the staff side now.</p>
+            <p style="font: 400 17px/1.7 var(--mbc-font-sans); color: var(--text-body); margin: 0; max-width: 62ch; text-wrap: pretty;">Nothing about your access changed when you flipped it — the database still decides what rows come back, and this toggle only decides which surfaces are drawn. The staff surfaces themselves are already designed: they live in the staff dashboard prototype, and nothing here replaces them.</p>
+            <p style="font: 400 16px/1.7 var(--mbc-font-sans); color: var(--text-meta); margin: 0; max-width: 62ch;">Notice what left the nav on the way over: the meeting, the Finance room. Staff do not need to see that the Board has a room they are not in.</p>
+            <div style="padding-top: 8px;">
+              <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="dark" size="md" on-click="{{ onSwitchContext }}" hint-size="auto,48px">Back to the deacon view</x-import>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </main>
+  </div>
+
+  <sc-if value="{{ hasToast }}">
+    <div style="position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 20; background: var(--surface-dark); border-radius: 999px; box-shadow: var(--mbc-shadow-print); padding: 14px 24px; display: flex; gap: 16px; align-items: center;">
+      <span style="font: 400 15px/1.3 var(--mbc-font-sans); color: var(--text-on-dark);">{{ toast }}</span>
+      <button type="button" onClick="{{ onDismissToast }}" style="background: none; border: 1px solid var(--mbc-dark-border); border-radius: 999px; padding: 7px 14px; cursor: pointer; font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .16em; text-transform: uppercase; color: var(--text-on-dark);">Close</button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;contextMarker&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;bar&quot;,&quot;pill&quot;],&quot;default&quot;:&quot;bar&quot;,&quot;tsType&quot;:&quot;'bar' | 'pill'&quot;,&quot;section&quot;:&quot;Context marker&quot;},&quot;showLandingChoice&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Context marker&quot;},&quot;showPatternNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Report builder&quot;}}">
+const PEOPLE = [
+  { id: 'wh', name: 'Wendell Harper', role: 'chairman · student ministry', missed: 0 },
+  { id: 'rt', name: 'Ray Teague', role: 'vice chairman', missed: 1 },
+  { id: 'dw', name: 'Dale Whitcomb', role: 'secretary', missed: 0 },
+  { id: 'cn', name: 'Curtis Nolen', role: 'treasurer · Finance chair', missed: 1 },
+  { id: 'as', name: 'Arthur Simms', role: 'deacon', missed: 0 },
+  { id: 'lb', name: 'Lowell Bracken', role: 'deacon', missed: 1 },
+  { id: 'gp', name: 'Gene Pruitt', role: 'deacon', missed: 2 },
+  { id: 'mh', name: 'Marvin Hollis', role: 'deacon', missed: 0 },
+  { id: 'sr', name: 'Stanley Ruiz', role: 'deacon', missed: 0 },
+  { id: 'dk', name: 'Dennis Kirby', role: 'deacon', missed: 0 },
+  { id: 'ev', name: 'Earl Vance', role: 'deacon', missed: 3 },
+  { id: 'rf', name: 'Roy Ferrell', role: 'deacon', missed: 0 },
+  { id: 'jb', name: 'Jacob Bice', role: 'senior pastor · ex officio', missed: 1 }
+];
+
+const money = (n) => '$' + Number(n || 0).toLocaleString('en-US');
+
+class Component extends DCLogic {
+  state = {
+    screen: 'landing',
+    context: 'deacon',
+    phase: 'agenda',
+    audienceStaff: false,
+    composeSubject: 'A second bid on the parking lot',
+    composeBody: 'The resurfacing bid came back higher than the August figure. Before this goes on the agenda I want to know whether Building & Grounds has a second bid in hand.',
+    attendance: { wh: 'present', rt: 'present', dw: 'present', cn: 'present', as: 'absent', lb: 'excused', gp: 'present' },
+    cause: { as: 'Out of town for his daughter\u2019s wedding. He told me last Sunday. \u2014 WH' },
+    agendaLocked: false,
+    motions: [
+      {
+        id: 'm1',
+        text: 'That the Board approve the resurfacing of the north lot by Tulsa Paving at $18,400, funded from the building reserve.',
+        movedBy: 'Curtis Nolen', secondedBy: 'Marvin Hollis', disposition: 'tabled',
+        forCount: '', againstCount: '', amends: false,
+        meta: 'Moved by Curtis Nolen, seconded by Marvin Hollis · tabled until a second bid is in hand'
+      },
+      {
+        id: 'm2',
+        text: 'That Article II.B \u00a73 \u00b612 be amended so that a deacon\u2019s absences are counted against the deacon year rather than the calendar year.',
+        movedBy: 'Dale Whitcomb', secondedBy: 'Ray Teague', disposition: 'approved',
+        forCount: '11', againstCount: '0', amends: true,
+        bylaw: 'Article II.B \u00a73 \u00b612',
+        before: '\u201cFailure to attend three-fourths of the regular monthly meetings in a calendar year, without just cause, shall constitute a resignation from the Board.\u201d',
+        after: '\u201cFailure to attend three-fourths of the regular monthly meetings in a deacon year, without just cause, shall constitute a resignation from the Board.\u201d',
+        meta: 'Moved by Dale Whitcomb, seconded by Ray Teague · approved 11\u20130'
+      }
+    ],
+    draft: { text: '', movedBy: 'Wendell Harper', secondedBy: 'Ray Teague', disposition: '', forCount: '', againstCount: '' },
+    narrative: { opening: '', pastor: '', closing: '' },
+    minutesStatus: 'none',
+    report: {
+      annual: 1284000,
+      received: 842600,
+      spent: 801350,
+      variances: [
+        { line: 'Utilities', amount: 'over by $3,410', note: 'Two window units failed in July; the replacements are in Building & Grounds\u2019 report.' },
+        { line: 'Missions', amount: 'under by $9,800', note: 'The Guatemala team moved to October, so the airfare falls in the next quarter.' }
+      ],
+      actions: [
+        'Moved $12,000 from the general reserve to the building reserve, under the July authorisation.',
+        'Renewed the property insurance at a four per cent increase; two other quotes came in higher.'
+      ],
+      items: [
+        { text: 'Approve the 2027 budget calendar dates before the calendar starts on 10 October.', vote: true },
+        { text: 'The audit window opens in January and the Board names the auditor.', vote: false }
+      ]
+    },
+    reportStatus: 'draft',
+    toast: ''
+  };
+
+  say(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 3400);
+  }
+
+  go(screen) { this.setState({ screen: screen }); }
+
+  setReport(patch) { this.setState({ report: Object.assign({}, this.state.report, patch) }); }
+
+  setRow(key, i, field, value) {
+    const rows = this.state.report[key].slice();
+    rows[i] = Object.assign({}, rows[i], { [field]: value });
+    this.setReport({ [key]: rows });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const p = this.props;
+    const marker = p.contextMarker || 'bar';
+    const deaconCtx = s.context === 'deacon';
+    const onStaffScreen = !deaconCtx;
+
+    // ---- shell
+    const navItem = (label, screen, tag) => ({
+      label: label, tag: tag, hasTag: !!tag,
+      active: s.screen === screen, inactive: s.screen !== screen,
+      isDivider: false, onClick: () => this.go(screen)
+    });
+    const divider = { isDivider: true, active: false, inactive: false, hasTag: false };
+
+    const nav = deaconCtx
+      ? [navItem('Which side today', 'landing'), divider, navItem('The meeting', 'meeting', 'Tonight'), navItem('Finance committee', 'report')]
+      : [navItem('Today at Memorial', 'staff'), divider, navItem('Huddle', 'staff'), navItem('Cadence ledger', 'staff'), navItem('Notice log', 'staff'), navItem('Discussion', 'staff'), divider, navItem('Communicator', 'staff'), navItem('Care pipelines', 'staff'), navItem('Goals', 'staff')];
+
+    const heads = {
+      landing: {
+        eyebrow: 'You hold both sides',
+        title: 'Which side today?',
+        lead: 'Two men at Memorial belong to the staff and to the Board. Everything below exists to stop one of them saying something in the wrong room — the choice, the marker that stays on screen afterwards, and the badge that travels on the record.'
+      },
+      meeting: {
+        eyebrow: 'The spine of the deacon year',
+        title: 'The September meeting',
+        lead: 'One record per month in three phases. Before: the agenda assembles itself. During: the roll is called and motions are captured. After: the secretary writes only the parts that are actually narrative.'
+      },
+      report: {
+        eyebrow: 'Finance · Curtis Nolen, chair',
+        title: 'Committee report',
+        lead: 'One form per committee, shaped to what that committee actually reports. Fill it, file it, and it lands on the meeting agenda on its own. This is the pattern the Treasurer\u2019s report and the minutes assembler follow.'
+      },
+      staff: {
+        eyebrow: 'Staff view',
+        title: 'The other side of the same app',
+        lead: 'Same sign-in, same database, same design system. What you see is assembled from the bodies you belong to, not from a rank.'
+      }
+    };
+    const head = heads[s.screen] || heads.landing;
+
+    // ---- landing
+    const badgeText = s.audienceStaff ? 'Deacons \u00b7 Staff' : 'Deacons';
+    const badgeInk = s.audienceStaff ? 'var(--mbc-yale-sage)' : 'var(--text-meta)';
+
+    // ---- meeting
+    const recorded = PEOPLE.filter((x) => s.attendance[x.id]).length;
+    const present = PEOPLE.filter((x) => s.attendance[x.id] === 'present').length;
+    const absent = PEOPLE.filter((x) => s.attendance[x.id] === 'absent').length;
+    const excused = PEOPLE.filter((x) => s.attendance[x.id] === 'excused').length;
+
+    const pill = (on) => ({
+      bg: on ? 'var(--surface-panel)' : 'transparent',
+      border: on ? 'var(--text-heading)' : 'var(--border-control)',
+      font: (on ? '700 ' : '400 ') + '15px/1 var(--mbc-font-sans)'
+    });
+
+    const roll = PEOPLE.map((x) => {
+      const v = s.attendance[x.id];
+      const a = pill(v === 'present'), b = pill(v === 'absent'), c = pill(v === 'excused');
+      return {
+        name: x.name, role: x.role,
+        presentBg: a.bg, presentBorder: a.border, presentFont: a.font,
+        absentBg: b.bg, absentBorder: b.border, absentFont: b.font,
+        excusedBg: c.bg, excusedBorder: c.border, excusedFont: c.font,
+        needsCause: v === 'absent',
+        cause: s.cause[x.id] || '',
+        onPresent: () => this.setState({ attendance: Object.assign({}, s.attendance, { [x.id]: 'present' }) }),
+        onAbsent: () => this.setState({ attendance: Object.assign({}, s.attendance, { [x.id]: 'absent' }) }),
+        onExcused: () => this.setState({ attendance: Object.assign({}, s.attendance, { [x.id]: 'excused' }) }),
+        onCause: (e) => this.setState({ cause: Object.assign({}, s.cause, { [x.id]: e.target.value }) })
+      };
+    });
+
+    const attendanceRule = [
+      { name: 'Earl Vance', count: '6 of 9', note: 'Three missed. His August absence carries a note from you. Attending the last three meets the rule exactly.' },
+      { name: 'Gene Pruitt', count: '7 of 9', note: 'Two missed. This is the second, which is why it is on this panel and not anywhere else.' },
+      { name: 'Ray Teague', count: '8 of 9', note: 'One missed, in March.' },
+      { name: 'Lowell Bracken', count: '8 of 9', note: 'One missed, excused in June.' }
+    ];
+
+    const dispositions = ['approved', 'tabled', 'withdrawn', 'failed'].map((d) => {
+      const st = pill(s.draft.disposition === d);
+      return {
+        label: d.charAt(0).toUpperCase() + d.slice(1),
+        bg: st.bg, border: st.border, font: st.font,
+        onClick: () => this.setState({ draft: Object.assign({}, s.draft, { disposition: d }) })
+      };
+    });
+
+    const tabled = s.motions.filter((m) => m.disposition === 'tabled');
+
+    const phases = [
+      { key: 'agenda', step: 'Phase one of three', name: 'Agenda', state: s.agendaLocked ? 'Locked \u00b7 eleven items' : 'Open \u00b7 eleven items, three committee reports filed' },
+      { key: 'session', step: 'Phase two of three', name: 'In session', state: recorded + ' of 13 recorded \u00b7 ' + s.motions.length + ' motions captured' },
+      { key: 'minutes', step: 'Phase three of three', name: 'Minutes', state: s.minutesStatus === 'draft' ? 'Draft saved' : (s.minutesStatus === 'published' ? 'Published \u00b7 awaiting approval in October' : 'Nothing written yet') }
+    ].map((ph) => ({
+      step: ph.step, name: ph.name, state: ph.state,
+      bg: s.phase === ph.key ? 'var(--surface-panel)' : 'var(--surface-card)',
+      ring: s.phase === ph.key ? 'inset 0 0 0 2px var(--mbc-border-control)' : 'none',
+      onClick: () => this.setState({ phase: ph.key })
+    }));
+
+    const tag = (label, ink) => ({ tag: label, tagInk: ink || 'var(--text-muted)' });
+    const agendaRaw = [
+      ['Call to order, prayer, and the roll', 'Wendell Harper \u00b7 every meeting', 'Recurring'],
+      ['Minutes of 11 August, for approval', 'Dale Whitcomb \u00b7 draft assembled 12 August', 'Recurring'],
+      ['Treasurer\u2019s report \u2014 August receipts and disbursements', 'Curtis Nolen \u00b7 filed 9 September \u00b7 Art. II.C \u00b62', 'Report'],
+      ['Finance committee report', 'Curtis Nolen \u00b7 filed 9 September', 'Report'],
+      ['Building & Grounds committee report', 'Marvin Hollis \u00b7 not filed', 'Report'],
+      ['Personnel committee report', 'Ray Teague \u00b7 filed 10 September \u00b7 no compensation figures', 'Report'],
+      ['Family Assistance committee reported', 'That it reported is the whole record here. Nothing inside it is on this agenda.', 'Report'],
+      ['North lot resurfacing \u2014 a second bid', 'Tabled 11 August \u00b7 carried forward on its own', 'Old business'],
+      ['October filing \u2014 the committee roster to the church', 'Due 1 October \u00b7 Family Assistance membership is excluded', 'Recurring'],
+      ['The 2027 budget calendar begins', 'Derived from A009 \u00b7 first date 10 October', 'Recurring'],
+      ['New business', 'Anything the chair recognises', 'Manual']
+    ];
+    const tagInk = { 'Recurring': 'var(--text-muted)', 'Report': 'var(--mbc-yale-sage)', 'Old business': 'var(--text-eyebrow)', 'Manual': 'var(--text-muted)' };
+    const agenda = agendaRaw.map((r, i) => ({ n: String(i + 1), title: r[0], meta: r[1], tag: r[2], tagInk: tagInk[r[2]] }));
+
+    const committeeStatus = [
+      { name: 'Finance', state: 'Filed', ink: 'var(--mbc-yale-sage)', meta: '9 September by Curtis Nolen \u00b7 version 1' },
+      { name: 'Building & Grounds', state: 'Not filed', ink: 'var(--text-eyebrow)', meta: 'Marvin Hollis has a draft open since 6 September' },
+      { name: 'Personnel', state: 'Filed', ink: 'var(--mbc-yale-sage)', meta: '10 September by Ray Teague' },
+      { name: 'Family Assistance', state: 'Filed', ink: 'var(--mbc-yale-sage)', meta: 'You are not on this committee. That it filed is all you can see.' }
+    ];
+
+    const assembled = [
+      { title: 'Attendance', source: 'from phase two', lines: [{ text: present + ' present, ' + absent + ' absent, ' + excused + ' excused, of thirteen on the roll. Arthur Simms\u2019 absence carries a note written by the chairman.' }] },
+      { title: 'Committee reports received', source: 'from the report builders', lines: [{ text: 'Finance, Personnel and Family Assistance filed. Building & Grounds did not file and will report in October.' }, { text: 'The Treasurer\u2019s itemised report of August receipts and disbursements was presented, as Art. II.C \u00b62 requires.' }] },
+      { title: 'Motions', source: 'from phase two', lines: s.motions.map((m) => ({ text: m.text + ' ' + m.meta.split(' \u00b7 ').slice(1).join(' \u00b7 ') + '.' })) },
+      { title: 'Carried to October', source: 'derived from dispositions', lines: tabled.length ? tabled.map((m) => ({ text: m.text })) : [{ text: 'Nothing tabled tonight.' }] }
+    ];
+
+    const narrative = [
+      { key: 'opening', label: 'Opening and prayer \u2014 who prayed, and anything said before business', placeholder: 'One or two sentences.' },
+      { key: 'pastor', label: 'The pastor\u2019s word to the Board', placeholder: 'What he asked of the men, in your own words.' },
+      { key: 'closing', label: 'Closing', placeholder: 'Adjourned at, and who closed in prayer.' }
+    ].map((n) => ({
+      label: n.label, placeholder: n.placeholder, value: s.narrative[n.key],
+      onChange: (e) => this.setState({ narrative: Object.assign({}, s.narrative, { [n.key]: e.target.value }) })
+    }));
+
+    // ---- report
+    const r = s.report;
+    const position = r.received - r.spent;
+    const pctYear = 67;
+    const pctBudget = Math.round((r.received / r.annual) * 1000) / 10;
+    const moneyFields = [
+      { label: 'Annual budget adopted', key: 'annual' },
+      { label: 'Received year to date', key: 'received' },
+      { label: 'Spent year to date', key: 'spent' }
+    ].map((f) => ({
+      label: f.label, value: String(r[f.key]),
+      onChange: (e) => this.setReport({ [f.key]: Number(String(e.target.value).replace(/[^0-9]/g, '')) || 0 })
+    }));
+
+    const variances = r.variances.map((v, i) => ({
+      line: v.line, amount: v.amount, note: v.note,
+      onLine: (e) => this.setRow('variances', i, 'line', e.target.value),
+      onAmount: (e) => this.setRow('variances', i, 'amount', e.target.value),
+      onNote: (e) => this.setRow('variances', i, 'note', e.target.value)
+    }));
+
+    const actions = r.actions.map((a, i) => ({
+      text: a,
+      onChange: (e) => {
+        const rows = r.actions.slice(); rows[i] = e.target.value; this.setReport({ actions: rows });
+      }
+    }));
+
+    const boardItems = r.items.map((b, i) => {
+      const st = pill(b.vote);
+      return {
+        text: b.text, voteBg: st.bg, voteBorder: st.border, voteFont: st.font,
+        voteLabel: b.vote ? 'Needs a vote \u00b7 goes on as new business' : 'No vote needed',
+        onChange: (e) => this.setRow('items', i, 'text', e.target.value),
+        onToggleVote: () => this.setRow('items', i, 'vote', !b.vote)
+      };
+    });
+    const voteCount = r.items.filter((b) => b.vote).length;
+
+    const statusOrder = ['draft', 'submitted', 'published', 'archived'];
+    const atIdx = statusOrder.indexOf(s.reportStatus);
+    const lifecycleMeta = {
+      draft: 'Only the chair sees it. Come back to it as often as you like.',
+      submitted: 'Filed against the September meeting and on the agenda.',
+      published: 'Official, printable, and in the meeting packet.',
+      archived: 'Replaced by the next month\u2019s report. Still readable, printable, editable.'
+    };
+    const lifecycle = statusOrder.map((k, i) => ({
+      step: 'Step ' + (i + 1),
+      name: k.charAt(0).toUpperCase() + k.slice(1),
+      meta: lifecycleMeta[k],
+      bg: i === atIdx ? 'var(--surface-panel)' : 'var(--surface-card)',
+      labelInk: i === atIdx ? 'var(--text-eyebrow)' : 'var(--text-muted)'
+    }));
+
+    const preview = [
+      { title: 'Budget position', lines: [{ text: money(r.received) + ' received against a ' + money(r.annual) + ' budget, with ' + money(r.spent) + ' spent \u2014 a position of ' + money(position) + ' at two-thirds of the year.' }] },
+      { title: 'Notable variances', lines: r.variances.map((v) => ({ text: v.line + ' \u2014 ' + v.amount + '. ' + v.note })) },
+      { title: 'Actions taken', lines: r.actions.map((a) => ({ text: a })) },
+      { title: 'Items for the Board', lines: r.items.map((b) => ({ text: b.text + (b.vote ? ' (a vote is asked for)' : '') })) }
+    ];
+
+    const versions = s.reportStatus === 'published'
+      ? [{ label: 'Version 1 \u00b7 September 2026', meta: 'Published today by Curtis Nolen \u00b7 in the packet for 14 September' },
+         { label: 'Version 2 \u00b7 August 2026', meta: 'Revised 12 August by Curtis Nolen \u00b7 the missions line was restated' },
+         { label: 'Version 1 \u00b7 August 2026', meta: 'Published 11 August by Curtis Nolen \u00b7 still readable, still printable' }]
+      : [{ label: 'Version 2 \u00b7 August 2026', meta: 'Revised 12 August by Curtis Nolen \u00b7 the missions line was restated' },
+         { label: 'Version 1 \u00b7 August 2026', meta: 'Published 11 August by Curtis Nolen \u00b7 still readable, still printable' }];
+
+    const patterns = [
+      { text: 'One form per committee, shaped to what that committee reports. Never a generic text box \u2014 Building & Grounds gets projects and spend against line, Personnel gets reviews and staffing actions.' },
+      { text: 'Every figure is a field and every narrative is one sentence per row. That is what lets the minutes assembler pull the report in without anyone retyping it.' },
+      { text: 'Personnel carries no compensation figures. Family Assistance carries amounts, approvals and the D002 third-party invoice confirmation \u2014 and no circumstances.' },
+      { text: 'Submitting files the report and puts it on the agenda. Saving a draft costs nothing and the chair can come back.' },
+      { text: 'Publishing makes it official. Editing after that writes a new version and leaves the old one readable \u2014 it never overwrites.' }
+    ];
+
+    const primaryLabels = { draft: 'Submit to the Board', submitted: 'Publish the report', published: 'Save as a new version', archived: 'Reopen for a new version' };
+    const nextStatus = { draft: 'submitted', submitted: 'published', published: 'published', archived: 'published' };
+    const footHints = {
+      draft: 'Submitting files it against the September meeting and puts it on the agenda.',
+      submitted: 'Filed. Publishing makes it official and printable.',
+      published: 'Published. An edit from here writes version two and leaves this one readable.',
+      archived: 'Archived by October\u2019s report. Still readable, printable and editable.'
+    };
+
+    return {
+      // shell
+      lockupLine: deaconCtx ? 'DEACONS\u2019 DASHBOARD' : 'STAFF DASHBOARD',
+      nav: nav,
+      navFootnote: deaconCtx
+        ? 'calendar, announcements, discussion, the year, care assignments, governance reference \u2014 straight to code, not mocked here'
+        : 'the staff surfaces are designed already \u2014 see the staff dashboard prototype',
+      myBodiesLine: deaconCtx ? 'Deacon Board \u00b7 Finance committee \u00b7 chair' : 'Staff \u00b7 student ministry',
+      markerIsBar: marker === 'bar',
+      markerIsPill: marker === 'pill',
+      contextName: deaconCtx ? 'Deacon view' : 'Staff view',
+      contextExplain: deaconCtx ? 'Anything you write here goes to the Board unless you widen it.' : 'Anything you write here goes to the staff unless you widen it.',
+      switchLabel: deaconCtx ? 'Switch to staff view' : 'Switch to deacon view',
+      onSwitchContext: () => this.setState({ context: deaconCtx ? 'staff' : 'deacon', screen: deaconCtx ? 'staff' : 'landing' }),
+      surfaceEyebrow: head.eyebrow,
+      surfaceTitle: head.title,
+      surfaceLead: head.lead,
+      showPrint: s.screen === 'meeting' || s.screen === 'report',
+      printLabel: s.screen === 'report' ? 'Print this report' : 'Print the packet',
+
+      atLanding: s.screen === 'landing',
+      atMeeting: s.screen === 'meeting' && !onStaffScreen,
+      atReport: s.screen === 'report' && !onStaffScreen,
+      atStaff: s.screen === 'staff',
+
+      // landing
+      landingChoice: p.showLandingChoice !== false,
+      deaconWaiting: [
+        { label: 'The September meeting', meta: 'Tonight at 7:00' },
+        { label: 'Committee reports not filed', meta: 'One \u00b7 Building & Grounds' },
+        { label: 'Minutes awaiting the Board', meta: 'August, approved 14 September' }
+      ],
+      staffWaiting: [
+        { label: 'Unclaimed commitments', meta: 'Three' },
+        { label: 'Sunday\u2019s bulletin', meta: 'Still a draft' },
+        { label: 'Decisions not announced', meta: 'Two' }
+      ],
+      toggleRules: [
+        { n: '1', title: 'It narrows, and never widens.', body: 'The toggle decides which surfaces are drawn. The database decides which rows come back, and it does not ask the toggle. A man who flips it has gained nothing.' },
+        { n: '2', title: 'The current side stays the loudest thing on screen.', body: 'Someone who has been in the deacon view for twenty minutes should never have to wonder before he types. The marker does not fade, collapse, or move.' },
+        { n: '3', title: 'Composing inherits the side you are on.', body: 'A thread started here is addressed to the Board. Widening it to staff is a second, deliberate act, and the badge on the record changes to say so.' }
+      ],
+      composeSubject: s.composeSubject,
+      composeBody: s.composeBody,
+      onComposeSubject: (e) => this.setState({ composeSubject: e.target.value }),
+      onComposeBody: (e) => this.setState({ composeBody: e.target.value }),
+      audienceStaff: s.audienceStaff,
+      onToggleStaffAudience: () => this.setState({ audienceStaff: !s.audienceStaff }),
+      staffChipLabel: s.audienceStaff ? 'Staff \u00b7 added' : 'Add staff',
+      staffChipBg: s.audienceStaff ? 'var(--surface-panel)' : 'transparent',
+      staffChipBorder: s.audienceStaff ? 'var(--text-heading)' : 'var(--border-control)',
+      staffChipInk: 'var(--text-heading)',
+      badgeText: badgeText,
+      badgeInk: badgeInk,
+      onPostThread: () => this.say(s.audienceStaff ? 'Posted to the Board and the staff. The badge says so on every screen it appears.' : 'Posted to the Board. Eleven other men can read it.'),
+      badgeSpecimens: [
+        { text: 'Deacons', ink: 'var(--text-meta)', caption: 'one body \u00b7 the quiet default' },
+        { text: 'Deacons \u00b7 Staff', ink: 'var(--mbc-yale-sage)', caption: 'two bodies \u00b7 sage, because someone else is reading' },
+        { text: 'Finance', ink: 'var(--text-meta)', caption: 'a committee room \u00b7 members only, and invisible to everyone else' }
+      ],
+
+      // meeting
+      phases: phases,
+      phaseAgenda: s.phase === 'agenda',
+      phaseSession: s.phase === 'session',
+      phaseMinutes: s.phase === 'minutes',
+      agenda: agenda,
+      agendaMeta: s.agendaLocked ? 'Locked \u00b7 eleven items \u00b7 nothing assembles in now' : 'Eleven items \u00b7 assembled from obligations, filed reports, and what was tabled',
+      agendaFoot: s.agendaLocked ? 'Locked. Unlocking is one click and it is logged \u2014 nothing here is one-way.' : 'Locking sends the packet to all thirteen men and stops new items assembling in.',
+      agendaOpen: !s.agendaLocked,
+      agendaLocked: s.agendaLocked,
+      onLockAgenda: () => { this.setState({ agendaLocked: true }); this.say('Agenda locked. The packet went to thirteen men.'); },
+      onUnlockAgenda: () => { this.setState({ agendaLocked: false }); this.say('Agenda unlocked.'); },
+      committeeStatus: committeeStatus,
+      oldBusiness: tabled.length ? tabled.map((m) => ({ text: m.text })) : [{ text: 'Nothing was tabled in August.' }],
+      roll: roll,
+      rollMeta: recorded + ' of 13 recorded \u00b7 ' + present + ' present, ' + absent + ' absent, ' + excused + ' excused',
+      attendanceRule: attendanceRule,
+      motions: s.motions.map((m) => ({
+        text: m.text, meta: m.meta, amends: !!m.amends, bylaw: m.bylaw, before: m.before, after: m.after,
+        disposition: m.disposition,
+        ink: m.disposition === 'approved' ? 'var(--mbc-yale-sage)' : 'var(--text-eyebrow)'
+      })),
+      motionsMeta: s.motions.length + ' captured tonight \u00b7 ' + tabled.length + ' tabled to October',
+      nameOptions: PEOPLE.map((x) => ({ value: x.name, label: x.name })),
+      draftText: s.draft.text,
+      draftMovedBy: s.draft.movedBy,
+      draftSecondedBy: s.draft.secondedBy,
+      draftFor: s.draft.forCount,
+      draftAgainst: s.draft.againstCount,
+      onDraftText: (e) => this.setState({ draft: Object.assign({}, s.draft, { text: e.target.value }) }),
+      onDraftMovedBy: (e) => this.setState({ draft: Object.assign({}, s.draft, { movedBy: e.target.value }) }),
+      onDraftSecondedBy: (e) => this.setState({ draft: Object.assign({}, s.draft, { secondedBy: e.target.value }) }),
+      onDraftFor: (e) => this.setState({ draft: Object.assign({}, s.draft, { forCount: e.target.value }) }),
+      onDraftAgainst: (e) => this.setState({ draft: Object.assign({}, s.draft, { againstCount: e.target.value }) }),
+      dispositions: dispositions,
+      motionHint: 'If it amends the bylaws, the next field asks for the sentence before and the sentence after \u2014 not the paragraph number.',
+      onAddMotion: () => {
+        if (!s.draft.text.trim() || !s.draft.disposition) { this.say('A motion needs its text and a disposition before it can be recorded.'); return; }
+        const count = s.draft.forCount ? ' \u00b7 ' + s.draft.forCount + '\u2013' + (s.draft.againstCount || '0') : '';
+        const m = {
+          id: 'm' + (s.motions.length + 1), text: s.draft.text.trim(), disposition: s.draft.disposition,
+          amends: false, meta: 'Moved by ' + s.draft.movedBy + ', seconded by ' + s.draft.secondedBy + count
+        };
+        this.setState({ motions: s.motions.concat([m]), draft: Object.assign({}, s.draft, { text: '', disposition: '', forCount: '', againstCount: '' }) });
+        this.say('Motion recorded. It is in the minutes already.');
+      },
+      assembled: assembled,
+      narrative: narrative,
+      minutesStateLine: s.minutesStatus === 'published'
+        ? 'Published. The Board approves these in October, and any edit from here writes a new version.'
+        : (s.minutesStatus === 'draft' ? 'Draft saved. Nobody else sees it until you publish.' : 'Nothing saved yet. A draft is private to you.'),
+      publishMinutesLabel: s.minutesStatus === 'published' ? 'Publish a new version' : 'Publish the minutes',
+      onSaveMinutes: () => { this.setState({ minutesStatus: 'draft' }); this.say('Draft saved. Only you can see it.'); },
+      onPublishMinutes: () => { this.setState({ minutesStatus: 'published' }); this.say('Minutes published as version one. The Board approves them in October.'); },
+
+      // report
+      lifecycle: lifecycle,
+      moneyFields: moneyFields,
+      positionFigure: money(position),
+      positionSentence: money(r.received) + ' received against a ' + money(r.annual) + ' budget \u2014 ' + pctBudget + ' per cent, with ' + pctYear + ' per cent of the year gone. Spending is ' + money(position) + ' behind receipts.',
+      variances: variances,
+      onAddVariance: () => this.setReport({ variances: r.variances.concat([{ line: '', amount: '', note: '' }]) }),
+      actions: actions,
+      onAddAction: () => this.setReport({ actions: r.actions.concat(['']) }),
+      boardItems: boardItems,
+      onAddBoardItem: () => this.setReport({ items: r.items.concat([{ text: '', vote: false }]) }),
+      boardItemsMeta: voteCount === 1 ? 'One item will be added to the agenda as new business.' : voteCount + ' items will be added to the agenda as new business.',
+      preview: preview,
+      previewFoot: 'Printed in the MBC styling, not the browser\u2019s. One report, a whole packet, or a date range.',
+      versions: versions,
+      patternNotes: p.showPatternNotes !== false,
+      patterns: patterns,
+      reportPrimaryLabel: primaryLabels[s.reportStatus],
+      reportFootHint: footHints[s.reportStatus],
+      onSaveReport: () => this.say('Draft saved. Nothing has gone to the Board.'),
+      onAdvanceReport: () => {
+        const next = nextStatus[s.reportStatus];
+        this.setState({ reportStatus: next });
+        this.say(next === 'submitted'
+          ? 'Filed for 14 September and added to the agenda.'
+          : 'Published. It is in the packet and it prints.');
+      },
+
+      // toast
+      hasToast: !!s.toast,
+      toast: s.toast,
+      onDismissToast: () => this.setState({ toast: '' })
+    };
+  }
+}
+</script>
+</body>
+</html>

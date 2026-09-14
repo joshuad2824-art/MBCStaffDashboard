@@ -1,0 +1,49 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   MBC Deacons' Dashboard — token additions
+   Load AFTER design-tokens.css. Nothing here invents a colour.
+
+   The deacon side is not a different product. Every value below resolves to
+   a token that already existed for the staff dashboard; these aliases exist
+   so the two new patterns — the body badge and the context marker — are
+   named once instead of being retyped as literals on every screen.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root{
+  /* ── Body badge ───────────────────────────────────────────────────────────
+     A small marker on any record, saying which bodies can read it.
+     Sage is the categorising colour in this system, so it carries the
+     multi-body case: a badge that names a second body should read as a
+     change, not as decoration. One body stays quiet in stone. */
+  --badge-ground:var(--surface-panel);       /* #F1E9DB */
+  --badge-ground-on-panel:var(--surface-card);
+  --badge-border:var(--mbc-border-chip);    /* #D6C9B4 */
+  --badge-ink-single:var(--text-meta);      /* #8A7C6C — one body */
+  --badge-ink-multi:var(--mbc-yale-sage);   /* #4F7A5A — someone else is reading */
+  --badge-radius:var(--mbc-radius-pill);    /* 999px */
+  --badge-pad:7px 13px;
+  --badge-font:700 10px/1 var(--mbc-font-sans);
+  --badge-track:var(--mbc-track-label-tight); /* .16em */
+
+  /* ── Context marker ──────────────────────────────────────────────────────
+     Staff view / Deacon view. Rule 2 of §2.4: the current context is the
+     loudest thing in the header, so the default treatment is a full dark
+     band above the sticky header — a third dark ground on the page, which
+     is why no screen here uses more than one other. */
+  --context-bar-ground:var(--surface-dark);       /* #3A322B */
+  --context-bar-name:var(--text-on-dark-strong);  /* #E4D9C8 */
+  --context-bar-explain:var(--text-on-dark-label);/* #B8A48C */
+  --context-bar-control-border:var(--mbc-dark-border);
+  --context-bar-pad:14px clamp(20px,3vw,40px);
+
+  /* ── Infrequent-user floors ──────────────────────────────────────────────
+     Section 10's design note: this side is opened monthly, by men some of
+     whom are in their seventies. The staff floors are raised here, and the
+     prototype holds to these — 15px is the smallest sentence on any screen,
+     and no control is under 48px. Tracked labels stay at 10–11px because
+     they are labels, not reading. */
+  --deacon-size-body:17px;
+  --deacon-size-small:16px;
+  --deacon-size-meta:15px;
+  --deacon-size-meta-min:14px;
+  --deacon-tap-min:48px;
+}
