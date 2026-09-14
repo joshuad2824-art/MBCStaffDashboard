@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Button, Card, Eyebrow } from '../components/ui'
@@ -10,7 +10,10 @@ import {
   COMMITTEES,
   COMMITTEE_SHORT,
   STATUS_STEPS,
+  accountTotals,
   budgetPosition,
+  groundsMonthTotal,
+  groundsYearTable,
   money,
   normalisePayload,
   renderReport,
@@ -21,6 +24,7 @@ import {
   type FamilyAssistancePayload,
   type FinancePayload,
   type GroundsPayload,
+  type LedgerAccount,
   type MinutesPayload,
   type MoneyLine,
   type PersonnelPayload,
@@ -51,26 +55,46 @@ export function ReportBuilder({ data }: { data: MeetingsData }) {
 
 function Builder({ data, report }: { data: MeetingsData; report: Report }) {
   const { bodies, isChairOf } = useSession()
-  const { saveReport, publish, refresh, error } = useMeetings()
+  const { saveReport, publish, refresh, attachFile, fileUrl, error } = useMeetings()
   const { say } = useStore()
   const navigate = useNavigate()
   const [payload, setPayload] = useState<ReportPayload>(() => normalisePayload(report.kind, report.bodySlug, report.payload))
   const [meetingId, setMeetingId] = useState<string | null>(report.meetingId)
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [file, setFile] = useState(report.file)
+  const [fileLink, setFileLink] = useState<string | null>(null)
+  const picker = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    let live = true
+    if (!file) {
+      setFileLink(null)
+      return
+    }
+    fileUrl(file).then((url) => {
+      if (live) setFileLink(url)
+    })
+    return () => {
+      live = false
+    }
+  }, [file, fileUrl])
 
   useEffect(() => {
     if (error) say(error)
   }, [error, say])
 
-  const canWrite = report.kind === 'minutes' ? bodies.includes('deacon-board') : isChairOf(report.bodySlug)
+  /* Mirrors can_write_report(): the chair; any Board member for the minutes;
+     and a Board member for a report he created on a committee's behalf. */
+  const onBoard = bodies.includes('deacon-board')
+  const canWrite = report.kind === 'minutes' ? onBoard : isChairOf(report.bodySlug) || (onBoard && report.createdBy !== null && report.createdBy === data.me)
   const versions = data.versions.filter((v) => v.reportId === report.id).sort((a, b) => b.versionNo - a.versionNo)
   const meetings = sortedByDate(data.meetings).filter((m) => m.status !== 'cancelled')
   const asOf = startOfToday()
   const preview = useMemo(
-    () => renderReport(renderContextFor(data, { ...report, payload, meetingId }, asOf)),
+    () => renderReport(renderContextFor(data, { ...report, payload, meetingId, file }, asOf)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data, report, payload, meetingId],
+    [data, report, payload, meetingId, file],
   )
   const set = (next: ReportPayload) => {
     setPayload(next)
@@ -79,7 +103,7 @@ function Builder({ data, report }: { data: MeetingsData; report: Report }) {
 
   const save = async () => {
     setBusy(true)
-    await saveReport(report.id, { payload, meetingId })
+    await saveReport(report.id, { payload, meetingId, file })
     setBusy(false)
     setDirty(false)
     say('Draft saved.')
@@ -90,7 +114,7 @@ function Builder({ data, report }: { data: MeetingsData; report: Report }) {
       return
     }
     setBusy(true)
-    await saveReport(report.id, { payload, meetingId, status: 'submitted', submittedAt: new Date().toISOString(), submittedBy: data.me })
+    await saveReport(report.id, { payload, meetingId, file, status: 'submitted', submittedAt: new Date().toISOString(), submittedBy: data.me })
     await refresh()
     setBusy(false)
     setDirty(false)
@@ -103,11 +127,23 @@ function Builder({ data, report }: { data: MeetingsData; report: Report }) {
     }
     setBusy(true)
     if (meetingId !== report.meetingId) await saveReport(report.id, { meetingId })
-    const version = await publish({ ...report, meetingId }, payload, renderedText(preview))
+    const version = await publish({ ...report, meetingId }, payload, renderedText(preview), file)
     await refresh()
     setBusy(false)
     setDirty(false)
     if (version) say(version.versionNo === 1 ? 'Published. Version 1 is on the Reports page and printable.' : `Published as version ${version.versionNo}. The prior version stays readable.`)
+  }
+
+  const pickFile = async (chosen: File | null) => {
+    if (!chosen) return
+    setBusy(true)
+    const stored = await attachFile(report, chosen)
+    setBusy(false)
+    if (stored) {
+      setFile(stored)
+      setDirty(true)
+      say(`${chosen.name} attached. It becomes the report when you file it.`)
+    }
   }
 
   const primary =
@@ -157,12 +193,41 @@ function Builder({ data, report }: { data: MeetingsData; report: Report }) {
             </div>
           </Card>
 
-          {report.kind === 'minutes' ? (
+          <Card tone={file ? 'panel' : 'paper'} radius="card" pad="22px 24px" style={{ display: 'grid', gap: 12 }}>
+            <SectionHead label={file ? 'Filed as a file' : 'Or file it their traditional way'} meta={file ? file.name : 'a PDF, a spreadsheet, a photo of the sheet'} />
+            <p style={{ ...bodyText, margin: 0, maxWidth: '64ch' }}>
+              {file
+                ? 'This file stands in for the form below. Each new file you attach becomes the next version when it is published; the earlier file stays readable.'
+                : 'Whoever puts this report together outside the builder can attach it here, or someone on the Board can attach it for them. The lifecycle is the same.'}
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+              {file && fileLink ? (
+                <a href={fileLink} target="_blank" rel="noreferrer" style={{ font: '700 14px/1.4 var(--mbc-font-sans)', color: 'var(--text-link)' }}>
+                  Open {file.name}
+                </a>
+              ) : null}
+              {canWrite ? (
+                <>
+                  <input ref={picker} type="file" accept=".pdf,.xlsx,.xls,.csv,.doc,.docx,.png,.jpg,.jpeg,application/pdf" style={{ display: 'none' }} onChange={(e) => void pickFile(e.target.files?.[0] ?? null)} />
+                  <Button variant="outline" size="sm" disabled={busy} onClick={() => picker.current?.click()}>
+                    {file ? 'Attach a newer file' : 'Attach a file'}
+                  </Button>
+                  {file ? (
+                    <button type="button" style={linkButton} onClick={() => { setFile(null); setDirty(true) }}>
+                      Use the form instead
+                    </button>
+                  ) : null}
+                </>
+              ) : null}
+            </div>
+          </Card>
+
+          {file ? null : report.kind === 'minutes' ? (
             <MinutesForm payload={payload as MinutesPayload} onChange={set} readOnly={!canWrite} />
           ) : report.kind === 'treasurer' ? (
             <TreasurerForm data={data} report={report} payload={payload as TreasurerPayload} onChange={set} readOnly={!canWrite} />
           ) : report.bodySlug === 'committee:building-grounds' ? (
-            <GroundsForm payload={payload as GroundsPayload} onChange={set} readOnly={!canWrite} />
+            <GroundsForm payload={payload as GroundsPayload} report={report} onChange={set} readOnly={!canWrite} />
           ) : report.bodySlug === 'committee:personnel' ? (
             <PersonnelForm payload={payload as PersonnelPayload} onChange={set} readOnly={!canWrite} />
           ) : report.bodySlug === 'committee:family-assistance' ? (
@@ -190,14 +255,14 @@ function Builder({ data, report }: { data: MeetingsData; report: Report }) {
               </div>
             </Card>
           ) : (
-            <p style={{ ...metaText, margin: 0 }}>You can read this report. Only {report.kind === 'minutes' ? 'a Board member' : 'its chair'} writes it.</p>
+            <p style={{ ...metaText, margin: 0 }}>You can read this report. Only {report.kind === 'minutes' ? 'a Board member' : 'its chair, or whoever filed it'} writes it.</p>
           )}
         </div>
 
         <div style={{ flex: '2 1 360px', display: 'grid', gap: 20, alignContent: 'start', minWidth: 0 }}>
           <div>
             <Eyebrow size="sm" style={{ marginBottom: 10 }}>As it will be filed and printed</Eyebrow>
-            <PrintedReport page={preview} footer={footerFor({ ...report, payload }, lastRevision ?? null)} />
+            <PrintedReport page={preview} footer={footerFor({ ...report, payload, file }, lastRevision ?? null)} />
           </div>
           <Card radius="card" pad="22px 24px" style={{ display: 'grid', gap: 10 }}>
             <Eyebrow size="sm">Versions · nothing overwrites</Eyebrow>
@@ -287,37 +352,65 @@ function FinanceForm({ payload, onChange, readOnly, asOf }: { payload: FinancePa
   )
 }
 
-function GroundsForm({ payload, onChange, readOnly }: { payload: GroundsPayload; onChange(p: GroundsPayload): void; readOnly: boolean }) {
+function GroundsForm({ payload, report, onChange, readOnly }: { payload: GroundsPayload; report: Report; onChange(p: GroundsPayload): void; readOnly: boolean }) {
   const up = (patch: Partial<GroundsPayload>) => onChange({ ...payload, ...patch })
-  const monthTotal = payload.expenses.reduce((t, l) => t + (l.amount ?? 0), 0)
+  const cents = (n: number | null) => (n === null ? '—' : '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+  const setAccount = (index: number, account: LedgerAccount) => up({ accounts: replaceAt(payload.accounts, index, account) })
   return (
     <>
-      <Section label="One · activity for the month" meta={`total ${money(monthTotal)}`}>
-        <div style={{ display: 'grid', gap: 10 }}>
-          {payload.expenses.map((line, index) => (
-            <div key={index} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'minmax(120px, 1fr) minmax(200px, 3fr) minmax(120px, 1fr) auto', alignItems: 'center' }}>
-              <input value={line.date} readOnly={readOnly} placeholder="8/7" onChange={(e) => up({ expenses: replaceAt(payload.expenses, index, { ...line, date: e.target.value }) })} style={fieldStyle} />
-              <input value={line.description} readOnly={readOnly} placeholder="Description" onChange={(e) => up({ expenses: replaceAt(payload.expenses, index, { ...line, description: e.target.value }) })} style={fieldStyle} />
-              <input inputMode="decimal" value={line.amount ?? ''} readOnly={readOnly} placeholder="Amount" onChange={(e) => up({ expenses: replaceAt(payload.expenses, index, { ...line, amount: toNumber(e.target.value) }) })} style={fieldStyle} />
-              {!readOnly ? <button type="button" style={linkButton} onClick={() => up({ expenses: payload.expenses.filter((_, i) => i !== index) })}>Remove</button> : <span />}
+      {payload.accounts.map((account, index) => {
+        const totals = accountTotals(account)
+        return (
+          <Section key={index} label={`Acct# ${account.number || '—'}`} meta={`account totals · debit ${cents(totals.debit)} · credit ${cents(totals.credit)}`}>
+            <div style={{ display: 'grid', gap: 10 }}>
+              <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'minmax(120px, 1fr) auto', alignItems: 'end' }}>
+                <Field label="Account number"><input value={account.number} readOnly={readOnly} onChange={(e) => setAccount(index, { ...account, number: e.target.value })} style={fieldStyle} /></Field>
+                {!readOnly && payload.accounts.length > 1 ? <button type="button" style={linkButton} onClick={() => up({ accounts: payload.accounts.filter((_, i) => i !== index) })}>Remove this account</button> : <span />}
+              </div>
+              <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'minmax(90px, 1fr) minmax(200px, 3fr) minmax(110px, 1fr) minmax(110px, 1fr) auto', ...labelText, color: 'var(--text-meta)' }}>
+                <span>Date</span><span>Description</span><span>Debit</span><span>Credit</span><span />
+              </div>
+              {account.lines.map((line, li) => (
+                <div key={li} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'minmax(90px, 1fr) minmax(200px, 3fr) minmax(110px, 1fr) minmax(110px, 1fr) auto', alignItems: 'center' }}>
+                  <input value={line.date} readOnly={readOnly} placeholder="8/22/2026" onChange={(e) => setAccount(index, { ...account, lines: replaceAt(account.lines, li, { ...line, date: e.target.value }) })} style={fieldStyle} />
+                  <input value={line.description} readOnly={readOnly} placeholder="Lowes" onChange={(e) => setAccount(index, { ...account, lines: replaceAt(account.lines, li, { ...line, description: e.target.value }) })} style={fieldStyle} />
+                  <input className="tabular" inputMode="decimal" value={line.debit ?? ''} readOnly={readOnly} placeholder="$" onChange={(e) => setAccount(index, { ...account, lines: replaceAt(account.lines, li, { ...line, debit: toNumber(e.target.value) }) })} style={fieldStyle} />
+                  <input className="tabular" inputMode="decimal" value={line.credit ?? ''} readOnly={readOnly} placeholder="$" onChange={(e) => setAccount(index, { ...account, lines: replaceAt(account.lines, li, { ...line, credit: toNumber(e.target.value) }) })} style={fieldStyle} />
+                  {!readOnly ? <button type="button" style={linkButton} onClick={() => setAccount(index, { ...account, lines: account.lines.filter((_, i) => i !== li) })}>Remove</button> : <span />}
+                </div>
+              ))}
+              {!readOnly ? <AddPill onClick={() => setAccount(index, { ...account, lines: [...account.lines, { date: '', description: '', debit: null, credit: null }] })}>Add a line</AddPill> : null}
+              <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', paddingTop: 10, borderTop: '1px solid var(--border-hairline)' }}>
+                <MoneyField label="Budget · annual" value={account.budgetAnnual} readOnly={readOnly} onChange={(v) => setAccount(index, { ...account, budgetAnnual: v })} />
+                <MoneyField label="Actual · year to date" value={account.spentYtd} readOnly={readOnly} onChange={(v) => setAccount(index, { ...account, spentYtd: v })} />
+                <Field label="Balance">
+                  <input className="tabular" readOnly value={account.budgetAnnual === null ? '—' : cents(account.budgetAnnual - (account.spentYtd ?? 0))} style={{ ...fieldStyle, background: 'var(--surface-panel)' }} />
+                </Field>
+              </div>
             </div>
-          ))}
-          {!readOnly ? <AddPill onClick={() => up({ expenses: [...payload.expenses, { date: '', description: '', amount: null }] })}>Add a line</AddPill> : null}
+          </Section>
+        )
+      })}
+      {!readOnly ? <AddPill onClick={() => up({ accounts: [...payload.accounts, { number: '', lines: [], budgetAnnual: null, spentYtd: null }] })}>Add an account</AddPill> : null}
+      <Section label="Total monthly expenditures" meta={`this month · ${cents(groundsMonthTotal(payload))} — derived from the lines`}>
+        <div style={{ display: 'grid', gap: 1, background: 'var(--border-hairline)' }}>
+          {groundsYearTable(payload, report.periodStart).map((row) => {
+            const key = `${(report.periodStart ?? new Date().toISOString()).slice(0, 4)}-${String(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].indexOf(row.month) + 1).padStart(2, '0')}`
+            const current = report.periodStart?.slice(0, 7) === key
+            return (
+              <div key={row.month} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 160px', gap: 12, alignItems: 'center', padding: '8px 2px', background: 'var(--surface-card)' }}>
+                <span style={{ font: '400 15px/1.4 var(--mbc-font-sans)', color: 'var(--text-heading)' }}>{row.month}</span>
+                {current ? (
+                  <span className="tabular" style={{ font: '700 15px/1.4 var(--mbc-font-sans)', color: 'var(--text-heading)', textAlign: 'right' }}>{cents(row.amount)}</span>
+                ) : (
+                  <input className="tabular" inputMode="decimal" value={row.amount ?? ''} readOnly={readOnly} placeholder="—" onChange={(e) => up({ monthlyTotals: { ...payload.monthlyTotals, [key]: toNumber(e.target.value) ?? 0 } })} style={{ ...fieldStyle, minHeight: 40, textAlign: 'right' }} />
+                )}
+              </div>
+            )
+          })}
         </div>
       </Section>
-      <Section label="Two · budget information" meta={payload.budgetAnnual !== null ? `balance ${money(payload.budgetAnnual - (payload.spentYtd ?? 0))}` : ''}>
-        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
-          <MoneyField label="Annual budget" value={payload.budgetAnnual} readOnly={readOnly} onChange={(v) => up({ budgetAnnual: v })} />
-          <MoneyField label="Spent year to date" value={payload.spentYtd} readOnly={readOnly} onChange={(v) => up({ spentYtd: v })} />
-        </div>
-      </Section>
-      <Section label="Three · projects" meta="">
-        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
-          <div><p style={{ ...labelText, margin: '0 0 8px' }}>Open</p><Lines lines={payload.projectsOpen} readOnly={readOnly} onChange={(projectsOpen) => up({ projectsOpen })} addLabel="Add a project" /></div>
-          <div><p style={{ ...labelText, margin: '0 0 8px' }}>Closed</p><Lines lines={payload.projectsClosed} readOnly={readOnly} onChange={(projectsClosed) => up({ projectsClosed })} addLabel="Add a project" /></div>
-        </div>
-      </Section>
-      <Section label="Four · items for the Board" meta={itemsMeta(payload.items)}>
+      <Section label="Items for the Board" meta={itemsMeta(payload.items)}>
         <Items items={payload.items} readOnly={readOnly} onChange={(items) => up({ items })} />
       </Section>
     </>
@@ -351,29 +444,27 @@ function PersonnelForm({ payload, onChange, readOnly }: { payload: PersonnelPayl
 
 function FamilyAssistanceForm({ payload, onChange, readOnly }: { payload: FamilyAssistancePayload; onChange(p: FamilyAssistancePayload): void; readOnly: boolean }) {
   const up = (patch: Partial<FamilyAssistancePayload>) => onChange({ ...payload, ...patch })
+  const cents = (n: number | null) => (n === null ? '—' : '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
   const closing = payload.openingBalance === null ? null : payload.openingBalance + (payload.additions ?? 0) - (payload.expenditures ?? 0)
   return (
     <>
       <Card tone="panel" radius="card" pad="16px 18px">
         <p style={{ ...bodyText, margin: 0, maxWidth: '70ch' }}>
-          <strong>No circumstances.</strong> This report carries the fund, the counts and the D002 confirmation. There is no field for why a family needed help, and that is the design.
+          <strong>The fund, as the committee has always reported it.</strong> There is no field for why a family needed help, and that is the design.
         </p>
       </Card>
-      <Section label="One · the fund" meta={closing === null ? '' : `closing balance ${money(closing)}`}>
+      <Section label="Family Assistance Report for Deacons Meeting" meta={closing === null ? '' : `closing balance ${cents(closing)}`}>
         <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
-          <MoneyField label="Balance at start of month" value={payload.openingBalance} readOnly={readOnly} onChange={(v) => up({ openingBalance: v })} />
+          <Field label="Report date"><input value={payload.reportDate} readOnly={readOnly} placeholder="8/31/2026" onChange={(e) => up({ reportDate: e.target.value })} style={fieldStyle} /></Field>
+          <MoneyField label="Balance at the start of the month" value={payload.openingBalance} readOnly={readOnly} onChange={(v) => up({ openingBalance: v })} />
           <MoneyField label="Additions" value={payload.additions} readOnly={readOnly} onChange={(v) => up({ additions: v })} />
           <MoneyField label="Expenditures" value={payload.expenditures} readOnly={readOnly} onChange={(v) => up({ expenditures: v })} />
+          <Field label="Balance at the end of the month">
+            <input className="tabular" readOnly value={cents(closing)} style={{ ...fieldStyle, background: 'var(--surface-panel)' }} />
+          </Field>
         </div>
       </Section>
-      <Section label="Two · requests" meta="counts only">
-        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
-          <CountField label="Received" value={payload.received} readOnly={readOnly} onChange={(v) => up({ received: v })} />
-          <CountField label="Approved" value={payload.approved} readOnly={readOnly} onChange={(v) => up({ approved: v })} />
-          <CountField label="Declined" value={payload.declined} readOnly={readOnly} onChange={(v) => up({ declined: v })} />
-        </div>
-      </Section>
-      <Section label="Three · D002 §6" meta="">
+      <Section label="D002 §6" meta="optional">
         <TogglePill selected={payload.thirdPartyInvoiceConfirmed} disabled={readOnly} onClick={() => up({ thirdPartyInvoiceConfirmed: !payload.thirdPartyInvoiceConfirmed })}>
           {payload.thirdPartyInvoiceConfirmed ? 'Confirmed · every disbursement was paid to a third party against an invoice' : 'Confirm the third-party invoice rule was followed'}
         </TogglePill>
@@ -508,14 +599,6 @@ function MoneyField({ label, value, readOnly, onChange }: { label: string; value
   return (
     <Field label={label}>
       <input className="tabular" inputMode="decimal" value={value ?? ''} readOnly={readOnly} onChange={(e) => onChange(toNumber(e.target.value))} placeholder="$" style={{ ...fieldStyle, font: '400 17px/1.4 var(--mbc-font-sans)' }} />
-    </Field>
-  )
-}
-
-function CountField({ label, value, readOnly, onChange }: { label: string; value: number | null; readOnly: boolean; onChange(v: number | null): void }) {
-  return (
-    <Field label={label}>
-      <input className="tabular" inputMode="numeric" value={value ?? ''} readOnly={readOnly} onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value.replace(/\D/g, '')))} style={fieldStyle} />
     </Field>
   )
 }

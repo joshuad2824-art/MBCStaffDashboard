@@ -1,5 +1,5 @@
 import { parseDate, toIso } from '../../lib/date'
-import type { AgendaItem, Attendance, AttendanceCount, Meeting, MeetingsData, Motion, Phase } from './types'
+import type { AgendaItem, Attendance, Meeting, Motion, Phase } from './types'
 
 /* Derived, never stored — the pattern the cadence ledger already uses. The
    attendance count against the threshold, the ordinal of a meeting in its
@@ -8,10 +8,6 @@ import type { AgendaItem, Attendance, AttendanceCount, Meeting, MeetingsData, Mo
 
 /** Art. II.B §3 ¶5: monthly. Twelve regular meetings in a deacon year. */
 export const MEETINGS_PER_YEAR = 12
-/** Art. II.B §3 ¶12: three-fourths of them. Nine of twelve; a man may miss three. */
-export const REQUIRED_MEETINGS = Math.ceil((MEETINGS_PER_YEAR * 3) / 4)
-/** The chairman is told at the second absence — early enough to be pastoral. */
-export const FLAG_AT_ABSENCES = 2
 
 export function phaseOf(meeting: Meeting): Phase {
   if (meeting.status === 'held') return 'minutes'
@@ -91,30 +87,6 @@ export function attendanceFor(attendance: Attendance[], meeting: Meeting): Map<s
 
 export function motionsFor(motions: Motion[], meeting: Meeting): Motion[] {
   return motions.filter((motion) => motion.meetingId === meeting.id).sort((a, b) => a.position - b.position)
-}
-
-/** The stub's version of board_attendance_summary(): the same arithmetic, in
-    the browser, over the same rows. In a configured build the database does
-    this and answers only the chairman. */
-export function attendanceCounts(data: MeetingsData, meeting: Meeting): AttendanceCount[] {
-  const held = new Set(
-    meetingsInYear(data.meetings, meeting, data.deaconYearStartMonth)
-      .filter((m) => m.status === 'in_session' || m.status === 'held')
-      .map((m) => m.id),
-  )
-  return data.roster
-    .map((member) => {
-      const rows = data.attendance.filter((row) => row.personId === member.personId && held.has(row.meetingId))
-      return {
-        personId: member.personId,
-        name: member.name,
-        meetingsHeld: held.size,
-        present: rows.filter((row) => row.status === 'present').length,
-        absent: rows.filter((row) => row.status === 'absent').length,
-        excused: rows.filter((row) => row.status === 'excused').length,
-      }
-    })
-    .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 export function sortedByDate(meetings: Meeting[]): Meeting[] {

@@ -11,7 +11,9 @@ export type MeetingKind = 'regular' | 'special'
 export type MeetingStatus = 'planned' | 'in_session' | 'held' | 'cancelled'
 export type MinutesStatus = 'none' | 'draft' | 'approved'
 export type AgendaSource = 'recurring' | 'report' | 'old_business' | 'new_business' | 'manual'
-export type AttendanceStatus = 'present' | 'absent' | 'excused'
+/** Present or not. There is no attendance tracker: the roll exists so the
+    minutes can say who was there. */
+export type AttendanceStatus = 'present' | 'absent'
 export type MotionDisposition = 'approved' | 'tabled' | 'withdrawn' | 'failed'
 export type SeatRole = 'chair' | 'member' | 'ex_officio'
 
@@ -50,8 +52,6 @@ export interface Attendance {
   meetingId: string
   personId: string
   status: AttendanceStatus
-  /** A note written by a person, in his own words. Optional. Never a checkbox. */
-  justCauseNote: string
   recordedBy: string | null
 }
 
@@ -78,16 +78,6 @@ export interface BoardMember {
   /** Their title on the roster — "Deacon", "Senior Pastor". */
   role: string
   seat: SeatRole
-}
-
-/** What the chairman's panel reads: the count, and nothing else. */
-export interface AttendanceCount {
-  personId: string
-  name: string
-  meetingsHeld: number
-  present: number
-  absent: number
-  excused: number
 }
 
 export interface MeetingsData {

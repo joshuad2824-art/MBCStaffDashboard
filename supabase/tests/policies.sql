@@ -549,9 +549,7 @@ update board_meeting set status = 'in_session' where id = 'c1000000-0000-0000-00
 insert into meeting_attendance (meeting_id, person_id, status, recorded_by) values
   ('c1000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000010', 'present', 'b0000000-0000-0000-0000-000000000010'),
   ('c1000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000009', 'absent',  'b0000000-0000-0000-0000-000000000010');
-update meeting_attendance set just_cause_note = 'Out of town for his daughter''s wedding. He told me last Sunday.'
- where person_id = 'b0000000-0000-0000-0000-000000000009';
-select test.assert((select count(*) from meeting_attendance) = 2, 'deacon B: calls the roll');
+select test.assert((select count(*) from meeting_attendance) = 2, 'deacon B: calls the roll — who was present and who was not, for the minutes');
 
 insert into motion (meeting_id, text, moved_by, seconded_by, disposition, recorded_by) values
   ('c1000000-0000-0000-0000-000000000001', 'That the Board approve the resurfacing of the north lot.',
@@ -571,25 +569,20 @@ select test.assert((select count(*) from meeting_attendance) = 2, 'deacon B: can
 select test.assert((select count(*) from agenda_item) = 1,        'deacon B: cannot delete an agenda item');
 select test.assert((select count(*) from board_meeting) = 1,      'deacon B: cannot delete the meeting');
 
-select test.assert((select count(*) from board_attendance_summary(current_date)) = 0,
-  'deacon B: the attendance count returns NOTHING to a member who is not the chairman');
+select test.assert(
+  (select count(*) from pg_proc where proname = 'board_attendance_summary') = 0,
+  'there is no attendance tracker: nothing computes a count against the three-fourths rule');
 reset role;
 
--- 7b. The chairman sees the count; it is a count and nothing more.
+-- 7b. The chairman is the chairman, and his absence changes nothing.
 
 select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
 set role authenticated;
 select test.assert(is_chair_of('deacon-board'), 'chairman: is the chairman');
-select test.assert((select count(*) from board_attendance_summary(current_date)) = 3,
-  'chairman: the count covers every seated Board member, the ex officio seat included');
-select test.assert(
-  (select absent from board_attendance_summary(current_date) where person_id = 'b0000000-0000-0000-0000-000000000009') = 1
-  and (select meetings_held from board_attendance_summary(current_date) where person_id = 'b0000000-0000-0000-0000-000000000009') = 1,
-  'chairman: his own absence is counted against one meeting held');
 select test.assert(
   (select access from person where id = 'b0000000-0000-0000-0000-000000000009') = 'limited'
   and (select active from membership where person_id = 'b0000000-0000-0000-0000-000000000009' and body_id = (select id from body where slug = 'deacon-board')),
-  'chairman: nothing about his standing changed because of the count');
+  'chairman: an absence on the roll changes nothing about his standing');
 reset role;
 
 -- 7c. The Senior Pastor, ex officio, is in the room.
@@ -598,7 +591,6 @@ select test.sign_in('a0000000-0000-0000-0000-000000000003', 'other@memorial.test
 set role authenticated;
 select test.assert(is_member_of('deacon-board') and is_staff_role(), 'ex officio: sits on the Board and is still staff');
 select test.assert((select count(*) from board_meeting) = 1, 'ex officio: reads the meeting');
-select test.assert((select count(*) from board_attendance_summary(current_date)) = 0, 'ex officio: does not see the chairman''s count');
 reset role;
 
 -- 7d. Everyone else gets nothing.
@@ -609,7 +601,6 @@ select test.assert((select count(*) from board_meeting) = 0,      'staff: reads 
 select test.assert((select count(*) from agenda_item) = 0,        'staff: reads zero agenda items');
 select test.assert((select count(*) from meeting_attendance) = 0, 'staff: reads ZERO attendance rows');
 select test.assert((select count(*) from motion) = 0,             'staff: reads zero motions');
-select test.assert((select count(*) from board_attendance_summary(current_date)) = 0, 'staff: gets nothing from the count');
 select test.refused(
   $q$ insert into board_meeting (meets_on, created_by) values (current_date + 30, 'b0000000-0000-0000-0000-000000000001') $q$,
   '42501', 'staff: cannot create a Board meeting');
@@ -653,8 +644,8 @@ update person set access = 'limited' where id = 'b0000000-0000-0000-0000-0000000
 select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
 set role authenticated;
 
-select test.assert(can_write_report('committee', (select id from body where slug = 'committee:finance')), 'finance chair: may write the Finance report');
-select test.assert(not can_write_report('committee', (select id from body where slug = 'committee:personnel')), 'finance chair: may not write Personnel''s');
+select test.assert(can_write_report('committee', (select id from body where slug = 'committee:finance'), null), 'finance chair: may write the Finance report');
+select test.assert(not can_write_report('committee', (select id from body where slug = 'committee:personnel'), null), 'finance chair: may not write Personnel''s draft');
 
 insert into report (id, kind, body_id, meeting_id, payload, created_by)
   values ('d1000000-0000-0000-0000-000000000001', 'committee', (select id from body where slug = 'committee:finance'),
@@ -767,9 +758,27 @@ reset role;
 select test.sign_in('a0000000-0000-0000-0000-000000000003', 'other@memorial.test');
 set role authenticated;
 select test.assert((select count(*) from report where kind = 'committee' and body_id = (select id from body where slug = 'committee:finance')) = 1, 'ex officio: reads the Finance report');
+-- A Board member files a report on a committee's behalf — an upload, their
+-- traditional way — and keeps writing the one he created, and no other.
+insert into report (id, kind, body_id, meeting_id, status, file_path, file_name, file_type, created_by, submitted_by, submitted_at)
+  values ('d1000000-0000-0000-0000-000000000006', 'committee', (select id from body where slug = 'committee:building-grounds'), 'c1000000-0000-0000-0000-000000000001',
+          'submitted', 'd1000000-0000-0000-0000-000000000006/1-Building-Grounds-August.pdf', 'Building & Grounds - August.pdf', 'application/pdf',
+          'b0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', now());
+select test.assert((select count(*) from report where created_by = 'b0000000-0000-0000-0000-000000000003') = 1, 'ex officio: files a committee''s report on its behalf');
+update report set file_name = 'renamed.pdf' where id = 'd1000000-0000-0000-0000-000000000001';
+reset role;
+select test.assert((select file_name from report where id = 'd1000000-0000-0000-0000-000000000001') is null,
+  'ex officio: cannot change a report another man created');
+
+-- The bucket asks the report's own questions.
+set role authenticated;
+insert into storage.objects (bucket_id, name) values ('reports', 'd1000000-0000-0000-0000-000000000006/1-Building-Grounds-August.pdf');
+select test.assert((select count(*) from storage.objects) >= 1, 'bucket: the uploader puts the file under his report');
 select test.refused(
-  $q$ insert into report (kind, body_id, created_by) values ('committee', (select id from body where slug = 'committee:finance'), 'b0000000-0000-0000-0000-000000000003') $q$,
-  '42501', 'ex officio: cannot write a committee''s report');
+  $q$ insert into storage.objects (bucket_id, name) values ('reports', 'd1000000-0000-0000-0000-000000000001/2-not-mine.pdf') $q$,
+  '42501', 'bucket: cannot put a file under a report he cannot write');
+delete from storage.objects;
+select test.assert((select count(*) from storage.objects) >= 1, 'bucket: a filed file cannot be deleted');
 reset role;
 
 -- A committee chair who sits on no other body: files, sees the meeting, and nothing of the room.
@@ -780,18 +789,24 @@ select test.assert((select count(*) from board_meeting) = 1,      'grounds chair
 select test.assert((select count(*) from agenda_item) = 0,        'grounds chair: reads zero agenda items');
 select test.assert((select count(*) from meeting_attendance) = 0, 'grounds chair: reads ZERO attendance rows');
 select test.assert((select count(*) from motion) = 0,             'grounds chair: reads zero motions');
-select test.assert((select count(*) from report) = 0,             'grounds chair: reads zero reports of other committees — not on the Board, not in their rooms');
+select test.assert((select count(*) from report) = 1 and (select count(*) from report where body_id <> (select id from body where slug = 'committee:building-grounds')) = 0,
+  'grounds chair: reads only his committee''s report — the one filed on its behalf — and zero of any other');
 select test.assert((select count(*) from reports_filed('c1000000-0000-0000-0000-000000000001')) = 0, 'grounds chair: reports_filed() answers only the Board');
 insert into report (kind, body_id, meeting_id, payload, created_by)
   values ('committee', (select id from body where slug = 'committee:building-grounds'), 'c1000000-0000-0000-0000-000000000001',
           '{"projectsOpen": ["North lot resurfacing"]}', 'b0000000-0000-0000-0000-000000000011');
-select test.assert((select count(*) from report) = 1, 'grounds chair: files his own committee''s report');
+select test.assert((select count(*) from report) = 2, 'grounds chair: reads his own report and the one filed on his committee''s behalf');
+select test.assert((select count(*) from storage.objects) = 1, 'bucket: the chair reads the file filed for his committee');
+update report set file_name = 'chair-renamed.pdf' where id = 'd1000000-0000-0000-0000-000000000006';
 reset role;
+select test.assert((select file_name from report where id = 'd1000000-0000-0000-0000-000000000006') = 'chair-renamed.pdf',
+  'grounds chair: may write a report filed for his committee by someone else');
 
 select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
 set role authenticated;
 select test.assert((select count(*) from report) = 0,         'staff: reads ZERO reports');
 select test.assert((select count(*) from report_version) = 0, 'staff: reads zero versions');
+select test.assert((select count(*) from storage.objects) = 0, 'staff: reads ZERO files from the reports bucket');
 reset role;
 
 select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
@@ -803,4 +818,5 @@ select test.sign_out();
 set role anon;
 select test.assert((select count(*) from report) = 0,         'signed out: no reports');
 select test.assert((select count(*) from report_version) = 0, 'signed out: no versions');
+select test.assert((select count(*) from storage.objects) = 0,  'signed out: no files');
 reset role;
