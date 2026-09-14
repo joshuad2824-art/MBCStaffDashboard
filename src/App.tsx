@@ -12,10 +12,14 @@ import { Communicator } from './screens/Communicator'
 import { Goals } from './screens/Goals'
 import { People } from './screens/People'
 import { NoticeLog } from './screens/NoticeLog'
+import { WhichSide } from './screens/WhichSide'
+import { Meeting } from './screens/Meeting'
 import { useSession } from './session/session'
 
 /** The screen behind each surface. Keyed the same way as SURFACES. */
 const SCREENS: Record<string, ReactNode> = {
+  whichSide: <WhichSide />,
+  meeting: <Meeting />,
   today: <Today />,
   huddle: <Huddle />,
   cadence: <Cadence />,
@@ -28,7 +32,7 @@ const SCREENS: Record<string, ReactNode> = {
 }
 
 export function App() {
-  const { member, bodies, viewAs, auth } = useSession()
+  const { member, bodies, viewAs, sides, context, auth } = useSession()
 
   /* An opened link arrives with its tokens on the address bar and takes a
      moment to become a session. Showing the sign-in screen in that gap tells
@@ -39,9 +43,15 @@ export function App() {
   /* Routes exist only for the surfaces this person may open. Typing the path
      of any other gets the same answer as a path that was never there: the
      landing screen. The route refuses; it does not render empty. */
-  const open = surfacesFor(bodies, viewAs)
+  const open = surfacesFor({ bodies, viewAs, sides, context })
   if (open.length === 0) return <NoSurfaces />
-  const home = (open.find((surface) => surface === SURFACES.today) ?? open[0]).path
+  /* Home is the landing screen for the two people who hold both sides, else
+     Today on the staff side and the meeting on the deacon side. */
+  const home = (
+    open.find((surface) => surface === SURFACES.whichSide) ??
+    open.find((surface) => surface === (context === 'deacon' ? SURFACES.meeting : SURFACES.today)) ??
+    open[0]
+  ).path
 
   return (
     <Routes>
@@ -51,7 +61,7 @@ export function App() {
         return (
           <Route
             key={surface.path}
-            path={surface.path}
+            path={surface.nested ? surface.path + '/*' : surface.path}
             element={<AppShell surface={surface}>{SCREENS[key]}</AppShell>}
           />
         )

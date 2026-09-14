@@ -4,7 +4,8 @@ import { useData, useStore } from '../data/store'
 import { nextId } from '../lib/derive'
 import { clearCallbackFromUrl, linkFailure, supabase, supabaseConfigured } from '../lib/supabase'
 import { loadAccount } from './account'
-import type { Account } from './account'
+import type { Account, Seat } from './account'
+import { SEED_SEATS } from '../data/seed'
 import type { Access, Person } from '../data/types'
 
 /* Who is signed in.
@@ -30,7 +31,25 @@ import type { Access, Person } from '../data/types'
    care record. */
 
 const SESSION_KEY = 'mbc.staff-dashboard.session'
+const CONTEXT_KEY = 'mbc.dashboard.context'
 const SESSION_DAYS = 30
+
+/** The two sides of the one application. */
+export type Side = 'staff' | 'deacon'
+
+/** Bodies whose surfaces live on the deacon side. */
+export function sideOfBody(slug: string): Side {
+  return slug === 'staff' ? 'staff' : 'deacon'
+}
+
+function readContext(): Side | null {
+  try {
+    const raw = window.localStorage.getItem(CONTEXT_KEY)
+    return raw === 'staff' || raw === 'deacon' ? raw : null
+  } catch {
+    return null
+  }
+}
 
 interface StoredSession {
   staffId: number
@@ -53,10 +72,20 @@ export interface AuthValue {
 
 interface SessionValue {
   member: Person | null
+  /** The bodies the signed-in person sits in, and the role in each. What
+      `my_seats()` says in a configured build; the stub reads the seed. */
+  seats: Seat[]
   /** Slugs of the bodies the signed-in person sits in. The nav is assembled
-      from this list, and a route not on it refuses. It is what `my_bodies()`
-      says in a configured build; the stub derives it from the roster. */
+      from this list, and a route not on it refuses. */
   bodies: string[]
+  isChairOf(slug: string): boolean
+  /** Which sides this person holds. Most people hold one. */
+  sides: Side[]
+  /** The side the interface is drawn for. A view filter and nothing more:
+      it narrows what is rendered for a person who holds both sides and it
+      changes nothing about what the database returns. */
+  context: Side
+  setContext(side: Side): void
   /** The role the interface is being drawn for — real role, or the preview. */
   viewAs: Access
   previewingLimited: boolean
@@ -100,6 +129,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   )
   const [previewingLimited, setPreviewingLimited] = useState(false)
   const [presentMode, setPresentMode] = useState(false)
+  const [chosenContext, setChosenContext] = useState<Side | null>(() => readContext())
 
   const [account, setAccount] = useState<Account | null>(null)
   const [checking, setChecking] = useState(supabaseConfigured)
@@ -336,13 +366,40 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const member = useMemo(() => people.find((person) => person.id === staffId) ?? null, [people, staffId])
 
   /* Postgres owns which bodies a person sits in. The stub has no membership
-     table, so it says what 0004 seats everybody in today: anyone who can sign
-     in on the staff side is in `staff`. */
-  const bodies = useMemo<string[]>(() => {
+     table, so it reads the seed's seats, and for anyone the seed does not
+     name it says what 0004 seats everybody in today: whoever can sign in on
+     the staff side is in `staff`. */
+  const seats = useMemo<Seat[]>(() => {
     if (!member) return []
-    if (supabaseConfigured) return account?.bodies ?? []
-    return member.access === 'none' ? [] : ['staff']
+    if (supabaseConfigured) return account?.seats ?? []
+    const seeded = SEED_SEATS[member.id]
+    if (seeded) return seeded
+    return member.access === 'none' ? [] : [{ slug: 'staff', role: 'member' }]
   }, [member, account])
+  const bodies = useMemo(() => seats.map((seat) => seat.slug), [seats])
+  const isChairOf = useCallback((slug: string) => seats.some((seat) => seat.slug === slug && seat.role === 'chair'), [seats])
+
+  const sides = useMemo<Side[]>(() => {
+    const held = new Set(bodies.map(sideOfBody))
+    return (['staff', 'deacon'] as Side[]).filter((side) => held.has(side))
+  }, [bodies])
+
+  /* The context narrows and never widens. A person who holds one side is on
+     it; a person who holds both is on the one they chose, remembered in this
+     browser. Nothing here reaches a query. */
+  const context = useMemo<Side>(() => {
+    if (sides.length === 1) return sides[0]
+    return chosenContext && sides.includes(chosenContext) ? chosenContext : 'staff'
+  }, [sides, chosenContext])
+
+  const setContext = useCallback((side: Side) => {
+    setChosenContext(side)
+    try {
+      window.localStorage.setItem(CONTEXT_KEY, side)
+    } catch {
+      // Remembered for this tab only.
+    }
+  }, [])
 
   const auth = useMemo<AuthValue>(
     () => ({
@@ -362,7 +419,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SessionValue>(
     () => ({
       member,
+      seats,
       bodies,
+      isChairOf,
+      sides,
+      context,
+      setContext,
       viewAs: previewingLimited ? 'limited' : (member?.access ?? 'none'),
       previewingLimited,
       setPreviewingLimited,
@@ -372,7 +434,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setPresentMode,
       auth,
     }),
-    [member, bodies, previewingLimited, presentMode, signIn, signOut, auth],
+    [member, seats, bodies, isChairOf, sides, context, setContext, previewingLimited, presentMode, signIn, signOut, auth],
   )
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>

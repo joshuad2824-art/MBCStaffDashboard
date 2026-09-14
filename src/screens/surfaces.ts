@@ -1,4 +1,5 @@
 import type { Access } from '../data/types'
+import type { Side } from '../session/session'
 
 /** Eyebrow, H1 and lead paragraph for each surface. The lead is the first thing
     on every page: 16px, 1.7, 66ch, in meta ink.
@@ -24,6 +25,13 @@ export interface Surface {
   lead: string
   /** Body slugs. A person opens the surface if they belong to any of them. */
   bodies: string[]
+  /** Which side of the application it is drawn on. `both` is the landing
+      screen for the two people who hold both sides. */
+  side: Side | 'both'
+  /** Only for a person who holds both sides. */
+  bothSides?: boolean
+  /** The screen owns the paths beneath its own — a meeting, a phase. */
+  nested?: boolean
   /** Staff-role only, within the staff body: the pastoral surfaces. */
   staffOnly?: boolean
   /* Whether a wide screen buys this surface anything.
@@ -39,10 +47,33 @@ export interface Surface {
 }
 
 export const SURFACES: Record<string, Surface> = {
+  whichSide: {
+    nav: 'Which side today',
+    group: 0,
+    bodies: ['staff'],
+    side: 'both',
+    bothSides: true,
+    path: '/which-side',
+    eyebrow: 'You hold both sides',
+    title: 'Which side today?',
+    lead: 'Two people at Memorial belong to the staff and to the Board. Everything on this screen exists to stop one of them saying something in the wrong room — the choice, the marker that stays on screen afterwards, and the badge that travels on the record.',
+  },
+  meeting: {
+    nav: 'The meeting',
+    group: 1,
+    bodies: ['deacon-board'],
+    side: 'deacon',
+    nested: true,
+    path: '/meeting',
+    eyebrow: 'The spine of the deacon year',
+    title: 'The Board meeting',
+    lead: 'One record per month in three phases. Before: the agenda assembles itself. During: the roll is called and motions are captured. After: the secretary writes only the parts that are actually narrative.',
+  },
   today: {
     nav: 'Today',
     group: 0,
     bodies: ['staff'],
+    side: 'staff',
     wide: true,
     path: '/today',
     eyebrow: 'Leave this one up',
@@ -53,6 +84,7 @@ export const SURFACES: Record<string, Surface> = {
     nav: 'Huddle',
     group: 1,
     bodies: ['staff'],
+    side: 'staff',
     path: '/huddle',
     eyebrow: 'Monday · 9:00 AM',
     title: 'Huddle',
@@ -62,6 +94,7 @@ export const SURFACES: Record<string, Surface> = {
     nav: 'Cadence ledger',
     group: 1,
     bodies: ['staff'],
+    side: 'staff',
     wide: true,
     path: '/cadence',
     eyebrow: 'Recurring commitments',
@@ -72,6 +105,7 @@ export const SURFACES: Record<string, Surface> = {
     nav: 'Notice log',
     group: 1,
     bodies: ['staff'],
+    side: 'staff',
     wide: true,
     path: '/notice',
     eyebrow: 'The instrument',
@@ -82,6 +116,7 @@ export const SURFACES: Record<string, Surface> = {
     nav: 'Discussion',
     group: 1,
     bodies: ['staff'],
+    side: 'staff',
     path: '/discussion',
     eyebrow: '14-day memory',
     title: 'Discussion board',
@@ -92,6 +127,7 @@ export const SURFACES: Record<string, Surface> = {
     nav: 'Communicator',
     group: 2,
     bodies: ['staff'],
+    side: 'staff',
     path: '/communicator',
     eyebrow: 'One entry, many outputs',
     title: 'Communicator',
@@ -101,6 +137,7 @@ export const SURFACES: Record<string, Surface> = {
     nav: 'Care pipelines',
     group: 2,
     bodies: ['staff'],
+    side: 'staff',
     path: '/care',
     eyebrow: 'Pastoral layer',
     title: 'Care pipelines',
@@ -111,6 +148,7 @@ export const SURFACES: Record<string, Surface> = {
     nav: 'Goals',
     group: 2,
     bodies: ['staff'],
+    side: 'staff',
     path: '/goals',
     eyebrow: 'Annual · reviewed quarterly',
     title: 'Goals',
@@ -120,6 +158,7 @@ export const SURFACES: Record<string, Surface> = {
     nav: 'People',
     group: 2,
     bodies: ['staff'],
+    side: 'staff',
     wide: true,
     path: '/people',
     eyebrow: 'Who can be named',
@@ -129,17 +168,50 @@ export const SURFACES: Record<string, Surface> = {
   },
 }
 
+export interface Viewer {
+  bodies: readonly string[]
+  viewAs: Access
+  sides: readonly Side[]
+  context: Side
+}
+
 /** Whether a person may open a surface: they sit in one of its bodies, and if
     it is staff-role only, they hold that role. The same answer the sidebar,
-    the router and — underneath both — the policies give. */
-export function canOpen(surface: Surface, bodies: readonly string[], viewAs: Access): boolean {
-  if (!surface.bodies.some((slug) => bodies.includes(slug))) return false
-  if (surface.staffOnly && viewAs !== 'staff') return false
+    the router and — underneath both — the policies give.
+
+    The context is applied last and only narrows: a person who holds both
+    sides sees one side at a time. It never lets anyone open a surface their
+    bodies would not. */
+export function canOpen(surface: Surface, viewer: Viewer): boolean {
+  if (!surface.bodies.some((slug) => viewer.bodies.includes(slug))) return false
+  if (surface.staffOnly && viewer.viewAs !== 'staff') return false
+  if (surface.bothSides && viewer.sides.length < 2) return false
+  if (viewer.sides.length > 1 && surface.side !== 'both' && surface.side !== viewer.context) return false
   return true
 }
 
 /** The surfaces a person gets, in the order the sidebar lists them. What is not
     in this list is not rendered anywhere — not disabled, not dimmed, not there. */
-export function surfacesFor(bodies: readonly string[], viewAs: Access): Surface[] {
-  return Object.values(SURFACES).filter((surface) => canOpen(surface, bodies, viewAs))
+export function surfacesFor(viewer: Viewer): Surface[] {
+  return Object.values(SURFACES).filter((surface) => canOpen(surface, viewer))
+}
+
+/** Where a side opens. */
+export function homeOf(side: Side): string {
+  return side === 'deacon' ? SURFACES.meeting.path : SURFACES.today.path
+}
+
+/** Readable names for the badge and the signed-in line. */
+export const BODY_NAMES: Record<string, string> = {
+  staff: 'Staff',
+  'deacon-board': 'Deacon Board',
+  'deacon-body': 'Deacon Body',
+  'committee:finance': 'Finance committee',
+  'committee:personnel': 'Personnel committee',
+  'committee:building-grounds': 'Building & Grounds committee',
+  'committee:family-assistance': 'Family Assistance committee',
+}
+
+export function bodyName(slug: string): string {
+  return BODY_NAMES[slug] ?? slug
 }

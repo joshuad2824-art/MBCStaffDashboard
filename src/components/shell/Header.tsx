@@ -16,7 +16,7 @@ export function Header({
   onOpenHistory(): void
 }) {
   const { history, undo } = useStore()
-  const { previewingLimited, setPreviewingLimited, setPresentMode } = useSession()
+  const { previewingLimited, setPreviewingLimited, setPresentMode, context } = useSession()
 
   return (
     <header
@@ -61,20 +61,27 @@ export function Header({
         <span className="tabular" style={{ font: '400 13px/1 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
           {formatLong(startOfToday())}
         </span>
-        {history.length > 0 ? (
-          <Button variant="outline" size="sm" onClick={undo}>
-            Undo
-          </Button>
+        {/* Undo, the history drawer, the role preview and present mode are the
+            staff side's. The deacon side keeps records, which are not undone,
+            and present mode excludes every deacon surface. */}
+        {context === 'staff' ? (
+          <>
+            {history.length > 0 ? (
+              <Button variant="outline" size="sm" onClick={undo}>
+                Undo
+              </Button>
+            ) : null}
+            <Button variant="outline" size="sm" onClick={onOpenHistory}>
+              Recent changes
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setPreviewingLimited(!previewingLimited)}>
+              Viewing as {previewingLimited ? 'limited' : 'staff'}
+            </Button>
+            <Button variant="dark" size="sm" onClick={() => setPresentMode(true)}>
+              Present mode
+            </Button>
+          </>
         ) : null}
-        <Button variant="outline" size="sm" onClick={onOpenHistory}>
-          Recent changes
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => setPreviewingLimited(!previewingLimited)}>
-          Viewing as {previewingLimited ? 'limited' : 'staff'}
-        </Button>
-        <Button variant="dark" size="sm" onClick={() => setPresentMode(true)}>
-          Present mode
-        </Button>
       </div>
       </div>
     </header>

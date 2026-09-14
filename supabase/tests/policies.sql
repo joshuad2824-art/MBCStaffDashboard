@@ -506,3 +506,124 @@ select test.assert((select count(*) from body) = 0,        'signed out: no bodie
 select test.assert((select count(*) from membership) = 0,  'signed out: no seats');
 select test.assert((select count(*) from my_bodies()) = 0, 'signed out: my_bodies() is empty');
 reset role;
+
+-- ------------------------------------------------------- 7. the meeting
+--
+-- 0005. The Board's room: members read and write it under their own names,
+-- nobody deletes from it, and the attendance count answers only the chairman.
+
+-- Seat the Senior Pastor ex officio, and make Deacon A the chairman.
+insert into membership (person_id, body_id, role_in_body, term_start)
+select 'b0000000-0000-0000-0000-000000000003', id, 'ex_officio', date '2025-09-01' from body where slug = 'deacon-board';
+update membership set role_in_body = 'chair'
+ where person_id = 'b0000000-0000-0000-0000-000000000009'
+   and body_id = (select id from body where slug = 'deacon-board');
+
+-- 7a. A member creates the meeting and records the night.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000010', 'deacon-b@memorial.test');
+set role authenticated;
+
+select test.assert(
+  (select array_agg(slug || ':' || role_in_body order by slug) from my_seats()) = array['committee:family-assistance:chair', 'deacon-board:member'],
+  'deacon B: my_seats() names both seats and the role in each');
+
+select test.refused(
+  $q$ insert into board_meeting (id, meets_on, created_by)
+      values ('c1000000-0000-0000-0000-000000000001', current_date, 'b0000000-0000-0000-0000-000000000009') $q$,
+  '42501', 'deacon B: cannot create a meeting under another man''s name');
+
+insert into board_meeting (id, meets_on, created_by)
+  values ('c1000000-0000-0000-0000-000000000001', current_date, 'b0000000-0000-0000-0000-000000000010');
+select test.assert((select count(*) from board_meeting) = 1, 'deacon B: creates the September meeting');
+
+insert into agenda_item (meeting_id, position, title, source, created_by)
+  values ('c1000000-0000-0000-0000-000000000001', 1, 'Treasurer''s report', 'recurring', 'b0000000-0000-0000-0000-000000000010');
+select test.refused(
+  $q$ insert into agenda_item (meeting_id, title, created_by)
+      values ('c1000000-0000-0000-0000-000000000001', 'Not mine', 'b0000000-0000-0000-0000-000000000009') $q$,
+  '42501', 'deacon B: cannot add an agenda item under another man''s name');
+
+update board_meeting set status = 'in_session' where id = 'c1000000-0000-0000-0000-000000000001';
+
+insert into meeting_attendance (meeting_id, person_id, status, recorded_by) values
+  ('c1000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000010', 'present', 'b0000000-0000-0000-0000-000000000010'),
+  ('c1000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000009', 'absent',  'b0000000-0000-0000-0000-000000000010');
+update meeting_attendance set just_cause_note = 'Out of town for his daughter''s wedding. He told me last Sunday.'
+ where person_id = 'b0000000-0000-0000-0000-000000000009';
+select test.assert((select count(*) from meeting_attendance) = 2, 'deacon B: calls the roll');
+
+insert into motion (meeting_id, text, moved_by, seconded_by, disposition, recorded_by) values
+  ('c1000000-0000-0000-0000-000000000001', 'That the Board approve the resurfacing of the north lot.',
+   'b0000000-0000-0000-0000-000000000010', 'b0000000-0000-0000-0000-000000000009', 'tabled', 'b0000000-0000-0000-0000-000000000010');
+select test.refused(
+  $q$ insert into motion (meeting_id, text, disposition, bylaw_reference, text_before, recorded_by)
+      values ('c1000000-0000-0000-0000-000000000001', 'That Article II.B be amended.', 'approved', 'Art. II.B §3 ¶12', 'before', 'b0000000-0000-0000-0000-000000000010') $q$,
+  '23514', 'motion: an amendment must quote the sentence before and after, not just cite the paragraph');
+
+-- Nothing is deleted. There is no delete policy, so a delete touches no rows.
+delete from motion;
+delete from meeting_attendance;
+delete from agenda_item;
+delete from board_meeting;
+select test.assert((select count(*) from motion) = 1,             'deacon B: cannot delete a motion');
+select test.assert((select count(*) from meeting_attendance) = 2, 'deacon B: cannot delete attendance');
+select test.assert((select count(*) from agenda_item) = 1,        'deacon B: cannot delete an agenda item');
+select test.assert((select count(*) from board_meeting) = 1,      'deacon B: cannot delete the meeting');
+
+select test.assert((select count(*) from board_attendance_summary(current_date)) = 0,
+  'deacon B: the attendance count returns NOTHING to a member who is not the chairman');
+reset role;
+
+-- 7b. The chairman sees the count; it is a count and nothing more.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+select test.assert(is_chair_of('deacon-board'), 'chairman: is the chairman');
+select test.assert((select count(*) from board_attendance_summary(current_date)) = 3,
+  'chairman: the count covers every seated Board member, the ex officio seat included');
+select test.assert(
+  (select absent from board_attendance_summary(current_date) where person_id = 'b0000000-0000-0000-0000-000000000009') = 1
+  and (select meetings_held from board_attendance_summary(current_date) where person_id = 'b0000000-0000-0000-0000-000000000009') = 1,
+  'chairman: his own absence is counted against one meeting held');
+select test.assert(
+  (select access from person where id = 'b0000000-0000-0000-0000-000000000009') = 'limited'
+  and (select active from membership where person_id = 'b0000000-0000-0000-0000-000000000009' and body_id = (select id from body where slug = 'deacon-board')),
+  'chairman: nothing about his standing changed because of the count');
+reset role;
+
+-- 7c. The Senior Pastor, ex officio, is in the room.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000003', 'other@memorial.test');
+set role authenticated;
+select test.assert(is_member_of('deacon-board') and is_staff_role(), 'ex officio: sits on the Board and is still staff');
+select test.assert((select count(*) from board_meeting) = 1, 'ex officio: reads the meeting');
+select test.assert((select count(*) from board_attendance_summary(current_date)) = 0, 'ex officio: does not see the chairman''s count');
+reset role;
+
+-- 7d. Everyone else gets nothing.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from board_meeting) = 0,      'staff: reads ZERO meetings — an expired seat is not a seat');
+select test.assert((select count(*) from agenda_item) = 0,        'staff: reads zero agenda items');
+select test.assert((select count(*) from meeting_attendance) = 0, 'staff: reads ZERO attendance rows');
+select test.assert((select count(*) from motion) = 0,             'staff: reads zero motions');
+select test.assert((select count(*) from board_attendance_summary(current_date)) = 0, 'staff: gets nothing from the count');
+select test.refused(
+  $q$ insert into board_meeting (meets_on, created_by) values (current_date + 30, 'b0000000-0000-0000-0000-000000000001') $q$,
+  '42501', 'staff: cannot create a Board meeting');
+reset role;
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from board_meeting) = 0,      'limited: reads zero meetings');
+select test.assert((select count(*) from meeting_attendance) = 0, 'limited: reads zero attendance rows');
+reset role;
+
+select test.sign_out();
+set role anon;
+select test.assert((select count(*) from board_meeting) = 0,      'signed out: no meetings');
+select test.assert((select count(*) from meeting_attendance) = 0, 'signed out: no attendance');
+select test.assert((select count(*) from motion) = 0,             'signed out: no motions');
+reset role;

@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 import { Rule } from '../ui'
 import { useSession } from '../../session/session'
 import { NARROW, useMediaQuery } from '../../lib/media'
-import { SURFACES, surfacesFor } from '../../screens/surfaces'
+import { SURFACES, bodyName, surfacesFor } from '../../screens/surfaces'
 import { ChangePasswordDialog } from './ChangePasswordDialog'
 
 interface NavItem {
@@ -12,9 +12,7 @@ interface NavItem {
   badge?: number
 }
 
-const ITEM_HEIGHT = 44
-
-function Item({ item }: { item: NavItem }) {
+function Item({ item, large }: { item: NavItem; large: boolean }) {
   const badge = item.badge && item.badge > 0 ? item.badge : null
   const content = (active: boolean) => (
     <>
@@ -41,10 +39,11 @@ function Item({ item }: { item: NavItem }) {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
-    minHeight: ITEM_HEIGHT,
+    // 48px and 15px on the deacon side: monthly users need larger targets.
+    minHeight: large ? 48 : 44,
     borderRadius: 10,
-    padding: '12px 14px',
-    font: '400 14px/1.3 var(--mbc-font-sans)',
+    padding: large ? '13px 14px' : '12px 14px',
+    font: large ? '400 15px/1.3 var(--mbc-font-sans)' : '400 14px/1.3 var(--mbc-font-sans)',
     color: 'var(--text-heading)',
     transition: 'var(--motion-hover)',
     border: '1px solid transparent',
@@ -73,14 +72,15 @@ function Item({ item }: { item: NavItem }) {
 }
 
 export function Sidebar({ unread }: { unread: number }) {
-  const { member, bodies, viewAs, signOut, auth } = useSession()
+  const { member, seats, bodies, viewAs, sides, context, signOut, auth } = useSession()
   const narrow = useMediaQuery(NARROW)
   const [passwordOpen, setPasswordOpen] = useState(false)
+  const deacon = context === 'deacon'
 
   /* Assembled from membership. A surface this person cannot open is not here
      — not locked, not dimmed, not there. The router gives the same answer. */
   const groups: NavItem[][] = []
-  for (const surface of surfacesFor(bodies, viewAs)) {
+  for (const surface of surfacesFor({ bodies, viewAs, sides, context })) {
     const item: NavItem = { to: surface.path, label: surface.nav }
     if (surface === SURFACES.discussion) item.badge = unread
     ;(groups[surface.group] ??= []).push(item)
@@ -128,7 +128,7 @@ export function Sidebar({ unread }: { unread: number }) {
               marginTop: 4,
             }}
           >
-            STAFF DASHBOARD
+            {deacon ? 'DEACONS\u2019 DASHBOARD' : 'STAFF DASHBOARD'}
           </span>
         </span>
       </div>
@@ -152,7 +152,7 @@ export function Sidebar({ unread }: { unread: number }) {
             {index > 0 && !narrow ? <Rule tone="hair" /> : null}
             <div style={narrow ? { display: 'flex', flexWrap: 'wrap', gap: 4 } : { display: 'grid', gap: 2 }}>
               {group.map((item) => (
-                <Item key={item.to} item={item} />
+                <Item key={item.to} item={item} large={deacon} />
               ))}
             </div>
           </div>
@@ -180,11 +180,18 @@ export function Sidebar({ unread }: { unread: number }) {
             SIGNED IN AS
           </span>
         )}
-        <span style={{ font: '700 14px/1.3 var(--mbc-font-sans)', color: 'var(--text-heading)' }}>
+        <span style={{ font: deacon ? '700 15px/1.3 var(--mbc-font-sans)' : '700 14px/1.3 var(--mbc-font-sans)', color: 'var(--text-heading)' }}>
           {member?.name}
         </span>
-        <span style={{ font: '400 12px/1.4 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
-          {member?.role} · role {viewAs}
+        {/* On the deacon side a man is described by what he belongs to, not
+            by where he sits on a ladder. */}
+        <span style={{ font: deacon ? '400 13px/1.4 var(--mbc-font-sans)' : '400 12px/1.4 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
+          {deacon
+            ? seats
+                .filter((seat) => seat.slug !== 'staff')
+                .map((seat) => bodyName(seat.slug) + (seat.role === 'chair' ? ' · chair' : seat.role === 'ex_officio' ? ' · ex officio' : ''))
+                .join(' · ')
+            : `${member?.role} · role ${viewAs}`}
         </span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: narrow ? 12 : 8 }}>
           {auth.mode === 'supabase' ? (

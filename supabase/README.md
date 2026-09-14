@@ -1,7 +1,8 @@
 # Supabase
 
-Four migrations for a fresh project. Configured builds use them through
-`SupabaseRepository`; unconfigured local builds keep the seed-data repository.
+Five migrations for a fresh project. Configured builds use them through
+`SupabaseRepository` (the staff side) and `SupabaseMeetingRepository` (the
+deacon side); unconfigured local builds keep the seed-data repositories.
 
 ```
 0001_schema.sql        tables, the thread-activity trigger, the retention functions
@@ -9,11 +10,24 @@ Four migrations for a fresh project. Configured builds use them through
 0003_claim_account.sql how an invited person's first sign-in finds their roster row
 0004_bodies.sql        body and membership; my_bodies(), is_member_of(), is_chair_of();
                        is_staff_role() reimplemented on top of them
+0005_meeting.sql       board_meeting, agenda_item, meeting_attendance, motion; my_seats();
+                       board_attendance_summary(), chairman-only; no deletes
 ```
 
-The application reads `my_bodies()` at sign-in, so a build carrying 0004's
-client must run against a project that has 0004 applied — push the migration
+The application reads `my_seats()` at sign-in, so a build carrying 0005's
+client must run against a project that has 0005 applied — push the migration
 first, then deploy.
+
+**The deacon year.** Attendance is counted per deacon year (Art. II.B §3 ¶12)
+and the manual does not say which month it begins. `church_settings.
+deacon_year_start_month` says; it defaults to 1, the calendar year. Change it
+with one `update` when the Board says otherwise.
+
+**Seating the Board.** A meeting is visible only to seats on `deacon-board`.
+Insert the deacons' memberships (`role_in_body` `chair` for the chairman,
+`ex_officio` for the Senior Pastor), then grant each man `access = 'limited'`
+so he can sign in — in that order, so the People-page trigger has nothing to
+add. The chairman's seat is what makes `board_attendance_summary()` answer.
 
 ## Tested
 

@@ -247,3 +247,45 @@ export function Rule({ tone = 'section', style }: { tone?: 'section' | 'card' | 
   }
   return <div style={{ height: 1, background: colours[tone], ...style }} />
 }
+
+/* ---------------------------------------------------------------- BodyBadge
+   A small marker on any record saying which bodies can read it. One body is
+   quiet; two or more is sage, because a badge naming a second body should
+   read as a change, not as decoration. It appears wherever the record
+   appears — a badge that only shows on the detail view prevents nothing.
+   design_handoff_deacons_dashboard/README.md → "The body badge". */
+
+const BADGE_LABELS: Record<string, string> = {
+  staff: 'Staff',
+  'deacon-board': 'Deacons',
+  'deacon-body': 'Deacon body',
+  'committee:finance': 'Finance',
+  'committee:personnel': 'Personnel',
+  'committee:building-grounds': 'Building & Grounds',
+  'committee:family-assistance': 'Family Assistance',
+}
+
+export function BodyBadge({ bodies, on = 'card', style }: { bodies: readonly string[]; on?: 'card' | 'panel'; style?: CSSProperties }) {
+  const labels = bodies.map((slug) => BADGE_LABELS[slug] ?? slug)
+  const several = bodies.length > 1
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        background: on === 'panel' ? 'var(--surface-card)' : 'var(--surface-panel)',
+        border: '1px solid var(--mbc-border-chip)',
+        borderRadius: 'var(--mbc-radius-pill)',
+        padding: '7px 13px',
+        font: '700 10px/1 var(--mbc-font-sans)',
+        letterSpacing: 'var(--mbc-track-label-tight)',
+        textTransform: 'uppercase',
+        color: several ? 'var(--mbc-yale-sage)' : 'var(--text-meta)',
+        whiteSpace: 'nowrap',
+        ...style,
+      }}
+    >
+      {labels.join(' \u00b7 ')}
+    </span>
+  )
+}
