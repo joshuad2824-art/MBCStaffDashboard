@@ -1,13 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import { BodyBadge, Button, Card, Eyebrow } from '../components/ui'
 import { useStore } from '../data/store'
 import { useMeetings } from '../data/meetings/store'
 import {
-  FLAG_AT_ABSENCES,
   MEETINGS_PER_YEAR,
-  REQUIRED_MEETINGS,
   agendaFor,
   attendanceFor,
   currentMeeting,
@@ -19,11 +17,10 @@ import {
   seatLabel,
   sortedByDate,
 } from '../data/meetings/derive'
-import type { AttendanceCount, AttendanceStatus, Meeting as MeetingRecord, MeetingsData, Motion, MotionDisposition, Phase } from '../data/meetings/types'
+import type { AttendanceStatus, Meeting as MeetingRecord, MeetingsData, Motion, MotionDisposition, Phase } from '../data/meetings/types'
 import { COMMITTEES, boardItems, emptyPayload } from '../data/meetings/reports'
 import { assembleFor } from '../data/meetings/render'
 import { formatLong, formatShort, parseDate, startOfToday, todayIso } from '../lib/date'
-import { useSession } from '../session/session'
 import { SURFACES } from './surfaces'
 
 /** Absolute, so a phase can be reached from any depth of the meeting's URL. */
@@ -407,7 +404,6 @@ function SessionPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingR
   return (
     <div style={{ display: 'grid', gap: 20 }}>
       <Roll data={data} meeting={meeting} readOnly={closed} />
-      <ThresholdPanel data={data} meeting={meeting} />
       <Motions data={data} meeting={meeting} readOnly={closed} />
       {!closed ? (
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
@@ -423,35 +419,28 @@ function SessionPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingR
 
 const STATUSES: { key: AttendanceStatus; label: string }[] = [
   { key: 'present', label: 'Present' },
-  { key: 'absent', label: 'Absent' },
-  { key: 'excused', label: 'Excused' },
+  { key: 'absent', label: 'Not present' },
 ]
 
+/** Who was there and who was not, for the minutes. That is the whole record;
+    there is no attendance tracker and nothing counts against a rule. */
 function Roll({ data, meeting, readOnly }: { data: MeetingsData; meeting: MeetingRecord; readOnly: boolean }) {
   const { recordAttendance } = useMeetings()
   const roll = attendanceFor(data.attendance, meeting)
-  const counts = { present: 0, absent: 0, excused: 0 }
+  const counts = { present: 0, absent: 0 }
   roll.forEach((row) => {
     counts[row.status] += 1
   })
-  const [notes, setNotes] = useState<Record<string, string>>({})
 
   const mark = (personId: string, status: AttendanceStatus) => {
-    const note = notes[personId] ?? roll.get(personId)?.justCauseNote ?? ''
-    void recordAttendance(meeting.id, personId, status, status === 'absent' ? note : '')
-  }
-  const saveNote = (personId: string) => {
-    const row = roll.get(personId)
-    if (!row || row.status !== 'absent') return
-    const note = notes[personId] ?? row.justCauseNote
-    if (note !== row.justCauseNote) void recordAttendance(meeting.id, personId, 'absent', note)
+    void recordAttendance(meeting.id, personId, status)
   }
 
   return (
     <Card radius="card" pad="26px clamp(22px,2vw,30px)" style={{ display: 'grid', gap: 0 }}>
       <SectionHead
         label="Attendance · call the roll"
-        meta={`${roll.size} of ${data.roster.length} recorded · ${counts.present} present, ${counts.absent} absent, ${counts.excused} excused`}
+        meta={`${roll.size} of ${data.roster.length} recorded · ${counts.present} present, ${counts.absent} not present`}
       />
       <div style={{ display: 'grid', gap: 1, background: 'var(--border-hairline)' }}>
         {data.roster.map((member) => {
@@ -471,89 +460,10 @@ function Roll({ data, meeting, readOnly }: { data: MeetingsData; meeting: Meetin
                   ))}
                 </div>
               </div>
-              {row?.status === 'absent' ? (
-                <div style={{ display: 'grid', gap: 8, maxWidth: '74ch' }}>
-                  <p style={{ ...metaText, margin: 0 }}>Just cause — a note written by a person, in his own words. Optional, and never a checkbox.</p>
-                  <textarea
-                    rows={2}
-                    value={notes[member.personId] ?? row.justCauseNote}
-                    readOnly={readOnly}
-                    onChange={(e) => setNotes((current) => ({ ...current, [member.personId]: e.target.value }))}
-                    onBlur={() => saveNote(member.personId)}
-                    style={{ ...fieldStyle, minHeight: 0, padding: '13px 14px', resize: 'vertical' }}
-                  />
-                </div>
-              ) : null}
             </div>
           )
         })}
       </div>
-    </Card>
-  )
-}
-
-/** The count, and the threshold. Nothing else. In a configured build this is
-    a query that returns nothing to anyone but the chairman; the screen asks
-    only when it is drawn for him, and nothing here acts on the number. */
-function ThresholdPanel({ data, meeting }: { data: MeetingsData; meeting: MeetingRecord }) {
-  const { isChairOf } = useSession()
-  const { counts } = useMeetings()
-  const chair = isChairOf('deacon-board')
-  const [rows, setRows] = useState<AttendanceCount[] | null>(null)
-  const version = useMemo(() => JSON.stringify(data.attendance) + data.meetings.map((m) => m.status).join(), [data.attendance, data.meetings])
-
-  useEffect(() => {
-    if (!chair) return
-    let live = true
-    counts(data, meeting).then((result) => {
-      if (live) setRows(result)
-    })
-    return () => {
-      live = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chair, meeting.id, version])
-
-  if (!chair || !rows) return null
-  const missed = rows.filter((row) => row.absent > 0).sort((a, b) => b.absent - a.absent)
-  const clean = rows.length - missed.length
-
-  return (
-    <Card tone="panel" radius="card" pad="26px clamp(22px,2vw,30px)" style={{ display: 'grid', gap: 16 }}>
-      <div>
-        <Eyebrow size="sm">Chairman only · this panel is not on anyone else’s screen</Eyebrow>
-        <p style={{ font: '600 24px/1.25 var(--mbc-font-serif)', color: 'var(--text-heading)', margin: '10px 0 8px' }}>The count, and the threshold. Nothing else.</p>
-        <p style={{ font: '400 16px/1.7 var(--mbc-font-sans)', color: 'var(--text-body)', margin: 0, maxWidth: '70ch' }}>
-          Three-fourths of {MEETINGS_PER_YEAR} meetings is {REQUIRED_MEETINGS}. A man may miss {MEETINGS_PER_YEAR - REQUIRED_MEETINGS} and still meet the rule. This
-          panel raises it at the {FLAG_AT_ABSENCES === 2 ? 'second' : String(FLAG_AT_ABSENCES) + 'th'} absence so the conversation is pastoral rather than procedural — it
-          does not act on the number, and no man’s standing changes here.
-        </p>
-      </div>
-      <div style={{ display: 'grid', gap: 1, background: 'var(--border-section)', borderTop: '1px solid var(--border-section)', borderBottom: '1px solid var(--border-section)' }}>
-        {missed.length === 0 ? (
-          <p style={{ ...bodyText, margin: 0, padding: '14px 2px', background: 'var(--surface-panel)' }}>Nobody has missed a meeting this deacon year.</p>
-        ) : null}
-        {missed.map((row) => (
-          <div key={row.personId} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 16, padding: '14px 2px', background: 'var(--surface-panel)' }}>
-            <div style={{ minWidth: 0 }}>
-              <p style={{ font: '400 17px/1.4 var(--mbc-font-sans)', color: 'var(--text-heading)', margin: 0 }}>{row.name}</p>
-              <p style={{ font: '400 14px/1.55 var(--mbc-font-sans)', color: 'var(--text-meta)', margin: '2px 0 0', maxWidth: '64ch' }}>
-                {row.absent === 1 ? 'One missed' : `${row.absent} missed`}
-                {row.excused > 0 ? `, ${row.excused} excused` : ''}
-                {row.absent >= FLAG_AT_ABSENCES ? '. This is the second, which is why it is on this panel and not anywhere else.' : '.'}
-                {row.present + row.absent + row.excused < row.meetingsHeld ? ` Roll not recorded for ${row.meetingsHeld - row.present - row.absent - row.excused}.` : ''}
-              </p>
-            </div>
-            <span className="tabular" style={{ font: '600 20px/1.4 var(--mbc-font-serif)', color: 'var(--text-heading)', whiteSpace: 'nowrap' }}>
-              {row.present} of {REQUIRED_MEETINGS}
-            </span>
-          </div>
-        ))}
-      </div>
-      <p style={{ ...metaText, margin: 0, maxWidth: '72ch' }}>
-        {clean === rows.length ? 'Every man on the roll' : `The other ${clean === 1 ? 'man has' : clean + ' have'}`} missed none. Present mode is not available on this side: no committee room, no
-        care assignment and no deacon-audience thread goes on a wall.
-      </p>
     </Card>
   )
 }

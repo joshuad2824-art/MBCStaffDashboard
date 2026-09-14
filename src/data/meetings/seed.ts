@@ -38,13 +38,13 @@ export const seedAgenda: AgendaItem[] = [
 ]
 
 export const seedAttendance: Attendance[] = [
-  { id: 't-1', meetingId: 'm-last', personId: '8', status: 'present', justCauseNote: '', recordedBy: '8' },
-  { id: 't-2', meetingId: 'm-last', personId: '1', status: 'present', justCauseNote: '', recordedBy: '8' },
-  { id: 't-3', meetingId: 'm-last', personId: '9', status: 'present', justCauseNote: '', recordedBy: '8' },
-  { id: 't-4', meetingId: 'm-last', personId: '10', status: 'absent', justCauseNote: 'Out of town for his daughter’s wedding. He told me the Sunday before.', recordedBy: '8' },
-  { id: 't-5', meetingId: 'm-last', personId: '11', status: 'excused', justCauseNote: '', recordedBy: '8' },
-  { id: 't-6', meetingId: 'm-last', personId: '12', status: 'present', justCauseNote: '', recordedBy: '8' },
-  { id: 't-7', meetingId: 'm-last', personId: '13', status: 'absent', justCauseNote: '', recordedBy: '8' },
+  { id: 't-1', meetingId: 'm-last', personId: '8', status: 'present', recordedBy: '8' },
+  { id: 't-2', meetingId: 'm-last', personId: '1', status: 'present', recordedBy: '8' },
+  { id: 't-3', meetingId: 'm-last', personId: '9', status: 'present', recordedBy: '8' },
+  { id: 't-4', meetingId: 'm-last', personId: '10', status: 'absent', recordedBy: '8' },
+  { id: 't-5', meetingId: 'm-last', personId: '11', status: 'absent', recordedBy: '8' },
+  { id: 't-6', meetingId: 'm-last', personId: '12', status: 'present', recordedBy: '8' },
+  { id: 't-7', meetingId: 'm-last', personId: '13', status: 'absent', recordedBy: '8' },
 ]
 
 export const seedMotions: Motion[] = [
@@ -69,7 +69,7 @@ const lastMonthEnd = toIso(new Date(lastMeeting.getFullYear(), lastMeeting.getMo
     page, the print view and the versions list have something to show. */
 export const seedReports: Report[] = [
   {
-    id: 'r-finance-last', kind: 'committee', bodySlug: 'committee:finance', bodyName: 'Finance Committee', meetingId: 'm-last',
+    id: 'r-finance-last', kind: 'committee', file: null, bodySlug: 'committee:finance', bodyName: 'Finance Committee', meetingId: 'm-last',
     periodStart: lastMonthIso, periodEnd: lastMonthEnd, status: 'published',
     payload: {
       asOf: '', budgetAdopted: 1284000, receivedYtd: 842600, spentYtd: 801350,
@@ -85,7 +85,7 @@ export const seedReports: Report[] = [
     publishedAt: toIso(addDays(lastMeeting, -2)), archivedAt: null,
   },
   {
-    id: 'r-treasurer-last', kind: 'treasurer', bodySlug: 'committee:finance', bodyName: 'Finance Committee', meetingId: 'm-last',
+    id: 'r-treasurer-last', kind: 'treasurer', file: null, bodySlug: 'committee:finance', bodyName: 'Finance Committee', meetingId: 'm-last',
     periodStart: lastMonthIso, periodEnd: lastMonthEnd, status: 'published',
     payload: {
       receipts: [{ line: 'Tithes and offerings', amount: 96400 }, { line: 'Designated gifts', amount: 4150 }],
@@ -98,11 +98,11 @@ export const seedReports: Report[] = [
 
 export const seedVersions: ReportVersion[] = [
   {
-    id: 'v-finance-last-1', reportId: 'r-finance-last', versionNo: 1, payload: seedReports[0].payload,
+    id: 'v-finance-last-1', reportId: 'r-finance-last', versionNo: 1, file: null, payload: seedReports[0].payload,
     rendered: 'FINANCE COMMITTEE\nFinance committee report\n(as published)\n', createdBy: '9', publishedAt: toIso(addDays(lastMeeting, -2)), supersedesVersionId: null,
   },
   {
-    id: 'v-treasurer-last-1', reportId: 'r-treasurer-last', versionNo: 1, payload: seedReports[1].payload,
+    id: 'v-treasurer-last-1', reportId: 'r-treasurer-last', versionNo: 1, file: null, payload: seedReports[1].payload,
     rendered: 'TREASURER\nTreasurer\u2019s monthly report\n(as published)\n', createdBy: '9', publishedAt: toIso(addDays(lastMeeting, -2)), supersedesVersionId: null,
   },
 ]

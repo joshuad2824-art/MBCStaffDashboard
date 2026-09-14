@@ -4,7 +4,7 @@ import { useData } from '../store'
 import { useSession } from '../../session/session'
 import { meetingRepository } from './repository'
 import type { AgendaItem, AttendanceStatus, Meeting, MeetingKind, MeetingsData, NewMotion } from './types'
-import type { Report, ReportPayload, ReportVersion } from './reports'
+import type { Report, ReportFile, ReportPayload, ReportVersion } from './reports'
 
 /* The Board's room, loaded once a person who sits on the Board is signed in
    and never for anyone else. Every action writes under the signed-in man's
@@ -18,15 +18,17 @@ interface MeetingsStore {
   updateMeeting(id: string, patch: Parameters<typeof meetingRepository.updateMeeting>[1]): Promise<void>
   addAgendaItem(item: Omit<AgendaItem, 'id' | 'removedAt'>): Promise<void>
   removeAgendaItem(id: string): Promise<void>
-  recordAttendance(meetingId: string, personId: string, status: AttendanceStatus, note: string): Promise<void>
+  recordAttendance(meetingId: string, personId: string, status: AttendanceStatus): Promise<void>
   recordMotion(meetingId: string, position: number, motion: NewMotion): Promise<void>
   takeUp(motionId: string, meetingId: string): Promise<void>
-  counts: typeof meetingRepository.attendanceCounts
   createReport(input: Parameters<typeof meetingRepository.createReport>[0]): Promise<Report | null>
   saveReport(id: string, patch: Parameters<typeof meetingRepository.saveReport>[1]): Promise<void>
+  /** Attach a file to a report: the next version's file. Returns what was stored. */
+  attachFile(report: Report, file: File): Promise<ReportFile | null>
+  fileUrl: typeof meetingRepository.fileUrl
   /** Publish: write the next version, mark the report published, and move
       the report it replaces to archived. Nothing is overwritten. */
-  publish(report: Report, payload: ReportPayload, rendered: string): Promise<ReportVersion | null>
+  publish(report: Report, payload: ReportPayload, rendered: string, file: ReportFile | null): Promise<ReportVersion | null>
   /** Reload the room — after a report is filed, the pointers change. */
   refresh(): Promise<void>
 }
@@ -124,9 +126,9 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
           )
         })
       },
-      recordAttendance: async (meetingId, personId, status, note) => {
+      recordAttendance: async (meetingId, personId, status) => {
         await guard(async (who) => {
-          const row = await meetingRepository.recordAttendance(meetingId, personId, status, note, who)
+          const row = await meetingRepository.recordAttendance(meetingId, personId, status, who)
           setData((current) => {
             if (!current) return current
             const rest = current.attendance.filter((a) => !(a.meetingId === meetingId && a.personId === personId))
@@ -150,7 +152,6 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
           )
         })
       },
-      counts: (current, meeting) => meetingRepository.attendanceCounts(current, meeting),
       createReport: (input) =>
         guard(async (who) => {
           const report = await meetingRepository.createReport(input, who)
@@ -166,17 +167,28 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
           )
         })
       },
-      publish: (report, payload, rendered) =>
+      attachFile: (report, file) =>
+        guard(async (who) => {
+          const current = data
+          if (!current) return null
+          const next = (current.versions.filter((v) => v.reportId === report.id).sort((a, b) => b.versionNo - a.versionNo)[0]?.versionNo ?? 0) + 1
+          const stored = await meetingRepository.uploadFile(report.id, next, file)
+          await meetingRepository.saveReport(report.id, { file: stored }, who)
+          setData((state) => (state ? { ...state, reports: state.reports.map((r) => (r.id === report.id ? { ...r, file: stored, updatedBy: who } : r)) } : state))
+          return stored
+        }),
+      fileUrl: (file) => meetingRepository.fileUrl(file),
+      publish: (report, payload, rendered, file) =>
         guard(async (who) => {
           const current = data
           if (!current) return null
           const prior = current.versions.filter((v) => v.reportId === report.id).sort((a, b) => b.versionNo - a.versionNo)[0] ?? null
           const version = await meetingRepository.addVersion(
-            { reportId: report.id, versionNo: (prior?.versionNo ?? 0) + 1, payload, rendered, supersedesVersionId: prior?.id ?? null },
+            { reportId: report.id, versionNo: (prior?.versionNo ?? 0) + 1, payload, rendered, file, supersedesVersionId: prior?.id ?? null },
             who,
           )
           const publishedAt = version.publishedAt
-          await meetingRepository.saveReport(report.id, { payload, status: 'published', publishedAt }, who)
+          await meetingRepository.saveReport(report.id, { payload, file, status: 'published', publishedAt }, who)
           // A new period's report retires the one it replaces: same body, same kind.
           const replaced = current.reports.filter(
             (r) => r.id !== report.id && r.kind === report.kind && r.bodySlug === report.bodySlug && r.status === 'published',
@@ -190,7 +202,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
                   versions: [...state.versions, version],
                   reports: state.reports.map((r) =>
                     r.id === report.id
-                      ? { ...r, payload, status: 'published', publishedAt, updatedBy: who, updatedAt: publishedAt }
+                      ? { ...r, payload, file, status: 'published', publishedAt, updatedBy: who, updatedAt: publishedAt }
                       : replaced.some((old) => old.id === r.id)
                         ? { ...r, status: 'archived', archivedAt }
                         : r,

@@ -14,6 +14,9 @@ deacon side); unconfigured local builds keep the seed-data repositories.
                        board_attendance_summary(), chairman-only; no deletes
 0006_reports.sql       report and report_version: the four-state lifecycle, versions on
                        publish, reports_filed(); no compensation figures in Personnel
+0007_reports_revised   no attendance tracker; reports may be uploaded files; the private
+                       `reports` storage bucket and its policies; Board members may file
+                       a report on a committee's behalf
 ```
 
 The application reads `my_seats()` at sign-in and the report tables in the
@@ -27,7 +30,14 @@ with one `update` when the Board says otherwise.
 
 **Reports.** A committee's chair writes its report (`is_chair_of`); the
 Treasurer's itemised report belongs to `committee:finance`, whose chair is the
-Treasurer; any Board member writes the minutes. A draft is readable in its
+Treasurer; any Board member writes the minutes; and any Board member may
+create a report for a committee on its behalf — an upload, typically — and keep
+writing the one he created. Uploaded files live in the private `reports`
+bucket under the report's id; the bucket's policies call the same
+`can_read_report` / `can_write_report` the table's do, and nothing in the
+bucket can be updated or deleted. 0007 creates the bucket; if the project's
+Storage was set up by hand, confirm a bucket named `reports` exists and is
+not public. A draft is readable in its
 committee's room only; once submitted it is readable by the whole Board. A
 Personnel report that contains a dollar figure is refused by a trigger, in the
 draft and in any version. Publishing inserts a `report_version`; versions have

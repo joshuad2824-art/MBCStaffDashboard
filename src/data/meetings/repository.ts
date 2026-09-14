@@ -1,14 +1,12 @@
 import { supabase, supabaseConfigured } from '../../lib/supabase'
 import { SEED_SEATS } from '../seed'
 import type { Person } from '../types'
-import { attendanceCounts } from './derive'
 import { normalisePayload } from './reports'
-import type { FiledPointer, Report, ReportKind, ReportPayload, ReportStatus, ReportVersion } from './reports'
+import type { FiledPointer, Report, ReportFile, ReportKind, ReportPayload, ReportStatus, ReportVersion } from './reports'
 import { seedAgenda, seedAttendance, seedMeetings, seedMotions, seedReports, seedVersions } from './seed'
 import type {
   AgendaItem,
   Attendance,
-  AttendanceCount,
   AttendanceStatus,
   BoardMember,
   Meeting,
@@ -37,18 +35,20 @@ export interface MeetingRepository {
   updateMeeting(id: string, patch: Partial<Pick<Meeting, 'status' | 'agendaLockedAt' | 'agendaLockedBy' | 'calledToOrderAt' | 'adjournedAt' | 'minutesStatus' | 'approvedAt' | 'timeLabel' | 'location'>>): Promise<void>
   addAgendaItem(item: Omit<AgendaItem, 'id' | 'removedAt'>, me: string): Promise<AgendaItem>
   removeAgendaItem(id: string): Promise<void>
-  recordAttendance(meetingId: string, personId: string, status: AttendanceStatus, note: string, me: string): Promise<Attendance>
+  recordAttendance(meetingId: string, personId: string, status: AttendanceStatus, me: string): Promise<Attendance>
   recordMotion(meetingId: string, position: number, motion: NewMotion, me: string): Promise<Motion>
   takeUp(motionId: string, meetingId: string): Promise<void>
-  /** The chairman's count. Empty for anyone else — the database decides. */
-  attendanceCounts(data: MeetingsData, meeting: Meeting): Promise<AttendanceCount[]>
-
   /* Reports. The lifecycle is draft → submitted → published → archived and
      nothing goes backwards except a draft reopened from submitted. */
   createReport(input: { kind: ReportKind; bodySlug: string; meetingId: string | null; periodStart: string | null; periodEnd: string | null; payload: ReportPayload }, me: string): Promise<Report>
-  saveReport(id: string, patch: { payload?: ReportPayload; meetingId?: string | null; status?: ReportStatus; submittedAt?: string | null; submittedBy?: string | null; publishedAt?: string | null; archivedAt?: string | null }, me: string): Promise<void>
+  saveReport(id: string, patch: { payload?: ReportPayload; file?: ReportFile | null; meetingId?: string | null; status?: ReportStatus; submittedAt?: string | null; submittedBy?: string | null; publishedAt?: string | null; archivedAt?: string | null }, me: string): Promise<void>
   /** Publishing writes a version. Never updates one. */
-  addVersion(input: { reportId: string; versionNo: number; payload: ReportPayload; rendered: string; supersedesVersionId: string | null }, me: string): Promise<ReportVersion>
+  addVersion(input: { reportId: string; versionNo: number; payload: ReportPayload; rendered: string; file: ReportFile | null; supersedesVersionId: string | null }, me: string): Promise<ReportVersion>
+  /** A report filed their traditional way. The file goes under the report's
+      id; the bucket asks the report's own questions of it. */
+  uploadFile(reportId: string, versionNo: number, file: File): Promise<ReportFile>
+  /** Somewhere the file can be opened from, for a little while. */
+  fileUrl(file: ReportFile): Promise<string | null>
 }
 
 const STORAGE_KEY = 'mbc.deacons.meetings.v1'
@@ -175,12 +175,10 @@ export class LocalMeetingRepository implements MeetingRepository {
     this.write({ ...data, agenda: data.agenda.map((a) => (a.id === id ? { ...a, removedAt: nowIso() } : a)) })
   }
 
-  async recordAttendance(meetingId: string, personId: string, status: AttendanceStatus, note: string, me: string): Promise<Attendance> {
+  async recordAttendance(meetingId: string, personId: string, status: AttendanceStatus, me: string): Promise<Attendance> {
     const data = this.read()
     const existing = data.attendance.find((a) => a.meetingId === meetingId && a.personId === personId)
-    const row: Attendance = existing
-      ? { ...existing, status, justCauseNote: note }
-      : { id: newId(), meetingId, personId, status, justCauseNote: note, recordedBy: me }
+    const row: Attendance = existing ? { ...existing, status } : { id: newId(), meetingId, personId, status, recordedBy: me }
     this.write({
       ...data,
       attendance: existing ? data.attendance.map((a) => (a.id === row.id ? row : a)) : [...data.attendance, row],
@@ -200,15 +198,10 @@ export class LocalMeetingRepository implements MeetingRepository {
     this.write({ ...data, motions: data.motions.map((m) => (m.id === motionId ? { ...m, tabledToMeetingId: meetingId } : m)) })
   }
 
-  async attendanceCounts(data: MeetingsData, meeting: Meeting): Promise<AttendanceCount[]> {
-    // The stub has no chairman-only query, so the screen decides who asks.
-    return attendanceCounts(data, meeting)
-  }
-
   async createReport(input: { kind: ReportKind; bodySlug: string; meetingId: string | null; periodStart: string | null; periodEnd: string | null; payload: ReportPayload }, me: string): Promise<Report> {
     const now = nowIso()
     const report: Report = {
-      id: newId(), kind: input.kind, bodySlug: input.bodySlug, bodyName: BODY_NAMES[input.bodySlug] ?? input.bodySlug,
+      id: newId(), kind: input.kind, file: null, bodySlug: input.bodySlug, bodyName: BODY_NAMES[input.bodySlug] ?? input.bodySlug,
       meetingId: input.meetingId, periodStart: input.periodStart, periodEnd: input.periodEnd, status: 'draft', payload: input.payload,
       createdBy: me, updatedBy: me, updatedAt: now, submittedBy: null, submittedAt: null, publishedAt: null, archivedAt: null,
     }
@@ -225,11 +218,39 @@ export class LocalMeetingRepository implements MeetingRepository {
     })
   }
 
-  async addVersion(input: { reportId: string; versionNo: number; payload: ReportPayload; rendered: string; supersedesVersionId: string | null }, me: string): Promise<ReportVersion> {
+  async addVersion(input: { reportId: string; versionNo: number; payload: ReportPayload; rendered: string; file: ReportFile | null; supersedesVersionId: string | null }, me: string): Promise<ReportVersion> {
     const version: ReportVersion = { id: newId(), ...input, createdBy: me, publishedAt: nowIso() }
     const data = this.read()
     this.write({ ...data, versions: [...data.versions, version] })
     return version
+  }
+
+  /* Files in a local checkout are kept as data URLs beside the records —
+     enough for a sample PDF, not for an archive. A configured build keeps
+     them in the bucket. */
+  async uploadFile(reportId: string, versionNo: number, file: File): Promise<ReportFile> {
+    if (file.size > 4 * 1024 * 1024) throw new Error('The local checkout keeps files under 4 MB. A configured build has no such limit.')
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.onerror = () => reject(new Error('Could not read the file.'))
+      reader.readAsDataURL(file)
+    })
+    const path = `${reportId}/${versionNo}-${file.name}`
+    try {
+      window.localStorage.setItem(`${STORAGE_KEY}.file.${path}`, dataUrl)
+    } catch {
+      throw new Error('The browser would not keep that file. Try a smaller one.')
+    }
+    return { path, name: file.name, type: file.type || 'application/octet-stream' }
+  }
+
+  async fileUrl(file: ReportFile): Promise<string | null> {
+    try {
+      return window.localStorage.getItem(`${STORAGE_KEY}.file.${file.path}`)
+    } catch {
+      return null
+    }
   }
 }
 
@@ -264,7 +285,7 @@ function readAgenda(row: Row): AgendaItem {
 function readAttendance(row: Row): Attendance {
   return {
     id: text(row.id), meetingId: text(row.meeting_id), personId: text(row.person_id),
-    status: text(row.status) as AttendanceStatus, justCauseNote: text(row.just_cause_note), recordedBy: nullableText(row.recorded_by),
+    status: text(row.status) === 'present' ? 'present' : 'absent', recordedBy: nullableText(row.recorded_by),
   }
 }
 function readMotion(row: Row): Motion {
@@ -286,7 +307,7 @@ function readReport(row: Row, names: Map<string, { slug: string; name: string }>
   const kind = text(row.kind) as ReportKind
   const bodySlug = body.slug
   return {
-    id: text(row.id), kind, bodySlug, bodyName: body.name, meetingId: nullableText(row.meeting_id),
+    id: text(row.id), kind, file: readFile(row), bodySlug, bodyName: body.name, meetingId: nullableText(row.meeting_id),
     periodStart: nullableText(row.period_start), periodEnd: nullableText(row.period_end),
     status: text(row.status) as ReportStatus, payload: normalisePayload(kind, bodySlug, row.payload),
     createdBy: nullableText(row.created_by), updatedBy: nullableText(row.updated_by), updatedAt: text(row.updated_at),
@@ -294,9 +315,13 @@ function readReport(row: Row, names: Map<string, { slug: string; name: string }>
     publishedAt: nullableText(row.published_at), archivedAt: nullableText(row.archived_at),
   }
 }
+function readFile(row: Row): ReportFile | null {
+  const path = nullableText(row.file_path)
+  return path ? { path, name: text(row.file_name) || path.split('/').pop() || 'file', type: text(row.file_type) || 'application/octet-stream' } : null
+}
 function readVersion(row: Row): ReportVersion {
   return {
-    id: text(row.id), reportId: text(row.report_id), versionNo: Number(row.version_no ?? 0),
+    id: text(row.id), reportId: text(row.report_id), versionNo: Number(row.version_no ?? 0), file: readFile(row),
     payload: (row.payload ?? {}) as ReportPayload, rendered: text(row.rendered), createdBy: nullableText(row.created_by),
     publishedAt: text(row.published_at), supersedesVersionId: nullableText(row.supersedes_version_id),
   }
@@ -428,10 +453,10 @@ export class SupabaseMeetingRepository implements MeetingRepository {
     if (error) fail('remove the agenda item', error)
   }
 
-  async recordAttendance(meetingId: string, personId: string, status: AttendanceStatus, note: string, me: string): Promise<Attendance> {
+  async recordAttendance(meetingId: string, personId: string, status: AttendanceStatus, me: string): Promise<Attendance> {
     const { data, error } = await this.client()
       .from('meeting_attendance')
-      .upsert({ meeting_id: meetingId, person_id: personId, status, just_cause_note: note, recorded_by: me }, { onConflict: 'meeting_id,person_id' })
+      .upsert({ meeting_id: meetingId, person_id: personId, status, recorded_by: me }, { onConflict: 'meeting_id,person_id' })
       .select('*')
       .single()
     if (error || !data) fail('record attendance', error)
@@ -477,6 +502,11 @@ export class SupabaseMeetingRepository implements MeetingRepository {
   async saveReport(id: string, patch: Parameters<MeetingRepository['saveReport']>[1], me: string): Promise<void> {
     const fields: Row = { updated_by: me, updated_at: nowIso() }
     if (patch.payload !== undefined) fields.payload = patch.payload
+    if (patch.file !== undefined) {
+      fields.file_path = patch.file?.path ?? null
+      fields.file_name = patch.file?.name ?? null
+      fields.file_type = patch.file?.type ?? null
+    }
     if (patch.meetingId !== undefined) fields.meeting_id = patch.meetingId
     if (patch.status !== undefined) fields.status = patch.status
     if (patch.submittedAt !== undefined) fields.submitted_at = patch.submittedAt
@@ -487,23 +517,32 @@ export class SupabaseMeetingRepository implements MeetingRepository {
     if (error) fail('save the report', error)
   }
 
-  async addVersion(input: { reportId: string; versionNo: number; payload: ReportPayload; rendered: string; supersedesVersionId: string | null }, me: string): Promise<ReportVersion> {
+  async addVersion(input: { reportId: string; versionNo: number; payload: ReportPayload; rendered: string; file: ReportFile | null; supersedesVersionId: string | null }, me: string): Promise<ReportVersion> {
     const { data, error } = await this.client()
       .from('report_version')
-      .insert({ report_id: input.reportId, version_no: input.versionNo, payload: input.payload, rendered: input.rendered, supersedes_version_id: input.supersedesVersionId, created_by: me })
+      .insert({
+        report_id: input.reportId, version_no: input.versionNo, payload: input.payload, rendered: input.rendered,
+        file_path: input.file?.path ?? null, file_name: input.file?.name ?? null, file_type: input.file?.type ?? null,
+        supersedes_version_id: input.supersedesVersionId, created_by: me,
+      })
       .select('*')
       .single()
     if (error || !data) fail('publish the version', error)
     return readVersion(data as Row)
   }
 
-  async attendanceCounts(_data: MeetingsData, meeting: Meeting): Promise<AttendanceCount[]> {
-    const { data, error } = await this.client().rpc('board_attendance_summary', { on_date: meeting.meetsOn })
-    if (error) fail('read the attendance count', error)
-    return ((data ?? []) as Row[]).map((row) => ({
-      personId: text(row.person_id), name: text(row.name), meetingsHeld: Number(row.meetings_held ?? 0),
-      present: Number(row.present ?? 0), absent: Number(row.absent ?? 0), excused: Number(row.excused ?? 0),
-    }))
+  async uploadFile(reportId: string, versionNo: number, file: File): Promise<ReportFile> {
+    const safeName = file.name.replace(/[^\w.\-]+/g, '-')
+    const path = `${reportId}/${versionNo}-${safeName}`
+    const { error } = await this.client().storage.from('reports').upload(path, file, { contentType: file.type || undefined, upsert: false })
+    if (error) fail('upload the file', error)
+    return { path, name: file.name, type: file.type || 'application/octet-stream' }
+  }
+
+  async fileUrl(file: ReportFile): Promise<string | null> {
+    const { data, error } = await this.client().storage.from('reports').createSignedUrl(file.path, 60 * 60)
+    if (error) return null
+    return data?.signedUrl ?? null
   }
 }
 

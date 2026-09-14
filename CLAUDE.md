@@ -41,9 +41,10 @@ which is a conversation. Reports are records, and records keep.
 anything under policy E006 (abuse response), individual contribution records, staff compensation
 figures.
 
-**Attendance flags, never removes.** The ¾ rule in Art. II.B §3 ¶12 carries automatic removal. The
-system shows the count and raises a private flag to the chairman; no automated status change ever
-follows from it. "Just cause" is a note written by a person.
+**There is no attendance tracker.** The Board decided it does not want one. The roll is called so
+the minutes can say who was present and who was not — the two lines the Board's minutes have always
+carried — and nothing computes a count against the ¾ rule in Art. II.B §3 ¶12. No function, no
+panel, no flag. If one is ever asked for again, it flags and never removes.
 
 ---
 
@@ -54,7 +55,7 @@ follows from it. "Just cause" is a note written by a person.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0007_…` |
+| Migrations | Continue the sequence: next is `supabase/migrations/0008_…` |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -78,8 +79,8 @@ follows from it. "Just cause" is a note written by a person.
   *and* `access = 'staff'`, not membership alone: the staff body is the whole staff roster, limited
   accounts included, and a bare `is_member_of('staff')` would have opened care records to them.
 - **`supabase/migrations/0005_meeting.sql`** — `board_meeting`, `agenda_item`, `meeting_attendance`,
-  `motion`; `my_seats()`; `board_attendance_summary()`, which returns rows only to the chairman of
-  the Board and is the only place the ¾ count is computed. No delete policy on any of the four.
+  `motion`; `my_seats()`. No delete policy on any of the four. (0007 dropped the attendance count
+  and the just-cause note: the roll is present or not present, for the minutes.)
 - **`supabase/migrations/0006_reports.sql`** — `report` (one table, `kind` committee / treasurer /
   minutes, the four-state lifecycle) and `report_version` (written on publish, never updated or
   deleted). A draft is its committee's own; a filed report goes to the whole Board, as the
@@ -87,6 +88,10 @@ follows from it. "Just cause" is a note written by a person.
   Family Assistance has no field for a circumstance; a dollar figure in a Personnel report is
   refused by a trigger. `src/data/meetings/reports.ts` holds the shapes and the standard template —
   the Brotherhood of Deacons minutes and their appendices A–D, as the Board has filed them for years.
+- **`supabase/migrations/0007_reports_revised.sql`** — a report may be a file instead of a form:
+  `file_path` on `report` and `report_version`, the private `reports` bucket whose policies ask the
+  report's own questions, and `can_write_report(kind, body, created_by)`: the chair, any Board
+  member for the minutes, and any Board member for a report he created on a committee's behalf.
 - **Seating.** Memberships change by SQL, by one administrator. The one automatic seat: an active
   person granted access who sits in no body yet is put in `staff`, so the People page keeps
   working. Seat a deacon first, grant access second, and the trigger adds nothing.

@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Navigate, useParams } from 'react-router-dom'
 import type { CSSProperties } from 'react'
 import { Button, Card, Eyebrow } from '../components/ui'
 import { APPENDIX, renderReport, type RenderedReport, type Report, type ReportVersion } from '../data/meetings/reports'
 import { renderAgenda, renderContextFor } from '../data/meetings/render'
+import { useMeetings } from '../data/meetings/store'
 import type { MeetingsData } from '../data/meetings/types'
 import { formatLong, parseDate, startOfToday } from '../lib/date'
 
@@ -72,7 +74,10 @@ export function ReportPrint({ data }: { data: MeetingsData }) {
 
       {agenda ? <PrintedReport page={agenda} footer="Agenda · Memorial Baptist Church, Tulsa" /> : null}
       {rendered.map(({ report, version, rendered: page }) => (
-        <PrintedReport key={report.id} page={page} footer={footerFor(report, version)} />
+        <div key={report.id} style={{ display: 'grid', gap: 10 }}>
+          <PrintedReport page={page} footer={footerFor(report, version)} />
+          {(version?.file ?? report.file) ? <FileLink file={(version?.file ?? report.file)!} /> : null}
+        </div>
       ))}
 
       {createPortal(
@@ -92,6 +97,31 @@ export function ReportPrint({ data }: { data: MeetingsData }) {
         document.body,
       )}
     </div>
+  )
+}
+
+/** An uploaded report prints from its file. */
+function FileLink({ file }: { file: { path: string; name: string; type: string } }) {
+  const { fileUrl } = useMeetings()
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    let live = true
+    fileUrl(file).then((u) => {
+      if (live) setUrl(u)
+    })
+    return () => {
+      live = false
+    }
+  }, [file, fileUrl])
+  if (!url) return null
+  return (
+    <p style={{ font: '400 14px/1.5 var(--mbc-font-sans)', color: 'var(--text-meta)', margin: 0 }}>
+      Filed as a file:{' '}
+      <a href={url} target="_blank" rel="noreferrer" style={{ color: 'var(--text-link)', fontWeight: 700 }}>
+        open {file.name}
+      </a>{' '}
+      and print it from there.
+    </p>
   )
 }
 

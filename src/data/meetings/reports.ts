@@ -38,13 +38,32 @@ export interface FinancePayload {
   items: BoardItem[]
 }
 
-/** Appendix D: the month's activity by line, and the annual budget it draws on. */
-export interface GroundsPayload {
-  expenses: { date: string; description: string; amount: number | null }[]
+/** One line of Building & Grounds activity, as the ledger prints it. */
+export interface LedgerLine {
+  date: string
+  description: string
+  debit: number | null
+  credit: number | null
+}
+
+/** One account on the Building & Grounds sheet: its lines for the month and
+    its annual budget against what has been spent. */
+export interface LedgerAccount {
+  number: string
+  lines: LedgerLine[]
   budgetAnnual: number | null
+  /** Year to date, as the sheet states it. The month's total is derived. */
   spentYtd: number | null
-  projectsOpen: string[]
-  projectsClosed: string[]
+}
+
+/** Appendix D — BUILDING & GROUNDS ACTIVITY, exactly as the committee sends
+    it each month: accounts with their lines and totals, budget information,
+    and total monthly expenditures across the year. */
+export interface GroundsPayload {
+  accounts: LedgerAccount[]
+  /** 'YYYY-MM' → total. Prior months carried from earlier reports; the
+      current month is derived from the lines and never typed. */
+  monthlyTotals: Record<string, number>
   items: BoardItem[]
 }
 
@@ -57,15 +76,16 @@ export interface PersonnelPayload {
   items: BoardItem[]
 }
 
-/** Appendix B: the fund, and the D002 confirmation. There is no field for a
+/** Appendix B — Family Assistance Report for Deacons Meeting, exactly as the
+    committee sends it: the fund's balance at the start of the month, additions,
+    expenditures, and the balance at the end. There is no field for a
     circumstance, which is the whole design. */
 export interface FamilyAssistancePayload {
+  reportDate: string
   openingBalance: number | null
   additions: number | null
   expenditures: number | null
-  received: number | null
-  approved: number | null
-  declined: number | null
+  /** D002 §6: every disbursement to a third party against an invoice. */
   thirdPartyInvoiceConfirmed: boolean
 }
 
@@ -101,9 +121,18 @@ export interface MinutesPayload {
 
 export type ReportPayload = FinancePayload | GroundsPayload | PersonnelPayload | FamilyAssistancePayload | TreasurerPayload | MinutesPayload
 
+/** A report filed as a file rather than built. */
+export interface ReportFile {
+  path: string
+  name: string
+  type: string
+}
+
 export interface Report {
   id: string
   kind: ReportKind
+  /** Set when the report was uploaded instead of built. */
+  file: ReportFile | null
   bodySlug: string
   bodyName: string
   meetingId: string | null
@@ -124,6 +153,7 @@ export interface ReportVersion {
   id: string
   reportId: string
   versionNo: number
+  file: ReportFile | null
   payload: ReportPayload
   rendered: string
   createdBy: string | null
@@ -165,11 +195,11 @@ export function emptyPayload(kind: ReportKind, bodySlug: string): ReportPayload 
   }
   switch (bodySlug) {
     case 'committee:building-grounds':
-      return { expenses: [], budgetAnnual: null, spentYtd: null, projectsOpen: [], projectsClosed: [], items: [] }
+      return { accounts: [{ number: '6307', lines: [], budgetAnnual: null, spentYtd: null }, { number: '6310', lines: [], budgetAnnual: null, spentYtd: null }], monthlyTotals: {}, items: [] }
     case 'committee:personnel':
       return { present: '', reviewsCompleted: [], staffingActions: [], items: [] }
     case 'committee:family-assistance':
-      return { openingBalance: null, additions: null, expenditures: null, received: null, approved: null, declined: null, thirdPartyInvoiceConfirmed: false }
+      return { reportDate: '', openingBalance: null, additions: null, expenditures: null, thirdPartyInvoiceConfirmed: false }
     default:
       return { asOf: '', budgetAdopted: null, receivedYtd: null, spentYtd: null, otherReceipts: [], variances: [], actions: [], items: [] }
   }
@@ -245,6 +275,33 @@ export function sum(lines: MoneyLine[]): number {
   return lines.reduce((total, line) => total + (line.amount ?? 0), 0)
 }
 
+/** An account's debits and credits for the month, as the sheet totals them. */
+export function accountTotals(account: LedgerAccount): { debit: number; credit: number } {
+  return account.lines.reduce(
+    (totals, line) => ({ debit: totals.debit + (line.debit ?? 0), credit: totals.credit + (line.credit ?? 0) }),
+    { debit: 0, credit: 0 },
+  )
+}
+
+/** Total monthly expenditures: every account's debits for the month. */
+export function groundsMonthTotal(payload: GroundsPayload): number {
+  return payload.accounts.reduce((total, account) => total + accountTotals(account).debit, 0)
+}
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+/** The year's months for the sheet, December first as the committee prints
+    it, with this month's total derived and the others carried. */
+export function groundsYearTable(payload: GroundsPayload, periodStart: string | null): { month: string; amount: number | null }[] {
+  const year = periodStart ? Number(periodStart.slice(0, 4)) : new Date().getFullYear()
+  const thisMonth = periodStart ? periodStart.slice(0, 7) : null
+  return MONTHS.map((name, index) => {
+    const key = `${year}-${String(index + 1).padStart(2, '0')}`
+    const amount = key === thisMonth ? groundsMonthTotal(payload) : (payload.monthlyTotals[key] ?? null)
+    return { month: name, amount }
+  }).reverse()
+}
+
 /* ------------------------------------------------- the standard template */
 
 export interface RenderContext {
@@ -276,6 +333,11 @@ function meetingLabel(meeting: Meeting | null): string {
   return 'for the meeting of ' + new Date(y, m - 1, d).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+function usDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return `${m}/${d}/${y}`
+}
+
 function periodLabel(report: Report): string {
   if (!report.periodStart) return ''
   const [y, m] = report.periodStart.split('-').map(Number)
@@ -289,6 +351,16 @@ export function renderReport(context: RenderContext): RenderedReport {
   const { report, meeting, chairName, asOf } = context
   const title = reportTitle(report)
   const when = meeting ? meetingLabel(meeting) : 'not yet filed'
+
+  if (report.file) {
+    const appendix = APPENDIX[report.bodySlug]
+    return {
+      label: report.kind === 'committee' && appendix ? `Appendix ${appendix} – ${COMMITTEE_SHORT[report.bodySlug]} report` : report.kind === 'treasurer' ? 'Treasurer' : 'Deacon Board',
+      title,
+      byline: `${periodLabel(report) ? periodLabel(report) + ' · ' : ''}filed as a file by ${chairName} · ${when}`,
+      sections: [{ title: 'Attached', lines: [`${report.file.name} — filed their traditional way. Open the file to read it; it prints from the file.`] }],
+    }
+  }
 
   if (report.kind === 'minutes') {
     const p = report.payload as MinutesPayload
@@ -356,27 +428,26 @@ export function renderReport(context: RenderContext): RenderedReport {
   switch (report.bodySlug) {
     case 'committee:building-grounds': {
       const p = report.payload as GroundsPayload
-      const monthTotal = p.expenses.reduce((total, line) => total + (line.amount ?? 0), 0)
-      return {
-        label,
-        title,
-        byline,
-        sections: [
-          {
-            title: 'Activity for the month',
-            lines: [...p.expenses.filter((l) => l.description.trim()).map((l) => `${l.date || '—'} · ${l.description} · ${money(l.amount)}`), `Total for the month · ${money(monthTotal)}`],
-          },
-          {
-            title: 'Budget information',
-            lines: [
-              p.budgetAnnual === null ? 'Annual budget · —' : `Annual budget · ${money(p.budgetAnnual)} · year to date ${money(p.spentYtd)} · balance ${money(p.budgetAnnual - (p.spentYtd ?? 0))}`,
-            ],
-          },
-          { title: 'Projects open', lines: some(p.projectsOpen) },
-          { title: 'Projects closed', lines: some(p.projectsClosed) },
-          { title: 'Items for the Board', lines: some(itemLines(p.items)) },
-        ],
-      }
+      const cents = (n: number | null) => (n === null ? '—' : '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+      const sections: RenderedSection[] = p.accounts.map((account) => {
+        const totals = accountTotals(account)
+        return {
+          title: `Acct# ${account.number}`,
+          lines: [
+            ...account.lines.filter((l) => l.description.trim() || l.debit !== null || l.credit !== null).map((l) => `${l.date || '—'} · ${l.description}${l.debit !== null ? ' · debit ' + cents(l.debit) : ''}${l.credit !== null ? ' · credit ' + cents(l.credit) : ''}`),
+            `Account totals · debit ${cents(totals.debit)} · credit ${cents(totals.credit)}`,
+            account.budgetAnnual === null
+              ? 'Budget information · annual —'
+              : `Budget information · annual ${cents(account.budgetAnnual)} · actual ${cents(account.spentYtd)} · balance ${cents(account.budgetAnnual - (account.spentYtd ?? 0))}`,
+          ],
+        }
+      })
+      sections.push({
+        title: 'Total monthly expenditures',
+        lines: groundsYearTable(p, report.periodStart).map((row) => `${row.month} · ${row.amount === null ? '' : cents(row.amount)}`.trimEnd()),
+      })
+      if (itemLines(p.items).length) sections.push({ title: 'Items for the Board', lines: itemLines(p.items) })
+      return { label: `Appendix ${appendix} – Building & Grounds Activity`, title: 'Building & Grounds Activity', byline: `${periodLabel(report)} · ${chairName} · ${when}`, sections }
     }
     case 'committee:personnel': {
       const p = report.payload as PersonnelPayload
@@ -394,21 +465,18 @@ export function renderReport(context: RenderContext): RenderedReport {
     }
     case 'committee:family-assistance': {
       const p = report.payload as FamilyAssistancePayload
-      const n = (v: number | null) => (v === null ? '—' : String(v))
+      const cents = (n: number | null) => (n === null ? '—' : '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
       const closing = p.openingBalance === null ? null : p.openingBalance + (p.additions ?? 0) - (p.expenditures ?? 0)
-      return {
-        label,
-        title,
-        byline,
-        sections: [
-          {
-            title: 'The fund',
-            lines: [`Balance at start of month · ${money(p.openingBalance)}`, `Additions · ${money(p.additions ?? 0)}`, `Expenditures · ${money(p.expenditures ?? 0)}`, `Balance at end of month · ${money(closing)}`],
-          },
-          { title: 'Requests', lines: [`Received · ${n(p.received)} · approved · ${n(p.approved)} · declined · ${n(p.declined)}`] },
-          { title: 'D002 §6', lines: [p.thirdPartyInvoiceConfirmed ? 'Every disbursement was paid to a third party against an invoice, as D002 §6 requires.' : 'Third-party invoice rule: not yet confirmed.'] },
-        ],
-      }
+      const start = report.periodStart ? usDate(report.periodStart) : '—'
+      const end = p.reportDate || (report.periodEnd ? usDate(report.periodEnd) : '—')
+      const sections: RenderedSection[] = [
+        {
+          title: 'The fund',
+          lines: [`${start} · ${cents(p.openingBalance)}`, `Additions · ${cents(p.additions ?? 0)}`, `Expenditures · ${cents(p.expenditures ?? 0)}`, `${end} · ${cents(closing)}`],
+        },
+      ]
+      if (p.thirdPartyInvoiceConfirmed) sections.push({ title: 'D002 §6', lines: ['Every disbursement was paid to a third party against an invoice, as D002 §6 requires.'] })
+      return { label: `Appendix ${appendix} – Family Assistance Report for Deacons Meeting`, title: 'Family Assistance Report for Deacons Meeting', byline: `${end} · ${chairName} · ${when}`, sections }
     }
     default: {
       const p = report.payload as FinancePayload
@@ -455,7 +523,6 @@ export function renderedText(rendered: RenderedReport): string {
 export interface AssembledMinutes {
   present: string[]
   absent: string[]
-  excused: string[]
   opened: string | null
   adjourned: string | null
   /** Tabled motions carried into this meeting, as old business lines. */
@@ -476,7 +543,7 @@ const clock = (iso: string | null) => {
 
 export function assembleMinutes(input: {
   roster: BoardMember[]
-  attendance: Map<string, { status: 'present' | 'absent' | 'excused' }>
+  attendance: Map<string, { status: 'present' | 'absent' }>
   motions: Motion[]
   filed: FiledPointer[]
   carriedIn: Motion[]
@@ -493,10 +560,7 @@ export function assembleMinutes(input: {
   }
   return {
     present: roster.filter((m) => attendance.get(m.personId)?.status === 'present').map((m) => m.name),
-    absent: roster
-      .filter((m) => attendance.get(m.personId)?.status !== 'present' && attendance.has(m.personId))
-      .map((m) => m.name + (attendance.get(m.personId)?.status === 'excused' ? ' (excused)' : '')),
-    excused: roster.filter((m) => attendance.get(m.personId)?.status === 'excused').map((m) => m.name),
+    absent: roster.filter((m) => attendance.get(m.personId)?.status === 'absent').map((m) => m.name),
     opened: clock(meeting.calledToOrderAt),
     adjourned: clock(meeting.adjournedAt),
     carriedIn: carriedIn.map((m) => `Carried from the last meeting: ${m.text}`),

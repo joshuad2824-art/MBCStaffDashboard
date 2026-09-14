@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Route, Routes, useNavigate } from 'react-router-dom'
 import { Button, Card, Eyebrow } from '../components/ui'
 import { useMeetings } from '../data/meetings/store'
@@ -31,9 +31,11 @@ export function Reports() {
 
 function ReportsIndex({ data }: { data: MeetingsData }) {
   const { bodies, isChairOf } = useSession()
-  const { createReport } = useMeetings()
+  const { createReport, attachFile } = useMeetings()
   const navigate = useNavigate()
   const today = startOfToday()
+  const picker = useRef<HTMLInputElement>(null)
+  const [uploadFor, setUploadFor] = useState<string>('committee:finance')
   const current = currentMeeting(data.meetings, today)
   const onBoard = bodies.includes('deacon-board')
   const [from, setFrom] = useState(toIso(new Date(today.getFullYear(), 0, 1)))
@@ -67,12 +69,49 @@ function ReportsIndex({ data }: { data: MeetingsData }) {
   if (isChairOf('committee:finance') && !mine.some((r) => r.kind === 'treasurer')) {
     starters.push({ label: 'Start the Treasurer’s itemised report', onStart: () => void start('treasurer', 'committee:finance') })
   }
+  /* A report filed their traditional way: pick the committee, pick the file.
+     The chair or any Board member may do this; the file stands in for the
+     form and moves through the same lifecycle. */
+  const upload = async (chosen: File | null) => {
+    if (!chosen) return
+    const created = await createReport({ kind: 'committee', bodySlug: uploadFor, meetingId: current?.id ?? null, periodStart: null, periodEnd: null, payload: emptyPayload('committee', uploadFor) })
+    if (!created) return
+    const stored = await attachFile(created, chosen)
+    if (stored) navigate(`/reports/${created.id}`)
+  }
+  const canUploadFor = COMMITTEES.filter((slug) => onBoard || isChairOf(slug))
+
   const heldWithoutMinutes = onBoard
     ? sortedByDate(data.meetings).filter((m) => m.status === 'held' && !data.reports.some((r) => r.kind === 'minutes' && r.meetingId === m.id))
     : []
 
   return (
     <div style={{ display: 'grid', gap: 20 }}>
+      {canUploadFor.length > 0 ? (
+        <Card tone="panel" radius="card" pad="22px 24px" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'end', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'grid', gap: 6, maxWidth: '56ch' }}>
+            <Eyebrow size="sm">Upload a report instead</Eyebrow>
+            <p style={{ font: '400 15px/1.6 var(--mbc-font-sans)', color: 'var(--text-body)', margin: 0 }}>
+              For a committee that puts its report together its own way. Attach the file and it files, publishes and archives like any other; each newer file is a new version.
+            </p>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'end' }}>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span style={labelStyle}>Committee</span>
+              <select value={uploadFor} onChange={(e) => setUploadFor(e.target.value)} style={fieldStyle}>
+                {canUploadFor.map((slug) => (
+                  <option key={slug} value={slug}>{COMMITTEE_SHORT[slug]}</option>
+                ))}
+              </select>
+            </label>
+            <input ref={picker} type="file" accept=".pdf,.xlsx,.xls,.csv,.doc,.docx,.png,.jpg,.jpeg,application/pdf" style={{ display: 'none' }} onChange={(e) => void upload(e.target.files?.[0] ?? null)} />
+            <Button variant="outline" size="md" onClick={() => picker.current?.click()}>
+              Choose the file
+            </Button>
+          </div>
+        </Card>
+      ) : null}
+
       {(mine.length > 0 || starters.length > 0 || heldWithoutMinutes.length > 0) ? (
         <Card radius="card" pad="26px clamp(22px,2vw,30px)" style={{ display: 'grid', gap: 14 }}>
           <Eyebrow size="sm">Yours to write</Eyebrow>
