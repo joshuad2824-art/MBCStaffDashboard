@@ -988,3 +988,56 @@ select test.assert((select count(*) from announcement) = 0, 'signed out: no anno
 select test.assert((select count(*) from thread) = 0,       'signed out: still no threads');
 select test.refused($q$ select purge_expired_announcements() $q$, '42501', 'signed out: cannot call the purge');
 reset role;
+
+-- ------------------------------------------------- 10. the year and the reference (0009)
+--
+-- Governance content: readable across the deacon side, written by nobody
+-- through the API. The obligations are seeded by the migration itself.
+
+reset role;
+
+insert into governance_document (slug, kind, code, title, body, position) values
+  ('article-ii', 'bylaws', 'Art. II', 'Article II — Officers and Boards', 'Transcribed text.', 1),
+  ('a009',       'policy', 'A009',    'A009 — Budget calendar',           'Transcribed text.', 2);
+insert into governance_finding (number, title, body, cites) values
+  (8, 'An amendment cites a paragraph that no longer resolves', 'The record captured a location, not the language.', '{"Art. II.B §3 ¶12"}');
+
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from obligation) = 8,           'deacon A: reads the year''s obligations');
+select test.assert((select count(*) from governance_document) = 2, 'deacon A: reads the reference');
+select test.assert((select count(*) from governance_finding) = 1,  'deacon A: reads the docket');
+select test.refused(
+  $q$ insert into obligation (slug, title, rule_source, cadence, anchor, owner_body_slug) values ('made-up', 'Made up', 'Nowhere', 'annual', '01-01', 'deacon-board') $q$,
+  '42501', 'deacon A: cannot add an obligation — the year is not typed');
+-- No update or delete policy: the statements touch no rows and raise nothing.
+update governance_document set body = 'Rewritten' where slug = 'article-ii';
+delete from governance_finding where number = 8;
+reset role;
+select test.assert((select body from governance_document where slug = 'article-ii') = 'Transcribed text.', 'deacon A: cannot edit the bylaws');
+select test.assert((select count(*) from governance_finding where number = 8) = 1, 'deacon A: cannot strike a finding from the docket');
+
+select test.sign_in('a0000000-0000-0000-0000-000000000011', 'grounds@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from obligation) = 8,           'grounds chair: on the deacon side, reads the year');
+select test.assert((select count(*) from governance_document) = 2, 'grounds chair: reads the reference');
+reset role;
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from obligation) = 0,           'staff: reads ZERO obligations — the year is the Board''s');
+select test.assert((select count(*) from governance_document) = 0, 'staff: reads zero reference documents');
+select test.assert((select count(*) from governance_finding) = 0,  'staff: reads zero findings');
+reset role;
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from obligation) = 0, 'limited: reads zero obligations');
+reset role;
+
+select test.sign_out();
+set role anon;
+select test.assert((select count(*) from obligation) = 0,           'signed out: no obligations');
+select test.assert((select count(*) from governance_document) = 0, 'signed out: no reference');
+select test.assert((select count(*) from governance_finding) = 0,  'signed out: no docket');
+reset role;

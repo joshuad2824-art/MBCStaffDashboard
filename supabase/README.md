@@ -20,7 +20,33 @@ deacon side); unconfigured local builds keep the seed-data repositories.
 0008_audience.sql      shared surfaces: audience text[] on event and thread, the new
                        announcement table, in_audience() and in_discussion_audience();
                        the calendar's draft state (published_at); purge_expired_announcements()
+0009_year_and_reference obligation (the year's dated rules, seeded), governance_document and
+                       governance_finding (the transcribed corpus and the discrepancy docket);
+                       readable across the deacon side, writable by nobody through the API
 ```
+
+## Loading the governance corpus
+
+The reference reads `governance_document` and `governance_finding`. They are
+filled from the transcription the brief cites — one Markdown file per bylaw
+article, policy or procedure, with `DISCREPANCY-DOCKET.md` beside them — by a
+loader that writes upserts keyed on slug and on finding number:
+
+```
+node supabase/governance/build-seed.mjs "/path/to/MBC_Bylaws:Policies:Procedures" > supabase/governance/seed.sql
+```
+
+Run the SQL it prints in the project's SQL editor (or with `psql`). Re-run both
+steps whenever the transcription changes; the script's header says how it reads
+a file's code, kind and title, and how it splits the docket into findings. The
+generated `seed.sql` is not committed — the corpus is church content and lives
+in the database, behind the policy, not in the repository or the bundle.
+
+The eight obligations 0009 seeds carry the citations the brief gives. Two are
+anchored provisionally until the corpus is read — the Treasurer's annual report
+and audit (anchored to the January meeting) and the A009 budget calendar, of
+whose five dates only 10 October is seeded. Correcting one is an `update
+obligation set anchor = … where slug = …`; everything derived moves with it.
 
 The application reads `my_seats()` at sign-in and the report tables in the
 Board's room, so a build carrying 0006's client must run against a project
@@ -88,6 +114,9 @@ one that does not stops the run. It asserts that:
   in, or narrows a joint one to a room they are not in; an empty audience and
   a slug that names no body are refused; a staff-only event cannot be stamped
   published, because publishing is widening
+- the year's obligations, the reference and the docket are readable across the
+  deacon side and by nobody else; a deacon cannot add an obligation, edit the
+  bylaws or strike a finding
 
 `tests/00_supabase_stub.sql` rebuilds the slice of a Supabase project the
 migrations lean on — the `anon`, `authenticated` and `service_role` roles,
