@@ -14,6 +14,22 @@ It exists to close four gaps:
 Around those sit **Today at Memorial** (the landing screen), the Monday **Huddle**
 board, a self-forgetting **Discussion board**, and annual **Goals**.
 
+## Planning documents
+
+Three files at the repo root say what this application is becoming, and
+`CLAUDE.md` asks that they be read before anything structural changes:
+
+- **`CLAUDE.md`** — the invariants that are easy to break by accident, the
+  conventions, and where the seams are.
+- **`mbc-staff-dashboard-brief.md`** — the brief this application was built from.
+- **`mbc-deacons-dashboard-brief.md`** — the deacons' side: same application,
+  same database, same sign-in, with what a person sees assembled from which
+  bodies they belong to. Its §7 is the build order and its §10 is the handoff
+  between design and code.
+
+The design system the deacon side inherits is in `design_handoff_staff_dashboard/`
+— the guide, the tokens, and the prototypes the staff surfaces were built from.
+
 ## Running it
 
 ```
