@@ -12,16 +12,26 @@ deacon side); unconfigured local builds keep the seed-data repositories.
                        is_staff_role() reimplemented on top of them
 0005_meeting.sql       board_meeting, agenda_item, meeting_attendance, motion; my_seats();
                        board_attendance_summary(), chairman-only; no deletes
+0006_reports.sql       report and report_version: the four-state lifecycle, versions on
+                       publish, reports_filed(); no compensation figures in Personnel
 ```
 
-The application reads `my_seats()` at sign-in, so a build carrying 0005's
-client must run against a project that has 0005 applied — push the migration
-first, then deploy.
+The application reads `my_seats()` at sign-in and the report tables in the
+Board's room, so a build carrying 0006's client must run against a project
+that has 0006 applied — push the migration first, then deploy.
 
 **The deacon year.** Attendance is counted per deacon year (Art. II.B §3 ¶12)
 and the manual does not say which month it begins. `church_settings.
 deacon_year_start_month` says; it defaults to 1, the calendar year. Change it
 with one `update` when the Board says otherwise.
+
+**Reports.** A committee's chair writes its report (`is_chair_of`); the
+Treasurer's itemised report belongs to `committee:finance`, whose chair is the
+Treasurer; any Board member writes the minutes. A draft is readable in its
+committee's room only; once submitted it is readable by the whole Board. A
+Personnel report that contains a dollar figure is refused by a trigger, in the
+draft and in any version. Publishing inserts a `report_version`; versions have
+no update or delete policy, and neither table has a delete policy.
 
 **Seating the Board.** A meeting is visible only to seats on `deacon-board`.
 Insert the deacons' memberships (`role_in_body` `chair` for the chairman,

@@ -4,6 +4,7 @@ import { useData } from '../store'
 import { useSession } from '../../session/session'
 import { meetingRepository } from './repository'
 import type { AgendaItem, AttendanceStatus, Meeting, MeetingKind, MeetingsData, NewMotion } from './types'
+import type { Report, ReportPayload, ReportVersion } from './reports'
 
 /* The Board's room, loaded once a person who sits on the Board is signed in
    and never for anyone else. Every action writes under the signed-in man's
@@ -21,6 +22,13 @@ interface MeetingsStore {
   recordMotion(meetingId: string, position: number, motion: NewMotion): Promise<void>
   takeUp(motionId: string, meetingId: string): Promise<void>
   counts: typeof meetingRepository.attendanceCounts
+  createReport(input: Parameters<typeof meetingRepository.createReport>[0]): Promise<Report | null>
+  saveReport(id: string, patch: Parameters<typeof meetingRepository.saveReport>[1]): Promise<void>
+  /** Publish: write the next version, mark the report published, and move
+      the report it replaces to archived. Nothing is overwritten. */
+  publish(report: Report, payload: ReportPayload, rendered: string): Promise<ReportVersion | null>
+  /** Reload the room — after a report is filed, the pointers change. */
+  refresh(): Promise<void>
 }
 
 const MeetingsContext = createContext<MeetingsStore | null>(null)
@@ -30,11 +38,24 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
   const { member, bodies } = useSession()
   const [data, setData] = useState<MeetingsData | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const onBoard = bodies.includes('deacon-board')
+  // Anyone on the deacon side: the Board, and a committee chair filing a report.
+  const onDeaconSide = bodies.some((slug) => slug !== 'staff')
   const meId = member?.id ?? null
 
+  const load = useCallback(async () => {
+    try {
+      const loaded = await meetingRepository.load({ people, meId })
+      setData(loaded)
+      setError(null)
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'The Board’s room could not be reached.')
+    }
+    // The roster is read once per sign-in; edits to the staff roster do not reopen the room.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meId])
+
   useEffect(() => {
-    if (!onBoard || meId === null) {
+    if (!onDeaconSide || meId === null) {
       setData(null)
       return
     }
@@ -53,9 +74,8 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
     return () => {
       live = false
     }
-    // The roster is read once per sign-in; edits to the staff roster do not reopen the room.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onBoard, meId])
+  }, [onDeaconSide, meId])
 
   const me = data?.me ?? null
   const guard = useCallback(
@@ -131,8 +151,58 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
         })
       },
       counts: (current, meeting) => meetingRepository.attendanceCounts(current, meeting),
+      createReport: (input) =>
+        guard(async (who) => {
+          const report = await meetingRepository.createReport(input, who)
+          setData((current) => (current ? { ...current, reports: [report, ...current.reports] } : current))
+          return report
+        }),
+      saveReport: async (id, patch) => {
+        await guard(async (who) => {
+          await meetingRepository.saveReport(id, patch, who)
+          const updatedAt = new Date().toISOString()
+          setData((current) =>
+            current ? { ...current, reports: current.reports.map((r) => (r.id === id ? { ...r, ...patch, updatedBy: who, updatedAt } : r)) } : current,
+          )
+        })
+      },
+      publish: (report, payload, rendered) =>
+        guard(async (who) => {
+          const current = data
+          if (!current) return null
+          const prior = current.versions.filter((v) => v.reportId === report.id).sort((a, b) => b.versionNo - a.versionNo)[0] ?? null
+          const version = await meetingRepository.addVersion(
+            { reportId: report.id, versionNo: (prior?.versionNo ?? 0) + 1, payload, rendered, supersedesVersionId: prior?.id ?? null },
+            who,
+          )
+          const publishedAt = version.publishedAt
+          await meetingRepository.saveReport(report.id, { payload, status: 'published', publishedAt }, who)
+          // A new period's report retires the one it replaces: same body, same kind.
+          const replaced = current.reports.filter(
+            (r) => r.id !== report.id && r.kind === report.kind && r.bodySlug === report.bodySlug && r.status === 'published',
+          )
+          const archivedAt = publishedAt
+          for (const old of replaced) await meetingRepository.saveReport(old.id, { status: 'archived', archivedAt }, who)
+          setData((state) =>
+            state
+              ? {
+                  ...state,
+                  versions: [...state.versions, version],
+                  reports: state.reports.map((r) =>
+                    r.id === report.id
+                      ? { ...r, payload, status: 'published', publishedAt, updatedBy: who, updatedAt: publishedAt }
+                      : replaced.some((old) => old.id === r.id)
+                        ? { ...r, status: 'archived', archivedAt }
+                        : r,
+                  ),
+                }
+              : state,
+          )
+          return version
+        }),
+      refresh: load,
     }),
-    [data, error, guard],
+    [data, error, guard, load],
   )
 
   return <MeetingsContext.Provider value={value}>{children}</MeetingsContext.Provider>

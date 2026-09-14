@@ -180,7 +180,10 @@ person cannot open is not in the sidebar and its route refuses — not disabled,
 not dimmed, not there. Neither of those is the gate; Row Level Security is.
 
 The deacon side begins with the Board meeting (`/meeting`), visible to seats on
-`deacon-board`. The two people who hold both sides land on "Which side today?"
+`deacon-board`, and the Reports page (`/reports`), where a committee's chair
+files its report, the Treasurer files the itemised monthly report, and the
+secretary writes the minutes in the Board's own template. Publishing makes a
+report official and printable; an edit after publication is a new version. The two people who hold both sides land on "Which side today?"
 and carry a context bar that says which side they are on; the choice narrows
 what is drawn and changes nothing about what the database returns.
 

@@ -69,6 +69,17 @@ export const SURFACES: Record<string, Surface> = {
     title: 'The Board meeting',
     lead: 'One record per month in three phases. Before: the agenda assembles itself. During: the roll is called and motions are captured. After: the secretary writes only the parts that are actually narrative.',
   },
+  reports: {
+    nav: 'Reports',
+    group: 1,
+    bodies: ['deacon-board', 'committee:finance', 'committee:personnel', 'committee:building-grounds', 'committee:family-assistance'],
+    side: 'deacon',
+    nested: true,
+    path: '/reports',
+    eyebrow: 'Records, not conversation',
+    title: 'Reports',
+    lead: 'Every report — a committee’s, the Treasurer’s, the minutes — moves through the same four states and lives here. Publishing makes it official and printable. An edit after publication is a new version, the one it replaces moves to the archive, and nothing is ever deleted.',
+  },
   today: {
     nav: 'Today',
     group: 0,
