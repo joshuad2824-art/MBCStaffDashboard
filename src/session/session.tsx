@@ -53,6 +53,10 @@ export interface AuthValue {
 
 interface SessionValue {
   member: Person | null
+  /** Slugs of the bodies the signed-in person sits in. The nav is assembled
+      from this list, and a route not on it refuses. It is what `my_bodies()`
+      says in a configured build; the stub derives it from the roster. */
+  bodies: string[]
   /** The role the interface is being drawn for — real role, or the preview. */
   viewAs: Access
   previewingLimited: boolean
@@ -331,6 +335,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const member = useMemo(() => people.find((person) => person.id === staffId) ?? null, [people, staffId])
 
+  /* Postgres owns which bodies a person sits in. The stub has no membership
+     table, so it says what 0004 seats everybody in today: anyone who can sign
+     in on the staff side is in `staff`. */
+  const bodies = useMemo<string[]>(() => {
+    if (!member) return []
+    if (supabaseConfigured) return account?.bodies ?? []
+    return member.access === 'none' ? [] : ['staff']
+  }, [member, account])
+
   const auth = useMemo<AuthValue>(
     () => ({
       mode: supabaseConfigured ? 'supabase' : 'stub',
@@ -349,6 +362,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SessionValue>(
     () => ({
       member,
+      bodies,
       viewAs: previewingLimited ? 'limited' : (member?.access ?? 'none'),
       previewingLimited,
       setPreviewingLimited,
@@ -358,7 +372,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setPresentMode,
       auth,
     }),
-    [member, previewingLimited, presentMode, signIn, signOut, auth],
+    [member, bodies, previewingLimited, presentMode, signIn, signOut, auth],
   )
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>

@@ -342,3 +342,167 @@ select test.refused(
   '23505', 'one row per account: the unique constraint refuses a second link');
 
 select test.sign_out();
+
+-- ------------------------------------------------- 6. bodies and membership
+--
+-- 0004 puts the gate on a new foundation. Everything above ran on it already;
+-- this section proves the parts that are new. The seating order below is the
+-- documented one for a deacon: memberships first, access second, so the
+-- People-page trigger has nothing to add.
+
+insert into auth.users (id, email) values
+  ('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test'),
+  ('a0000000-0000-0000-0000-000000000010', 'deacon-b@memorial.test');
+
+insert into person (id, auth_id, name, role, email, access, active) values
+  ('b0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000009', 'Deacon A', 'Deacon', 'deacon-a@memorial.test', 'none', true),
+  ('b0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000010', 'Deacon B', 'Deacon', 'deacon-b@memorial.test', 'none', true);
+
+insert into membership (person_id, body_id, role_in_body, term_start, term_end)
+select p.id, b.id, r.role_in_body::body_role, r.term_start, r.term_end
+  from (values
+    ('b0000000-0000-0000-0000-000000000009', 'deacon-board',                'member', date '2025-09-01', null),
+    ('b0000000-0000-0000-0000-000000000009', 'committee:finance',           'member', date '2025-09-01', null),
+    ('b0000000-0000-0000-0000-000000000010', 'deacon-board',                'member', date '2025-09-01', null),
+    ('b0000000-0000-0000-0000-000000000010', 'committee:family-assistance', 'chair',  date '2025-09-01', null),
+    -- A staff member whose term on the Board ended last year. The row stays;
+    -- the seat does not count.
+    ('b0000000-0000-0000-0000-000000000001', 'deacon-board',                'member', date '2022-09-01', date '2025-08-31')
+  ) as r (person_id, slug, role_in_body, term_start, term_end)
+  join person p on p.id = r.person_id::uuid
+  join body   b on b.slug = r.slug;
+
+update person set access = 'limited'
+ where id in ('b0000000-0000-0000-0000-000000000009', 'b0000000-0000-0000-0000-000000000010');
+
+select test.assert(
+  (select count(*) from membership m join body b on b.id = m.body_id
+    where b.slug = 'staff' and m.person_id in ('b0000000-0000-0000-0000-000000000009', 'b0000000-0000-0000-0000-000000000010')) = 0,
+  'seating: a deacon seated before being granted access is not put in the staff body');
+
+-- 6a. The staff side, on the new foundation.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+
+select test.assert((select array_agg(slug order by slug) from my_bodies() as slug) = array['staff'],
+  'staff: my_bodies() is exactly {staff} — the expired Board term does not count');
+select test.assert(is_member_of('staff'),            'staff: is a member of the staff body');
+select test.assert(not is_member_of('deacon-board'), 'staff: an expired term is not membership');
+select test.assert(is_staff_role(),                  'staff: still the staff role, now via membership and access');
+select test.assert((select count(*) from body) = 6,  'staff: reads every body except the confidential one');
+select test.assert((select count(*) from body where confidential) = 0, 'staff: the confidential committee does not exist to a non-member');
+select test.assert(
+  (select count(*) from membership where person_id = 'b0000000-0000-0000-0000-000000000001') = 2,
+  'staff: reads their own seats, the expired one included');
+select test.assert(
+  (select count(*) from membership where person_id = 'b0000000-0000-0000-0000-000000000009') = 0,
+  'staff: cannot read a deacon''s seat on a body they are not in');
+select test.assert(
+  (select count(*) from membership m join body b on b.id = m.body_id where b.slug = 'staff') = 4,
+  'staff: reads the whole staff roster''s seats');
+
+select test.refused(
+  $q$ insert into membership (person_id, body_id)
+      values ('b0000000-0000-0000-0000-000000000001', (select id from body where slug = 'deacon-board')) $q$,
+  '42501', 'staff: cannot seat themselves on the Board through the API');
+select test.refused(
+  $q$ insert into body (slug, kind, name) values ('committee:mine', 'committee', 'Mine') $q$,
+  '42501', 'staff: cannot create a body through the API');
+update body set confidential = false where slug = 'committee:family-assistance';
+update membership set active = false where person_id = 'b0000000-0000-0000-0000-000000000009';
+reset role;
+select test.assert((select confidential from body where slug = 'committee:family-assistance'),
+  'staff: an update aimed at a body changed nothing');
+select test.assert((select count(*) from membership where person_id = 'b0000000-0000-0000-0000-000000000009' and active) = 2,
+  'staff: an update aimed at another''s seat changed nothing');
+
+-- Inviting a colleague from the People page still works: the seat follows.
+set role authenticated;
+update person set email = 'volunteer@memorial.test', access = 'limited' where name = 'A Volunteer';
+reset role;
+select test.assert(
+  (select count(*) from membership m join body b on b.id = m.body_id join person p on p.id = m.person_id
+    where b.slug = 'staff' and p.name = 'A Volunteer' and m.active) = 1,
+  'inviting: a person granted access with no seat anywhere is seated in staff');
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+select test.assert((select array_agg(slug order by slug) from my_bodies() as slug) = array['staff'],
+  'limited: is in the staff body');
+select test.assert(not is_staff_role(),                  'limited: membership alone is not the staff role');
+select test.assert((select count(*) from care_entry) = 0, 'limited: still reads ZERO rows from care_entry on the new gate');
+reset role;
+
+-- 6b. A deacon in two rooms, and the room he is not in.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+
+select test.assert(is_signed_in(), 'deacon A: signs in');
+select test.assert((select array_agg(slug order by slug) from my_bodies() as slug) = array['committee:finance', 'deacon-board'],
+  'deacon A: my_bodies() is the Board and Finance, nothing else');
+select test.assert(is_member_of('deacon-board'),                    'deacon A: sits on the Board');
+select test.assert(is_member_of('committee:finance'),               'deacon A: sits on Finance');
+select test.assert(not is_member_of('committee:family-assistance'), 'deacon A: is not in Family Assistance');
+select test.assert(not is_member_of('staff'),                       'deacon A: is not staff');
+select test.assert(not is_staff_role(),                             'deacon A: is not the staff role');
+select test.assert(not is_chair_of('deacon-board'),                 'deacon A: is not the chairman');
+
+select test.assert((select count(*) from care_entry) = 0, 'deacon A: reads ZERO rows from care_entry');
+select test.assert((select count(*) from care_type)  = 0, 'deacon A: reads zero rows from care_type');
+select test.assert((select count(*) from thread)     = 0, 'deacon A: reads zero rows from the staff discussion');
+select test.assert((select count(*) from post)       = 0, 'deacon A: reads zero posts');
+select test.refused(
+  $q$ insert into care_entry (person_name, type, opened_on) values ('Someone', 'Hospital', current_date) $q$,
+  '42501', 'deacon A: cannot write a care entry');
+
+select test.assert((select count(*) from body) = 6, 'deacon A: reads six bodies');
+select test.assert((select count(*) from body where slug = 'committee:family-assistance') = 0,
+  'deacon A: the confidential committee he is not in does not exist to him');
+select test.assert((select count(*) from body where slug = 'committee:personnel') = 1,
+  'deacon A: a committee he is not in, but which is not confidential, is visible by name');
+select test.assert(
+  (select count(*) from membership where person_id = 'b0000000-0000-0000-0000-000000000009') = 2,
+  'deacon A: reads his own two seats');
+select test.assert(
+  (select count(*) from membership m join body b on b.id = m.body_id
+    where m.person_id = 'b0000000-0000-0000-0000-000000000010' and b.slug = 'deacon-board') = 1,
+  'deacon A: reads a fellow Board member''s Board seat');
+select test.assert(
+  (select count(*) from membership m join body b on b.id = m.body_id
+    where m.person_id = 'b0000000-0000-0000-0000-000000000010' and b.slug = 'committee:family-assistance') = 0,
+  'deacon A: reads ZERO rows from the confidential committee''s roster');
+select test.assert(
+  (select count(*) from membership m join body b on b.id = m.body_id where b.slug = 'staff') = 0,
+  'deacon A: reads zero staff seats — a room he is not in');
+
+select test.refused(
+  $q$ insert into membership (person_id, body_id)
+      values ('b0000000-0000-0000-0000-000000000009', (select id from body where slug = 'committee:finance')) $q$,
+  '42501', 'deacon A: cannot seat himself anywhere through the API');
+
+reset role;
+
+select test.sign_in('a0000000-0000-0000-0000-000000000010', 'deacon-b@memorial.test');
+set role authenticated;
+
+select test.assert(is_chair_of('committee:family-assistance'), 'deacon B: chairs Family Assistance');
+select test.assert(not is_chair_of('deacon-board'),            'deacon B: does not chair the Board');
+select test.assert((select count(*) from body where slug = 'committee:family-assistance') = 1,
+  'deacon B: the confidential committee exists to its member');
+select test.assert((select count(*) from body) = 7, 'deacon B: reads all seven bodies');
+select test.assert(
+  (select count(*) from membership m join body b on b.id = m.body_id where b.slug = 'committee:family-assistance') = 1,
+  'deacon B: reads the confidential roster he sits on');
+select test.assert((select count(*) from care_entry) = 0, 'deacon B: reads ZERO rows from care_entry');
+
+reset role;
+
+-- Signed out again, now that there are bodies to not see.
+select test.sign_out();
+set role anon;
+select test.assert((select count(*) from body) = 0,        'signed out: no bodies');
+select test.assert((select count(*) from membership) = 0,  'signed out: no seats');
+select test.assert((select count(*) from my_bodies()) = 0, 'signed out: my_bodies() is empty');
+reset role;

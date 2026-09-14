@@ -15,6 +15,8 @@ export interface Account {
   role: string
   email: string
   access: Access
+  /** Slugs of the bodies this person sits in, from `my_bodies()`. */
+  bodies: string[]
 }
 
 export type AccountLookup =
@@ -43,6 +45,14 @@ export async function loadAccount(): Promise<AccountLookup> {
     | undefined
   if (!row || !row.email) return { state: 'not-on-roster' }
 
+  // Which bodies they sit in — supabase/migrations/0004_bodies.sql. The nav is
+  // assembled from this list; the policies consult the same function.
+  const seats = await supabase.rpc('my_bodies')
+  if (seats.error) {
+    if (NOT_SET_UP.has(seats.error.code ?? '')) return { state: 'not-set-up' }
+    return { state: 'failed', message: seats.error.message }
+  }
+
   return {
     state: 'account',
     account: {
@@ -50,6 +60,16 @@ export async function loadAccount(): Promise<AccountLookup> {
       role: row.role ?? '',
       email: row.email.trim().toLowerCase(),
       access: row.access ?? 'none',
+      bodies: readSlugs(seats.data),
     },
   }
+}
+
+/* PostgREST returns a `setof text` as a plain array of strings; an older
+   client shape wraps each in an object. Read either. */
+function readSlugs(data: unknown): string[] {
+  if (!Array.isArray(data)) return []
+  return data
+    .map((item) => (typeof item === 'string' ? item : (item as { my_bodies?: string } | null)?.my_bodies ?? ''))
+    .filter((slug) => slug.length > 0)
 }

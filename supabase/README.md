@@ -1,13 +1,19 @@
 # Supabase
 
-Three migrations for a fresh project. Configured builds use them through
+Four migrations for a fresh project. Configured builds use them through
 `SupabaseRepository`; unconfigured local builds keep the seed-data repository.
 
 ```
 0001_schema.sql        tables, the thread-activity trigger, the retention functions
 0002_rls.sql           row level security: the real role gate
 0003_claim_account.sql how an invited person's first sign-in finds their roster row
+0004_bodies.sql        body and membership; my_bodies(), is_member_of(), is_chair_of();
+                       is_staff_role() reimplemented on top of them
 ```
+
+The application reads `my_bodies()` at sign-in, so a build carrying 0004's
+client must run against a project that has 0004 applied — push the migration
+first, then deploy.
 
 ## Tested
 
@@ -70,10 +76,18 @@ is a user under Authentication → Users — and `auth_id` is filled in by
 
 - **Email magic link, invite-only.** Turn off sign-ups in the Auth settings, or
   the roster stops meaning anything.
-- **Two roles.** `staff` reads and writes everything. `limited` loses Care
-  pipelines and the Discussion board — and loses them as *no rows returned*, not
-  as a hidden button. The header's "viewing as limited" toggle is a preview of
-  that and never the thing itself.
+- **Bodies, and two roles inside the staff one.** What a person sees is
+  assembled from which bodies they sit in (`membership`, seeded by 0004 for
+  everyone who can sign in today). Inside the `staff` body, `access` still
+  separates the staff role from a limited account: `limited` loses Care
+  pipelines and the Discussion board — and loses them as *no rows returned*,
+  not as a hidden button. The header's "viewing as limited" toggle is a preview
+  of that and never the thing itself.
+- **Seating is SQL, for now.** Nothing in the API can insert into `body` or
+  `membership`. To seat a deacon: insert his memberships, *then* set his
+  `access` to `limited` so he can sign in. Granting access first puts a person
+  with no seat into `staff`, which is what inviting a colleague from the People
+  page relies on.
 - **Schedule the retention job.** `purge_expired_threads()` nightly, via pg_cron:
 
   ```sql
