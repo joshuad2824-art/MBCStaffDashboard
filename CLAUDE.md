@@ -55,7 +55,7 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0011_…` |
+| Migrations | Continue the sequence: next is `supabase/migrations/0013_…` |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -125,11 +125,17 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   the join, it reads zero rows of it. No delete policy on any of the five. The committee rooms are
   the existing pieces drawn for a committee's slug: `membership` for the roster, `report` for the
   history, and the discussion board with `audience = {committee:…}` for the working notes.
+- **`supabase/migrations/0011_chairman_membership_admin.sql`** and **`0012_…`** — the chairman's seat
+  editor: `chairman_roster()` and `set_managed_membership()`, both security definer and both refusing
+  anyone but the Board chairman. They reach the Board and its committees, and a confidential
+  committee only when the chairman himself sits in it. Nothing else in the API writes `membership`;
+  the tables still have no insert, update or delete policy.
 - **Seating.** The Board chairman maintains Board and non-confidential committee memberships from
-  the People page; the confidential Family Assistance roster remains visible and manageable only
-  inside that room. The one automatic seat: an active person granted access who sits in no body yet
-  is put in `staff`, so the People page keeps working. Seat a deacon first, grant access second, and
-  the trigger adds nothing.
+  the People page (`src/components/SeatManager.tsx`, which renders nothing without Supabase); the
+  confidential Family Assistance roster remains visible and manageable only inside that room. The
+  one automatic seat: an active person granted access who sits in no body yet is put in `staff`, so
+  the People page keeps working. Seat a deacon first, grant access second, and the trigger adds
+  nothing.
 
 ## The policy test, and what Phase 1 owes it
 
