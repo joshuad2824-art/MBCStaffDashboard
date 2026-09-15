@@ -5,7 +5,7 @@ import { nextId } from '../lib/derive'
 import { clearCallbackFromUrl, linkFailure, supabase, supabaseConfigured } from '../lib/supabase'
 import { loadAccount } from './account'
 import type { Account, Seat } from './account'
-import { SEED_SEATS } from '../data/seed'
+import { seedSeatsFor } from '../data/seed'
 import type { Access, Person } from '../data/types'
 
 /* Who is signed in.
@@ -372,9 +372,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const seats = useMemo<Seat[]>(() => {
     if (!member) return []
     if (supabaseConfigured) return account?.seats ?? []
-    const seeded = SEED_SEATS[member.id]
-    if (seeded) return seeded
-    return member.access === 'none' ? [] : [{ slug: 'staff', role: 'member' }]
+    return seedSeatsFor(member)
   }, [member, account])
   const bodies = useMemo(() => seats.map((seat) => seat.slug), [seats])
   const isChairOf = useCallback((slug: string) => seats.some((seat) => seat.slug === slug && seat.role === 'chair'), [seats])

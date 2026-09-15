@@ -233,6 +233,15 @@ export interface SeedSeat {
   role: 'chair' | 'member' | 'ex_officio'
 }
 
+/** The stub's answer for anyone: their seeded seats, and for a person the
+    seed does not name, what 0004 seats everybody in today — whoever can sign
+    in is in `staff`. */
+export function seedSeatsFor(person: { id: number; access: string }): SeedSeat[] {
+  const seeded = SEED_SEATS[person.id]
+  if (seeded) return seeded
+  return person.access === 'none' ? [] : [{ slug: 'staff', role: 'member' }]
+}
+
 export const SEED_SEATS: Record<number, SeedSeat[]> = {
   1: [{ slug: 'staff', role: 'member' }, { slug: 'deacon-board', role: 'ex_officio' }, { slug: 'committee:finance', role: 'ex_officio' }],
   8: [{ slug: 'staff', role: 'member' }, { slug: 'deacon-board', role: 'chair' }],

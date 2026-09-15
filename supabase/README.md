@@ -23,6 +23,9 @@ deacon side); unconfigured local builds keep the seed-data repositories.
 0009_year_and_reference obligation (the year's dated rules, seeded), governance_document and
                        governance_finding (the transcribed corpus and the discrepancy docket);
                        readable across the deacon side, writable by nobody through the API
+0010_care_pointers     care_assignment, care_request, care_request_link (staff-only),
+                       deacon_week, deacon_visit — pointers only, no notes column anywhere,
+                       the staff → deacon handoff composed and never forwarded; no deletes
 ```
 
 ## Loading the governance corpus
@@ -117,6 +120,13 @@ one that does not stops the run. It asserts that:
 - the year's obligations, the reference and the docket are readable across the
   deacon side and by nobody else; a deacon cannot add an obligation, edit the
   bylaws or strike a finding
+- none of the deacon side's care tables has a notes column; staff compose a
+  request in their own name and cannot act on it; a deacon reads the request
+  and zero rows of its link to the care entry, cannot compose one, cannot
+  rewrite what or who asked, cannot mark it done without a date, and cannot
+  reopen it; the staff member who asked sees it done, dated and by whom; a
+  limited account and a committee-only chair read zero requests and zero
+  assignments; nothing on the deacon side is deleted
 
 `tests/00_supabase_stub.sql` rebuilds the slice of a Supabase project the
 migrations lean on — the `anon`, `authenticated` and `service_role` roles,

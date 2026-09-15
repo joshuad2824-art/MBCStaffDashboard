@@ -126,6 +126,19 @@ export interface Finding {
   status: 'open' | 'resolved'
 }
 
+/** A seat in any body whose roster this person may read: their own seats and
+    the rosters of the bodies they sit in. What a committee room draws its
+    roster and terms from. */
+export interface Seat {
+  bodySlug: string
+  personId: string
+  name: string
+  role: string
+  seat: SeatRole
+  termStart: string | null
+  termEnd: string | null
+}
+
 export interface MeetingsData {
   meetings: Meeting[]
   agenda: AgendaItem[]
@@ -143,6 +156,8 @@ export interface MeetingsData {
   me: string | null
   /** Month the deacon year begins in (1 = calendar year). From church_settings. */
   deaconYearStartMonth: number
+  /** Every seat this person may read, current terms and past. */
+  seats: Seat[]
   /** The year's obligations, as the bylaws create them. */
   obligations: Obligation[]
   /** The reference and its docket. */

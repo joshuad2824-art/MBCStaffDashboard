@@ -1,5 +1,5 @@
 import { supabase, supabaseConfigured } from '../../lib/supabase'
-import { SEED_SEATS } from '../seed'
+import { SEED_SEATS, seedSeatsFor } from '../seed'
 import type { Person } from '../types'
 import { normalisePayload } from './reports'
 import type { FiledPointer, Report, ReportFile, ReportKind, ReportPayload, ReportStatus, ReportVersion } from './reports'
@@ -10,6 +10,7 @@ import type {
   Attendance,
   GovernanceDocument,
   Obligation,
+  Seat,
   AttendanceStatus,
   BoardMember,
   Meeting,
@@ -109,6 +110,22 @@ export class LocalMeetingRepository implements MeetingRepository {
     }
   }
 
+  /** The stub's version of membership_read: my own seats, and the rosters of
+      the bodies I sit in. */
+  private stubSeats(stub: StubContext): Seat[] {
+    const meRow = stub.people.find((p) => p.id === stub.meId) ?? null
+    const mine = new Set((meRow ? seedSeatsFor(meRow) : []).map((s) => s.slug))
+    const seats: Seat[] = []
+    for (const person of stub.people) {
+      for (const seat of seedSeatsFor(person)) {
+        if (person.id === stub.meId || mine.has(seat.slug)) {
+          seats.push({ bodySlug: seat.slug, personId: String(person.id), name: person.name, role: person.role, seat: seat.role, termStart: null, termEnd: null })
+        }
+      }
+    }
+    return seats
+  }
+
   /** The stub's version of the read policy: members of the body, and the
       Board unless the body is confidential. */
   private readable(stub: StubContext, bodySlug: string): boolean {
@@ -149,6 +166,7 @@ export class LocalMeetingRepository implements MeetingRepository {
       roster: this.roster,
       me: stub.meId === null ? null : String(stub.meId),
       deaconYearStartMonth: 1,
+      seats: this.stubSeats(stub),
       obligations: seedObligations,
       documents: seedDocuments,
       findings: seedFindings,
@@ -363,7 +381,6 @@ export class SupabaseMeetingRepository implements MeetingRepository {
       client
         .from('membership')
         .select('person_id, role_in_body, term_start, term_end, body!inner(slug), person!inner(name, role, active)')
-        .eq('body.slug', 'deacon-board')
         .eq('active', true),
       client.from('church_settings').select('deacon_year_start_month').limit(1),
       client.rpc('claim_account'),
@@ -393,7 +410,16 @@ export class SupabaseMeetingRepository implements MeetingRepository {
       if (bodyId && !bodyNames.has(bodyId)) bodyNames.set(bodyId, { slug: pointer.bodySlug, name: pointer.bodyName })
     }
     const today = new Date().toISOString().slice(0, 10)
+    const allSeats: Seat[] = ((seats.data ?? []) as Row[]).map((row) => {
+      const person = row.person as Row
+      const body = row.body as Row
+      return {
+        bodySlug: text(body?.slug), personId: text(row.person_id), name: text(person?.name), role: text(person?.role),
+        seat: text(row.role_in_body) as Seat['seat'], termStart: nullableText(row.term_start), termEnd: nullableText(row.term_end),
+      }
+    })
     const roster: BoardMember[] = ((seats.data ?? []) as Row[])
+      .filter((row) => (row.body as Row | null)?.slug === 'deacon-board')
       .filter((row) => {
         const person = row.person as Row | null
         const start = nullableText(row.term_start)
@@ -419,6 +445,7 @@ export class SupabaseMeetingRepository implements MeetingRepository {
       roster,
       me: meRow ? text(meRow.id) || null : null,
       deaconYearStartMonth: Number(settingsRow?.deacon_year_start_month ?? 1) || 1,
+      seats: allSeats,
       obligations: ((obligations.data ?? []) as Row[]).map((row) => ({
         id: text(row.id), slug: text(row.slug), title: text(row.title), ruleSource: text(row.rule_source), requirement: text(row.requirement),
         cadence: text(row.cadence) as Obligation['cadence'], anchor: text(row.anchor), noticeDays: Number(row.notice_days ?? 0) || 0,

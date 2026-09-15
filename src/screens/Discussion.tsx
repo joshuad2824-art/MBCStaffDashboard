@@ -27,19 +27,23 @@ import { PromoteToAgenda } from './discussion/PromoteToAgenda'
    started here is addressed here, and adding the other room is a deliberate
    second act with the badge changing to say so. */
 
-export function Discussion({ side }: { side: Side }) {
+export function Discussion({ side, room: roomSlug }: { side: Side; room?: string }) {
   const data = useData()
   const { mutate, say } = useStore()
   const { member, bodies, viewAs } = useSession()
   const navigate = useNavigate()
   const today = startOfToday()
 
-  const room = roomOf(side)
+  /* The room is a body. The two sides' boards are the staff and Board rooms;
+     a committee's working notes are the same component drawn for the
+     committee's own slug, with no other room to widen to. */
+  const room = roomSlug ?? roomOf(side)
+  const committee = room.startsWith('committee:')
   const other = otherRoom(side)
   /* Widening is offered only to a person who sits in the other room too —
      and, for the staff room, holds the staff role, since that is what reads
      it. The policy would refuse anyone else; the checkbox is not shown. */
-  const canWiden = bodies.includes(other) && (other !== 'staff' || viewAs === 'staff')
+  const canWiden = !committee && bodies.includes(other) && (other !== 'staff' || viewAs === 'staff')
   const threads = useMemo(() => data.threads.filter((thread) => reaches(thread.audience, room)), [data.threads, room])
 
   const [activeThreadId, setActiveThreadId] = useState<number | null>(threads[0]?.id ?? null)
@@ -154,7 +158,7 @@ export function Discussion({ side }: { side: Side }) {
     const subject = newSubject.trim()
     if (!subject) return
     const threadId = nextId(data.threads)
-    const audience = composedAudience(side, canWiden && alsoOther)
+    const audience = committee ? [room] : composedAudience(side, canWiden && alsoOther)
     setNewSubject('')
     setAlsoOther(false)
     setActiveThreadId(threadId)
@@ -223,7 +227,7 @@ export function Discussion({ side }: { side: Side }) {
 
   return (
     <div style={{ display: 'grid', gap: 20 }}>
-    <Announcements side={side} compose />
+    {committee ? null : <Announcements side={side} compose />}
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
       <Card radius="card" pad={22} style={{ flex: '1 1 300px', maxWidth: 340, display: 'grid', gap: 16 }}>
         <div style={{ display: 'grid', gap: 12 }}>
@@ -248,7 +252,7 @@ export function Discussion({ side }: { side: Side }) {
         <div style={{ display: 'grid' }}>
           {threads.length === 0 ? (
             <p style={{ font: '400 14px/1.6 var(--mbc-font-sans)', color: 'var(--text-muted)', margin: 0 }}>
-              {side === 'deacon' ? 'The Board’s room is empty. Everything in it has aged out.' : 'The board is empty. Everything on it has aged out.'}
+              {committee ? 'No working notes. Everything here has aged out.' : side === 'deacon' ? 'The Board’s room is empty. Everything in it has aged out.' : 'The board is empty. Everything on it has aged out.'}
             </p>
           ) : (
             threads.map((item) => {
@@ -334,7 +338,7 @@ export function Discussion({ side }: { side: Side }) {
             >
               Start it
             </Button>
-            <BodyBadge bodies={composedAudience(side, canWiden && alsoOther)} />
+            <BodyBadge bodies={committee ? [room] : composedAudience(side, canWiden && alsoOther)} />
           </div>
         </div>
       </Card>
@@ -427,9 +431,11 @@ export function Discussion({ side }: { side: Side }) {
                         >
                           Reply
                         </TextAction>
-                        <TextAction onClick={() => setPromoting(promoting === post.id ? null : post.id)}>
-                          Promote
-                        </TextAction>
+                        {committee ? null : (
+                          <TextAction onClick={() => setPromoting(promoting === post.id ? null : post.id)}>
+                            Promote
+                          </TextAction>
+                        )}
                         {mine ? (
                           <>
                             <TextAction

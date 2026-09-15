@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { App } from './App'
 import { DataProvider } from './data/store'
 import { MeetingsProvider } from './data/meetings/store'
+import { CareProvider } from './data/care/store'
 import { SessionProvider } from './session/session'
 import './styles/tokens.css'
 import './styles/global.css'
@@ -14,7 +15,9 @@ createRoot(document.getElementById('root') as HTMLElement).render(
       <DataProvider>
         <SessionProvider>
           <MeetingsProvider>
-            <App />
+            <CareProvider>
+              <App />
+            </CareProvider>
           </MeetingsProvider>
         </SessionProvider>
       </DataProvider>

@@ -55,18 +55,24 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0010_…` |
+| Migrations | Continue the sequence: next is `supabase/migrations/0011_…` |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
 ## Where the seams are
 
-- **`src/data/repository.ts`** — the staff side's persistence seam. `Repository` is two methods.
-  Configured builds use `SupabaseRepository`; unconfigured local builds keep `LocalRepository` and
-  seed data.
+- **`src/data/repository.ts`** — the staff side's persistence seam. `Repository` is two methods
+  plus `careEntryRef()`, the one place the care seam names a staff row: the database id of a care
+  entry, written into `care_request_link` and nowhere else. Configured builds use
+  `SupabaseRepository`; unconfigured local builds keep `LocalRepository` and seed data.
 - **`src/data/meetings/repository.ts`** — the deacon side's seam, deliberately separate: a handful
   of named operations rather than one blob, because what it writes are records. No undo, no
   delete. `MeetingsProvider` loads it only for a person seated on the Board.
+- **`src/data/care/repository.ts`** — the care seam: named operations for the deacon family
+  ministry plan, the staff→deacon handoff, and Deacon of the Week. `askDeacon()` takes a
+  household, a kind of help, a date and the asker, and nothing else; there is no operation that
+  takes a `care_entry` and produces a request from it. `CareProvider` loads it for the Board and
+  for the staff role.
 - **`src/screens/surfaces.ts`** — every surface names its `bodies`; `surfacesFor(bodies, viewAs)`
   is what the sidebar and the router are assembled from. `staffOnly` survives inside the staff
   body: it is the staff role versus a limited account, as before.
@@ -110,6 +116,15 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   All three are read across the deacon side and written by nobody through the API: no insert,
   update or delete policy exists, and the test proves it. The corpus lives in the database, not
   in the bundle, so that who may read the bylaws is a policy and not an accident of hosting.
+- **`supabase/migrations/0010_care_pointers.sql`** — care on the deacon side, pointers only.
+  `care_assignment` (household, deacon, last contact), `care_request` (household, kind of help, by
+  when, who asked; the Board takes it up and dates it done, a trigger keeps each side to its own
+  columns), `deacon_week` and `deacon_visit`. **None has a notes column and the test checks the
+  catalogue for one.** The staff member's thread back to their care entry is `care_request_link`,
+  a separate staff-only table rather than a column: the deacon side does not merely avoid selecting
+  the join, it reads zero rows of it. No delete policy on any of the five. The committee rooms are
+  the existing pieces drawn for a committee's slug: `membership` for the roster, `report` for the
+  history, and the discussion board with `audience = {committee:…}` for the working notes.
 - **Seating.** Memberships change by SQL, by one administrator. The one automatic seat: an active
   person granted access who sits in no body yet is put in `staff`, so the People page keeps
   working. Seat a deacon first, grant access second, and the trigger adds nothing.
