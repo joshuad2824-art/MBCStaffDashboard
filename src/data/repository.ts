@@ -258,7 +258,7 @@ export class SupabaseRepository implements Repository {
       this.read('event', 'id,name,ministry,starts_at,time_label,location,cadence_item_id,audience,published_at'),
       this.read('huddle_post', 'id,column_key,body,author_id,created_at,resolved_at'),
       this.read('notice_entry', 'id,subject,ministry,category,decided_on,notified_on,audience,channel,event_id'),
-      this.read('care_entry', 'id,person_name,type,opened_on,owner_id,status,last_touch_on,sensitive,notes'),
+      this.read('care_entry', 'id,person_name,type,opened_on,owner_id,status,last_touch_on,closed_at,sensitive,notes'),
       this.read('thread', 'id,subject,created_by,last_activity_at,audience'),
       this.read('post', 'id,thread_id,reply_to_post_id,body,author_id,created_at,edited_at,removed'),
       this.read('mention', 'id,post_id,person_id'),
@@ -303,6 +303,7 @@ export class SupabaseRepository implements Repository {
       id: this.localId('care', row.id), person: text(row.person_name), type: text(row.type),
       openedOn: text(row.opened_on), ownerId: this.localOptional('person', row.owner_id),
       status: text(row.status) as CareStatus, lastTouchOn: nullableText(row.last_touch_on),
+      closedOn: nullableText(row.closed_at)?.slice(0, 10) ?? null,
       sensitive: row.sensitive === true, notes: text(row.notes),
     }))
     const threads = threadRows.map((row) => ({
@@ -466,7 +467,7 @@ export class SupabaseRepository implements Repository {
     const careRows = data.care.map((entry) => ({
       id: this.remoteId('care', entry.id), person_name: entry.person, type: entry.type,
       opened_on: entry.openedOn, owner_id: this.remoteOptional('person', entry.ownerId), status: entry.status,
-      last_touch_on: entry.lastTouchOn, sensitive: entry.sensitive, notes: entry.notes,
+      last_touch_on: entry.lastTouchOn, closed_at: entry.closedOn, sensitive: entry.sensitive, notes: entry.notes,
     }))
     const threadRows = data.threads.map((thread) => ({
       id: this.remoteId('thread', thread.id), subject: thread.subject,

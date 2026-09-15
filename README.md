@@ -100,12 +100,18 @@ src/
 | Cadence ledger | Built — unclaimed filter, sortable table, claim an owner, record when it was held. |
 | Discussion board | Built — threads, replies by reference, edit, delete, mentions, promote, 14-day purge. |
 | Notice log | Built — median gap by month, the per-category standard, recording an entry with a live gap preview, and a verdict per row. |
-| Care pipelines | Phase three. Records exist and drive the calendar and rail; the surface is not built. |
+| Care pipelines | Built — filters, the five types with open counts and windows, per-person rows with the derived deadline, sensitive rows redacted on the list, the open record with notes, owner, touched, closed and reopened, and the handoff to the deacons. |
 | Communicator | Built — weekly fields, drag-and-drop cover art, a live panel preview, a fit guard that measures the rendered panels, printing, and publishing that writes to the notice log. |
 | Goals | Built — five annual goals, a status you cycle, one sentence per quarter. |
 
-Care pipelines is the one surface left. It renders a short page saying where it
-stands, so nothing on Today links into a dead end.
+Care pipelines was built last, as the staff brief asked: it is the surface that
+must not be built casually. It is staff-role only in the database, sensitive
+rows show a first name on the list and their notes only in the open record,
+nothing on it is ever pulled into the Communicator, and present mode never
+draws it. Closing an entry dates it, which is what the twelve-month archive
+counts from. "Ask a deacon" on the open record is the handoff to the deacons'
+side: a form whose fields — household, kind of help, by when — are the only
+things that travel.
 
 ## The communicator
 

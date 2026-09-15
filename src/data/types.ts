@@ -80,6 +80,8 @@ export interface CareEntry {
   ownerId: Id | null
   status: CareStatus
   lastTouchOn: string | null
+  /** Set when the entry is closed; the twelve-month archive counts from it. */
+  closedOn: string | null
   sensitive: boolean
   notes: string
 }
