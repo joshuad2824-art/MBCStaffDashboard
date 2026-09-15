@@ -28,6 +28,7 @@ const DATE_FIELDS = [
   'notifiedOn',
   'openedOn',
   'lastTouchOn',
+  'closedOn',
   'lastActivity',
   'editedAt',
   'startsAt',

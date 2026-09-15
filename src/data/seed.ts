@@ -96,13 +96,13 @@ export const seed: DashboardData = {
   ],
 
   care: [
-    { id: 201, person: 'Hannah Whitfield', type: 'Guest follow-up', openedOn: '2026-08-27', ownerId: 2, status: 'open', lastTouchOn: null, sensitive: false, notes: 'Contact card, first visit Aug 23.' },
-    { id: 202, person: 'Marcus Ellery', type: 'Guest follow-up', openedOn: '2026-08-24', ownerId: null, status: 'open', lastTouchOn: null, sensitive: false, notes: 'Asked about the 9:15 class.' },
-    { id: 203, person: 'The Alvarado family', type: 'New member follow-up', openedOn: '2026-08-06', ownerId: 1, status: 'touched', lastTouchOn: '2026-08-20', sensitive: false, notes: 'Joined Aug 2. Two children in Kids.' },
-    { id: 204, person: 'Caleb Mundy', type: 'Baptism follow-up', openedOn: '2026-08-16', ownerId: 6, status: 'touched', lastTouchOn: '2026-08-22', sensitive: false, notes: 'Baptized Aug 16. Next steps conversation set.' },
-    { id: 205, person: 'Ruth Hollingsworth', type: 'Member care need', openedOn: '2026-08-22', ownerId: 1, status: 'open', lastTouchOn: null, sensitive: true, notes: 'Surgery scheduled; family needs meals for two weeks and a ride Thursday.' },
-    { id: 206, person: 'Dale Prentiss', type: 'Prayer request', openedOn: '2026-08-27', ownerId: 2, status: 'open', lastTouchOn: null, sensitive: true, notes: 'Submitted through the website. Asked that it not be read aloud.' },
-    { id: 207, person: 'Tina Boyer', type: 'Member care need', openedOn: '2026-07-30', ownerId: 4, status: 'closed', lastTouchOn: '2026-08-04', sensitive: false, notes: 'Visit made Aug 4. Closed.' },
+    { id: 201, person: 'Hannah Whitfield', type: 'Guest follow-up', openedOn: '2026-08-27', ownerId: 2, status: 'open', lastTouchOn: null, closedOn: null, sensitive: false, notes: 'Contact card, first visit Aug 23.' },
+    { id: 202, person: 'Marcus Ellery', type: 'Guest follow-up', openedOn: '2026-08-24', ownerId: null, status: 'open', lastTouchOn: null, closedOn: null, sensitive: false, notes: 'Asked about the 9:15 class.' },
+    { id: 203, person: 'The Alvarado family', type: 'New member follow-up', openedOn: '2026-08-06', ownerId: 1, status: 'touched', lastTouchOn: '2026-08-20', closedOn: null, sensitive: false, notes: 'Joined Aug 2. Two children in Kids.' },
+    { id: 204, person: 'Caleb Mundy', type: 'Baptism follow-up', openedOn: '2026-08-16', ownerId: 6, status: 'touched', lastTouchOn: '2026-08-22', closedOn: null, sensitive: false, notes: 'Baptized Aug 16. Next steps conversation set.' },
+    { id: 205, person: 'Ruth Hollingsworth', type: 'Member care need', openedOn: '2026-08-22', ownerId: 1, status: 'open', lastTouchOn: null, closedOn: null, sensitive: true, notes: 'Surgery scheduled; family needs meals for two weeks and a ride Thursday.' },
+    { id: 206, person: 'Dale Prentiss', type: 'Prayer request', openedOn: '2026-08-27', ownerId: 2, status: 'open', lastTouchOn: null, closedOn: null, sensitive: true, notes: 'Submitted through the website. Asked that it not be read aloud.' },
+    { id: 207, person: 'Tina Boyer', type: 'Member care need', openedOn: '2026-07-30', ownerId: 4, status: 'closed', lastTouchOn: '2026-08-04', closedOn: '2026-08-04', sensitive: false, notes: 'Visit made Aug 4. Closed.' },
   ],
 
   goals: [
