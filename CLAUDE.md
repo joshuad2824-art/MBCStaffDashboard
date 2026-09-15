@@ -4,8 +4,10 @@ One application, two sides. The staff dashboard and the deacons' dashboard are t
 the same database, and the same sign-in. What a person sees is assembled from which bodies they
 belong to.
 
-Read `mbc-staff-dashboard-brief.md` and `mbc-deacons-dashboard-brief.md` before changing anything
-structural. The invariants below are the ones that are easy to break by accident and expensive to
+Read `mbc-staff-dashboard-brief.md`, `mbc-deacons-dashboard-brief.md` and
+`mbc-dashboard-expansion-brief.md` before changing anything structural (the third is the current
+work; `docs/CLAUDE-CODE-KICKOFF.md` is its instruction sheet and `supabase/governance/CORPUS-PREP.md`
+the corpus session that feeds it). The invariants below are the ones that are easy to break by accident and expensive to
 discover later.
 
 ---
@@ -28,6 +30,16 @@ rows. Only the third is a security control; the other two exist so the interface
 **The context toggle narrows, never widens.** It is a view filter for the two people who hold both
 sides. It changes nothing about RLS. If it ever becomes the thing deciding what someone may read,
 the model has been broken.
+
+**View-as narrows, never widens, and moves no policy.** An administrator previews a *seat* — the
+sidebar it would have, the routes it would allow — and the rows on screen stay his own. It changes
+nothing about RLS; if a change to view-as ever needs a policy, the feature has been misunderstood.
+It is read-only while worn, and the guard is in the stores (`isPreviewLocked()`), not in the
+buttons. **The one exception to absence-not-greyed-out lives here**: in view-as, and only in
+view-as, a surface belonging to a body the administrator is not in appears in the sidebar and opens
+to a labelled stub naming the room. The question being asked is about somebody else's access, and a
+truthful answer requires naming the room; showing its contents would be impersonation, which the
+confidential committee's policies exist to prevent. Outside view-as, nothing changes.
 
 **Audience is never empty.** `audience text[]` with no entries is a bug, not a private record.
 
@@ -55,7 +67,7 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0014_…` |
+| Migrations | Continue the sequence: next is `supabase/migrations/0017_…` |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -74,9 +86,12 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   takes a `care_entry` and produces a request from it. `CareProvider` loads it for the Board and
   for the staff role.
 - **`src/data/reference/repository.ts`** — the reference's seam, split from the Board's room in 0014
-  because the manual is not the Board's alone: two reads, no writes. `ReferenceProvider` loads it for
-  anyone signed in, and what comes back is the policies' answer — the whole manual, the docket only on
-  the deacon side. `Reference.tsx` draws the docket only when there is one.
+  because the manual is not the Board's alone: documents and sections in, one search out, no writes.
+  `search()` is `search_manual()` in a configured build and a substring pass over the seeded sections
+  otherwise, in the same shape — the screen does not know which answered. `sections.ts` is the stub's
+  copy of the loader's splitter and must only agree with it; the loader decides what production holds.
+  `screens/Reference.tsx` is the three states of the expansion brief §A.4, identical on both sides;
+  the discrepancy docket is not on it, at Joshua's ask, and no screen reads `governance_finding` today.
 - **`src/screens/surfaces.ts`** — every surface names its `bodies`; `surfacesFor(bodies, viewAs)`
   is what the sidebar and the router are assembled from. `staffOnly` survives inside the staff
   body: it is the staff role versus a limited account, as before.
@@ -84,6 +99,14 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   which bodies they sit in and in what role. Both are read in `account.ts`; `session.tsx` exposes
   `seats`, `bodies`, `isChairOf()`, `sides` and the `context` — the side the interface is drawn
   for, a view filter that narrows and never reaches a query.
+- **`src/session/viewAs.ts`** — view as. `SEATS` is the fixed list from the expansion brief §C.3;
+  `seatOf()` turns a person's readable seat set into one, labelled as a seat. `previewSeat` on the
+  session composes into `Viewer` (`surfaces.ts`): `surfacesFor()` asks the same `canOpen()` with the
+  seat's bodies, and `isStub()` says which of those the administrator's own membership does not
+  open — those render `components/shell/Stub.tsx`. `bodies` on the session stays real; only
+  `viewAs`, `sides`, `context` and `isChairOf()` follow the seat. The lock is module state read by
+  every store's write path, because the stores sit above the session in the tree. Who is offered
+  the control is `person.admin`, which gates nothing in the database and arrives with 0016.
 - **`supabase/migrations/0004_bodies.sql`** — `body`, `membership`, `my_bodies()`, `is_member_of()`,
   `is_chair_of()`, and `is_staff_role()` reimplemented on top of them. It is membership in `staff`
   *and* `access = 'staff'`, not membership alone: the staff body is the whole staff roster, limited
@@ -148,6 +171,16 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   included. `governance_finding` is untouched and stays the deacon side's: the docket is the Board's
   working record, not the manual. Still no write policy on either table, and the loader ignores an
   `audience:` key if a corpus still carries one, saying so once on stderr.
+- **`supabase/migrations/0016_governance_search.sql`** — the manual, searchable. `governance_section` is
+  one row per heading of a document — the headings above it, a citation in the docket's dialect, a
+  stable anchor, the markdown verbatim — with a stored weighted `tsvector` (citation A, heading path B,
+  body C), a GIN index on it and trigram indexes on `citation` and the document `code`. Its read policy
+  is inherited, an `exists` against `governance_document`, so one decision governs both tables. No
+  write policy. `search_manual(q)` is security invoker: a citation typed as a string lands on the
+  paragraph, above the ranked `websearch_to_tsquery` hits, and the snippet carries `<mark>` markers the
+  client renders as the match mark and never as HTML. The loader emits the sections, refuses a file with
+  no `sensitivity` key (CORPUS-PREP.md §2), and stops if a document's sections do not reconstruct its
+  body exactly.
 - **`supabase/migrations/0011_chairman_membership_admin.sql`** and **`0012_…`** — the chairman's seat
   editor: `chairman_roster()` and `set_managed_membership()`, both security definer and both refusing
   anyone but the Board chairman. They reach the Board and its committees, and a confidential

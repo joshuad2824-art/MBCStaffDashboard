@@ -37,6 +37,8 @@ deacon side); unconfigured local builds keep the seed-data repositories.
 0015_manual_open_to_all
                        the audience goes again: the manual is open to everyone who
                        signs in; the docket stays the deacon side's; still no write policy
+0016_governance_search governance_section (one row per heading, weighted tsvector,
+                       trigram indexes), its inherited read policy, and search_manual()
 ```
 
 ## Loading the governance corpus
@@ -62,6 +64,18 @@ the bundle.
 bylaws, policies and procedures are the church's own documents. An `audience:`
 key in a file's front matter is ignored, and the loader says once on stderr if
 it saw any. The docket is the deacon side's and is never addressed to the staff.
+
+**Sections.** The loader also splits each document at its headings into
+`governance_section` rows — the deepest heading and the text under it, with the
+headings above it, a citation in the docket's dialect (`Art. II.B §3`, `A009 §4`)
+and a stable anchor — deleting and reinserting a document's sections inside the
+transaction so a re-load leaves no orphans. Joined in order the sections are the
+document again; the loader asserts that and stops if it does not hold. The run's
+last line on stderr says how many documents, sections and findings it wrote.
+
+**Every file needs a `sensitivity` key.** `normal` or `restricted`. A file with
+neither is refused by name and the run writes nothing, so a file somebody adds
+and forgets to mark is a build error rather than an accidental publication.
 
 **What the loader refuses.** Every file whose front matter says
 `sensitivity: restricted` — the salary plan, the fourteen performance standards

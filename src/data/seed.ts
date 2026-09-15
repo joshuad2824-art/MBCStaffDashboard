@@ -42,14 +42,14 @@ export const CHURCH = {
 
 export const seed: DashboardData = {
   people: [
-    { id: 1, name: 'Jacob Bice', role: 'Senior Pastor', email: 'jacob@memorialbaptist.com', access: 'staff', active: true },
+    { id: 1, name: 'Jacob Bice', role: 'Senior Pastor', email: 'jacob@memorialbaptist.com', access: 'staff', active: true, admin: true },
     { id: 2, name: 'Spencer Ray', role: 'Associate Pastor', email: 'spencer@memorialbaptist.com', access: 'staff', active: true },
     { id: 3, name: 'Ricky Weatherford', role: 'Music Minister', email: 'ricky@memorialbaptist.com', access: 'staff', active: true },
     { id: 4, name: 'Lori Bell', role: 'Family Ministries Associate', email: 'lori@memorialbaptist.com', access: 'staff', active: true },
     { id: 5, name: 'Michelle Davis', role: 'Preschool Minister', email: 'michelle@memorialbaptist.com', access: 'staff', active: true },
     { id: 6, name: 'Andrew McGuire', role: 'Campus Minister', email: 'andrew@memorialbaptist.com', access: 'staff', active: true },
     { id: 7, name: 'Sherry Kitchens', role: 'Office Administrator', email: 'sherry@memorialbaptist.com', access: 'staff', active: true },
-    { id: 8, name: 'Joshua Davis', role: 'Office Administrator', email: 'joshua@memorialbaptist.com', access: 'staff', active: true },
+    { id: 8, name: 'Joshua Davis', role: 'Office Administrator', email: 'joshua@memorialbaptist.com', access: 'staff', active: true, admin: true },
     // Sample deacons. Invented names, as in the design handoff; the real Board
     // is seated in Postgres by the administrator, never from here.
     { id: 9, name: 'Curtis Nolen', role: 'Deacon', email: 'curtis@memorialbaptist.com', access: 'limited', active: true },

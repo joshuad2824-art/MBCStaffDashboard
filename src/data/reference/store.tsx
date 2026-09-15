@@ -3,26 +3,25 @@ import type { ReactNode } from 'react'
 import { useSession } from '../../session/session'
 import { referenceRepository } from './repository'
 import type { ReferenceData } from './repository'
+import type { SearchHit } from './types'
 
-/* The manual, loaded once a person is signed in — whichever side they are on.
-   What comes back is the policies' answer: the whole manual, and the docket
-   only on the deacon side. */
+/* The manual, loaded once a person is signed in — whichever side they are on
+   — and a search over it. What comes back is the policies' answer, and since
+   0015 that is the whole manual for anyone signed in. */
 
 interface ReferenceStore {
   data: ReferenceData | null
   error: string | null
+  search(q: string): Promise<SearchHit[]>
 }
 
 const ReferenceContext = createContext<ReferenceStore | null>(null)
 
 export function ReferenceProvider({ children }: { children: ReactNode }) {
-  const { member, bodies } = useSession()
+  const { member } = useSession()
   const [data, setData] = useState<ReferenceData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const meId = member?.id ?? null
-  // Seats change only with a sign-in; the list is keyed so a new person, or the
-  // same person seated differently, reloads and nobody else does.
-  const seated = bodies.join(',')
 
   useEffect(() => {
     if (meId === null) {
@@ -31,7 +30,7 @@ export function ReferenceProvider({ children }: { children: ReactNode }) {
     }
     let live = true
     referenceRepository
-      .load({ bodies: seated ? seated.split(',') : [] })
+      .load()
       .then((loaded) => {
         if (live) {
           setData(loaded)
@@ -44,9 +43,9 @@ export function ReferenceProvider({ children }: { children: ReactNode }) {
     return () => {
       live = false
     }
-  }, [meId, seated])
+  }, [meId])
 
-  const value = useMemo<ReferenceStore>(() => ({ data, error }), [data, error])
+  const value = useMemo<ReferenceStore>(() => ({ data, error, search: (q) => referenceRepository.search(q) }), [data, error])
   return <ReferenceContext.Provider value={value}>{children}</ReferenceContext.Provider>
 }
 

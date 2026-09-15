@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/shell/AppShell'
-import { SURFACES, surfacesFor } from './screens/surfaces'
+import { SURFACES, isStub, surfacesFor } from './screens/surfaces'
+import { Stub } from './components/shell/Stub'
 import { SignIn } from './screens/SignIn'
 import { Today } from './screens/Today'
 import { Huddle } from './screens/Huddle'
@@ -51,7 +52,7 @@ const SCREENS: Record<string, ReactNode> = {
 }
 
 export function App() {
-  const { member, bodies, viewAs, sides, context, auth } = useSession()
+  const { member, bodies, viewAs, sides, context, auth, previewSeat, access } = useSession()
 
   /* An opened link arrives with its tokens on the address bar and takes a
      moment to become a session. Showing the sign-in screen in that gap tells
@@ -62,7 +63,8 @@ export function App() {
   /* Routes exist only for the surfaces this person may open. Typing the path
      of any other gets the same answer as a path that was never there: the
      landing screen. The route refuses; it does not render empty. */
-  const open = surfacesFor({ bodies, viewAs, sides, context })
+  const viewer = { bodies, viewAs, sides, context, previewSeat, access }
+  const open = surfacesFor(viewer)
   if (open.length === 0) return <NoSurfaces />
   /* Home is the landing screen for the two people who hold both sides, else
      Today on the staff side and the meeting on the deacon side. */
@@ -81,7 +83,7 @@ export function App() {
           <Route
             key={surface.path}
             path={surface.nested ? surface.path + '/*' : surface.path}
-            element={<AppShell surface={surface}>{SCREENS[key]}</AppShell>}
+            element={<AppShell surface={surface}>{isStub(surface, viewer) ? <Stub surface={surface} /> : SCREENS[key]}</AppShell>}
           />
         )
       })}
