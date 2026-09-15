@@ -59,7 +59,11 @@ the bundle.
 and their introduction, and policy E006 — is left out and named on stderr.
 CLAUDE.md says staff compensation and anything under E006 never enter the
 system, in any form, behind any gate; the loader is where that is enforced for
-the corpus. The `_build/` and `source/` folders are skipped too.
+the corpus. The `_build/` and `source/` folders are skipped too, and so are the
+folder's own build artefacts — the generated `00_INDEX.md`, which links to every
+file including the restricted ones, and `VERIFICATION.md` — because they describe
+the transcription rather than belong to the manual. The loader names those on
+stderr as well, so a run's output says exactly what was left out and why.
 
 The fifteen obligations 0013 seeds were verified against the manual. One
 question the manual leaves open is named in the row itself: the bylaws never

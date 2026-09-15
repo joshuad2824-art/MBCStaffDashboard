@@ -18,6 +18,10 @@
        staff compensation and anything under E006 never enter the system, in
        any form, behind any gate. The loader refuses them; it does not merely
        skip them quietly — it names each one on stderr.
+     - the folder's own build artefacts: any file whose front matter says
+       `generated: true` (the folder index, which links to every file including
+       the restricted ones) or `type: verification-report`. They describe the
+       transcription; they are not part of the manual.
      - `_build/`, `source/`, and anything that is not Markdown.
 
    How a file is read:
@@ -31,8 +35,10 @@
        article, "Constitution" for the constitution, else empty
      - documents sort by folder and file name, which is the manual's own order
    The docket is split on its numbered `### N. Title` headings; the text below
-   each is the finding's body, and every "Art. …" or lettered-code citation in
-   the body is collected into `cites`. */
+   each, up to the next heading of any kind, is the finding's body (so the
+   docket's closing sections are not glued onto the last finding), and every
+   "Art. …" / "Article …" or lettered-code citation in the body is collected
+   into `cites`, normalised to the form the reference screen links on. */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, extname, join, relative, sep } from 'node:path'
@@ -70,11 +76,20 @@ function frontMatter(text) {
   return { fields, body: text.slice(match[0].length) }
 }
 
-const CITE = /\b(?:Art\.\s*[IVX]+(?:\.[A-Z])?(?:\s*§\s*\d+)?(?:\s*¶\s*\d+)?|[A-Z]\d{3}(?:\s*§\s*\d+)?)/g
+const CITE =
+  /\b(?:(?:Art\.|Article|ARTICLE)\s*([IVX]+)(\.[A-Z]\b)?(?:,?\s*(?:§|Section|SECTION)\s*(\d+))?(?:,?\s*(?:¶|paragraph)\s*(\d+))?|([A-Z]\d{3})(?:\s*§\s*(\d+))?)/g
+
+/** "Article II.B, Section 3, paragraph 10" → "Art. II.B §3 ¶10"; "A009 § 4" → "A009 §4". */
+function normaliseCite(match) {
+  const [, article, letter, section, paragraph, policy, policySection] = match
+  if (policy) return policy + (policySection ? ' §' + policySection : '')
+  return 'Art. ' + article + (letter ?? '') + (section ? ' §' + section : '') + (paragraph ? ' ¶' + paragraph : '')
+}
 
 const documents = []
 const findings = []
 const refused = []
+const skipped = []
 
 for (const path of files) {
   const rel = relative(root, path).split(sep).join('/')
@@ -86,15 +101,21 @@ for (const path of files) {
     refused.push(rel)
     continue
   }
+  if ((fields.generated ?? '').toLowerCase() === 'true' || (fields.type ?? '').toLowerCase() === 'verification-report') {
+    skipped.push(rel)
+    continue
+  }
 
   if (fields.type === 'discrepancy-docket' || /discrepancy[-_ ]?docket/i.test(name)) {
-    const parts = body.split(/^(#{2,3}\s*(?:finding\s*)?\d+[.:)\s-].*)$/im)
+    const FINDING = /^#{2,3}\s*(?:finding\s*)?(\d+)[.:)\s-]+(.*)$/i
+    const parts = body.split(/^(#{1,3}\s.*)$/m)
     for (let i = 1; i < parts.length; i += 2) {
-      const heading = parts[i]
-      const findingBody = (parts[i + 1] ?? '').trim()
-      const number = Number(/(\d+)/.exec(heading)[1])
-      const title = heading.replace(/^#{2,3}\s*(?:finding\s*)?\d+[.:)\s-]*/i, '').trim() || 'Finding ' + number
-      const cites = [...new Set((findingBody.match(CITE) ?? []).map((c) => c.replace(/\s+/g, ' ')))]
+      const heading = FINDING.exec(parts[i])
+      if (!heading) continue
+      const number = Number(heading[1])
+      const title = heading[2].trim() || 'Finding ' + number
+      const findingBody = (parts[i + 1] ?? '').trim().replace(/(?:\s*^(?:---|\*\*\*)\s*$)+$/m, '').trim()
+      const cites = [...new Set([...findingBody.matchAll(CITE)].map(normaliseCite))]
       const resolved = /^\s*(?:\*\*)?status(?:\*\*)?\s*[:—-]\s*(?:\*\*)?resolved/im.test(findingBody)
       findings.push({ number, title, body: findingBody, cites, status: resolved ? 'resolved' : 'open' })
     }
@@ -149,3 +170,4 @@ out.push('commit;')
 process.stdout.write(out.join('\n') + '\n')
 console.error(`${documents.length} documents, ${findings.length} findings`)
 if (refused.length) console.error('refused (sensitivity: restricted):\n  ' + refused.join('\n  '))
+if (skipped.length) console.error('skipped (build artefacts, not part of the manual):\n  ' + skipped.join('\n  '))
