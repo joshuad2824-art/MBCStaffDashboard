@@ -452,7 +452,7 @@ export class SupabaseMeetingRepository implements MeetingRepository {
         ownerBodySlug: text(row.owner_body_slug), active: row.active === true, position: Number(row.position ?? 0) || 0,
       })),
       documents: ((documents.data ?? []) as Row[]).map((row) => ({
-        id: text(row.id), slug: text(row.slug), kind: text(row.kind) as GovernanceDocument['kind'], code: text(row.code), title: text(row.title),
+        id: text(row.id), slug: text(row.slug), kind: (['constitution', 'bylaws', 'policy', 'procedure', 'reference'].includes(text(row.kind)) ? text(row.kind) : 'reference') as GovernanceDocument['kind'], code: text(row.code), title: text(row.title),
         body: text(row.body), position: Number(row.position ?? 0) || 0,
       })),
       findings: ((findings.data ?? []) as Row[]).map((row) => ({

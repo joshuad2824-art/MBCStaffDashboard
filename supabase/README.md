@@ -30,14 +30,18 @@ deacon side); unconfigured local builds keep the seed-data repositories.
                        chairman-only roster and seat-management functions
 0012_preserve_confidential_membership
                        keeps confidential committee membership inside that committee
+0013_obligations_from_the_corpus
+                       the year's fifteen obligations as the manual states them; the
+                       reference's kinds gain constitution and reference
 ```
 
 ## Loading the governance corpus
 
 The reference reads `governance_document` and `governance_finding`. They are
-filled from the transcription the brief cites — one Markdown file per bylaw
-article, policy or procedure, with `DISCREPANCY-DOCKET.md` beside them — by a
-loader that writes upserts keyed on slug and on finding number:
+filled from the transcription the brief cites — the 2-11-2025 Bylaws, Policies
+& Procedures Manual as one Markdown file per document, each with YAML front
+matter, and `DISCREPANCY-DOCKET.md` at the top — by a loader that writes
+upserts keyed on slug and on finding number:
 
 ```
 node supabase/governance/build-seed.mjs "/path/to/MBC_Bylaws:Policies:Procedures" > supabase/governance/seed.sql
@@ -45,15 +49,25 @@ node supabase/governance/build-seed.mjs "/path/to/MBC_Bylaws:Policies:Procedures
 
 Run the SQL it prints in the project's SQL editor (or with `psql`). Re-run both
 steps whenever the transcription changes; the script's header says how it reads
-a file's code, kind and title, and how it splits the docket into findings. The
-generated `seed.sql` is not committed — the corpus is church content and lives
-in the database, behind the policy, not in the repository or the bundle.
+a file's front matter, kind and title, and how it splits the docket into
+findings. The generated `seed.sql` is not committed — the corpus is church
+content and lives in the database, behind the policy, not in the repository or
+the bundle.
 
-The eight obligations 0009 seeds carry the citations the brief gives. Two are
-anchored provisionally until the corpus is read — the Treasurer's annual report
-and audit (anchored to the January meeting) and the A009 budget calendar, of
-whose five dates only 10 October is seeded. Correcting one is an `update
-obligation set anchor = … where slug = …`; everything derived moves with it.
+**What the loader refuses.** Every file whose front matter says
+`sensitivity: restricted` — the salary plan, the fourteen performance standards
+and their introduction, and policy E006 — is left out and named on stderr.
+CLAUDE.md says staff compensation and anything under E006 never enter the
+system, in any form, behind any gate; the loader is where that is enforced for
+the corpus. The `_build/` and `source/` folders are skipped too.
+
+The fifteen obligations 0013 seeds were verified against the manual. One
+question the manual leaves open is named in the row itself: the bylaws never
+define the fiscal year, so the Treasurer's annual report and audit are anchored
+to 1 March on A009's calendar-year budget. If the Treasurer and the Audit
+Committee work to the church year instead, `update obligation set anchor =
+'11-29' where slug = 'treasurer-annual-report'`; everything derived moves with
+it.
 
 The application reads `my_seats()` at sign-in and the report tables in the
 Board's room, so a build carrying 0006's client must run against a project

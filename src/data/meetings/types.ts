@@ -104,7 +104,7 @@ export interface Obligation {
 
 /* The reference: the transcribed bylaws and policies, and the docket that
    says where the manual disagrees with itself. Read here, edited nowhere. */
-export type DocumentKind = 'bylaws' | 'policy' | 'procedure'
+export type DocumentKind = 'constitution' | 'bylaws' | 'policy' | 'procedure' | 'reference'
 
 export interface GovernanceDocument {
   id: string
