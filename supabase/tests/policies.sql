@@ -1039,7 +1039,7 @@ select test.assert((select count(*) from thread) = 0,       'signed out: still n
 select test.refused($q$ select purge_expired_announcements() $q$, '42501', 'signed out: cannot call the purge');
 reset role;
 
--- ------------------------------------------------- 10. the year and the reference (0009, 0015)
+-- ------------------------------------------------- 10. the year and the reference (0009, 0015, 0016)
 --
 -- Governance content: written by nobody through the API. The obligations
 -- are seeded by the migration itself and are the deacon side's. The manual
@@ -1058,14 +1058,25 @@ insert into governance_document (slug, kind, code, title, body, position) values
 insert into governance_finding (number, title, body, cites) values
   (8, 'An amendment cites a paragraph that no longer resolves', 'The record captured a location, not the language.', '{"Art. II.B §3 ¶12"}');
 
--- 10a. The shape: no audience on a document, no write policy on either table.
+-- Sections, as the loader emits them (0016): the heading and the text under it.
+insert into governance_section (document_id, heading_path, anchor, citation, body, position)
+select id, '{"Policy A009","1. Purpose"}', 'a009-1', 'A009 §1', '## 1. Purpose  The buildings are held for the ministry of the church.', 1 from governance_document where slug = 'a009';
+insert into governance_section (document_id, heading_path, anchor, citation, body, position)
+select id, '{"Policy A009","4. Fee schedule"}', 'a009-4', 'A009 §4', '## 4. Fee schedule  The fee schedule is reviewed every year in August, before the budget is assembled.', 2 from governance_document where slug = 'a009';
+insert into governance_section (document_id, heading_path, anchor, citation, body, position)
+select id, '{"ARTICLE II. CHURCH LEADERSHIP","B. Deacons","SECTION 3. Elected Deacon Board"}', 'art-ii-b-3', 'Art. II.B §3', '### SECTION 3. Elected Deacon Board  The officers of the Board are elected in September, before the church year begins.', 1 from governance_document where slug = 'article-ii';
+
+-- 10a. The shape: no audience on a document, no write policy on any of the three tables.
 
 select test.assert(
   not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'governance_document' and column_name = 'audience'),
   'reference: a document carries no audience — the manual is not kept from either side');
 select test.assert(
-  (select count(*) from pg_policies where tablename in ('governance_document', 'governance_finding') and cmd <> 'SELECT') = 0,
-  'reference: neither table has an insert, update or delete policy');
+  (select count(*) from pg_policies where tablename in ('governance_document', 'governance_finding', 'governance_section') and cmd <> 'SELECT') = 0,
+  'reference: none of the three tables has an insert, update or delete policy');
+select test.assert(
+  (select count(*) from pg_policies where tablename = 'obligation' and cmd <> 'SELECT') = 0,
+  'reference: the year has no insert, update or delete policy either');
 
 -- 10b. The deacon side reads the manual and the docket.
 
@@ -1074,6 +1085,21 @@ set role authenticated;
 select test.assert((select count(*) from obligation) = 15,          'deacon A: reads the year''s obligations, as 0013 seeds them from the manual');
 select test.assert((select count(*) from governance_document) = 4, 'deacon A: reads the reference — constitution, bylaws, policy and derived material alike');
 select test.assert((select count(*) from governance_finding) = 1,  'deacon A: reads the docket');
+select test.assert((select count(*) from governance_section) = 3,  'deacon A: reads the sections');
+-- search_manual(): a text query ranks sections and marks the words; a citation
+-- typed as a string lands on the paragraph, above any text hit; a miss is empty.
+select test.assert((select count(*) from search_manual('fee schedule')) = 1, 'deacon A: search finds the one section that says fee schedule');
+select test.assert((select snippet like '%<mark>fee</mark>%' and not by_citation from search_manual('fee schedule')), 'deacon A: the snippet marks the matched words');
+select test.assert((select array_agg(citation order by section_position) from search_manual('A009')) = array['A009 §1', 'A009 §4'], 'deacon A: typing a code finds that policy''s sections, by citation, in order');
+select test.assert((select by_citation and citation = 'A009 §4' from search_manual('A009 §4') limit 1), 'deacon A: typing a full citation lands on that paragraph');
+select test.assert((select count(*) from search_manual('Art. II.B')) = 1, 'deacon A: typing a bylaw citation finds the section — tokenisation does not mangle it');
+select test.assert((select count(*) from search_manual('columbarium')) = 0, 'deacon A: nothing in the manual says that');
+select test.assert((select count(*) from search_manual('')) = 0, 'deacon A: an empty query finds nothing');
+delete from governance_section;
+update governance_section set body = 'Rewritten';
+reset role;
+select test.assert((select count(*) from governance_section where body = 'Rewritten') = 0 and (select count(*) from governance_section) = 3, 'deacon A: cannot edit or delete a section');
+set role authenticated;
 select test.refused(
   $q$ insert into obligation (slug, title, rule_source, cadence, anchor, owner_body_slug) values ('made-up', 'Made up', 'Nowhere', 'annual', '01-01', 'deacon-board') $q$,
   '42501', 'deacon A: cannot add an obligation — the year is not typed');
@@ -1097,7 +1123,12 @@ select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test
 set role authenticated;
 select test.assert((select count(*) from obligation) = 0,           'staff: reads ZERO obligations — the year is the Board''s');
 select test.assert((select count(*) from governance_document) = 4, 'staff: reads the whole manual — it is the church''s own document');
+select test.assert((select count(*) from governance_section) = 3,  'staff: reads every section — a section is readable when its document is');
+select test.assert((select count(*) from search_manual('fee schedule')) = 1, 'staff: search_manual() answers the staff too');
 select test.assert((select count(*) from governance_finding) = 0,  'staff: reads ZERO findings — the docket stays the deacon side''s');
+select test.refused(
+  $q$ insert into governance_section (document_id, anchor, body) values ((select id from governance_document where slug = 'a009'), 'mine', 'Mine') $q$,
+  '42501', 'staff: cannot add a section');
 select test.refused(
   $q$ insert into governance_document (slug, kind, code, title) values ('mine', 'policy', 'X000', 'Mine') $q$,
   '42501', 'staff: cannot add a document to the manual');
@@ -1109,6 +1140,7 @@ select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.te
 set role authenticated;
 select test.assert((select count(*) from obligation) = 0,           'limited: reads zero obligations');
 select test.assert((select count(*) from governance_document) = 4, 'limited: reads the whole manual — any account on the roster may');
+select test.assert((select count(*) from search_manual('A009')) = 2, 'limited: search_manual() answers a limited account too');
 select test.assert((select count(*) from governance_finding) = 0,  'limited: reads zero findings');
 reset role;
 
@@ -1116,7 +1148,9 @@ select test.sign_out();
 set role anon;
 select test.assert((select count(*) from obligation) = 0,           'signed out: no obligations');
 select test.assert((select count(*) from governance_document) = 0, 'signed out: no reference — the manual is the church''s, and a login is still the door');
+select test.assert((select count(*) from governance_section) = 0,  'signed out: no sections — the inherited policy answers as the document''s does');
 select test.assert((select count(*) from governance_finding) = 0,  'signed out: no docket');
+select test.refused($q$ select * from search_manual('fee') $q$, '42501', 'signed out: cannot call search_manual() at all');
 reset role;
 
 -- ------------------------------------------------- 11. care: pointers, not content (0010)

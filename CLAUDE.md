@@ -95,9 +95,12 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   takes a `care_entry` and produces a request from it. `CareProvider` loads it for the Board and
   for the staff role.
 - **`src/data/reference/repository.ts`** — the reference's seam, split from the Board's room in 0014
-  because the manual is not the Board's alone: two reads, no writes. `ReferenceProvider` loads it for
-  anyone signed in, and what comes back is the policies' answer — the whole manual, the docket only on
-  the deacon side. `Reference.tsx` draws the docket only when there is one.
+  because the manual is not the Board's alone: documents and sections in, one search out, no writes.
+  `search()` is `search_manual()` in a configured build and a substring pass over the seeded sections
+  otherwise, in the same shape — the screen does not know which answered. `sections.ts` is the stub's
+  copy of the loader's splitter and must only agree with it; the loader decides what production holds.
+  `screens/Reference.tsx` is the three states of the expansion brief §A.4, identical on both sides;
+  the discrepancy docket is not on it, at Joshua's ask, and no screen reads `governance_finding` today.
 - **`src/lib/serving.ts`** and **`src/screens/Ministries.tsx`** — the directory. Everything derived is
   derived here and stored nowhere: whether a group has a gap (nobody in a leading role, which the
   group's kind decides — a class a teacher, a community group a host, a team a coordinator), the open
@@ -184,6 +187,16 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   included. `governance_finding` is untouched and stays the deacon side's: the docket is the Board's
   working record, not the manual. Still no write policy on either table, and the loader ignores an
   `audience:` key if a corpus still carries one, saying so once on stderr.
+- **`supabase/migrations/0016_governance_search.sql`** — the manual, searchable. `governance_section` is
+  one row per heading of a document — the headings above it, a citation in the docket's dialect, a
+  stable anchor, the markdown verbatim — with a stored weighted `tsvector` (citation A, heading path B,
+  body C), a GIN index on it and trigram indexes on `citation` and the document `code`. Its read policy
+  is inherited, an `exists` against `governance_document`, so one decision governs both tables. No
+  write policy. `search_manual(q)` is security invoker: a citation typed as a string lands on the
+  paragraph, above the ranked `websearch_to_tsquery` hits, and the snippet carries `<mark>` markers the
+  client renders as the match mark and never as HTML. The loader emits the sections, refuses a file with
+  no `sensitivity` key (CORPUS-PREP.md §2), and stops if a document's sections do not reconstruct its
+  body exactly.
 - **`supabase/migrations/0017_ministries.sql`** and **`0018_ministry_reference.sql`** — the directory.
   `ministry`, `serving_role` (enumerated, changed by migration only), `serving_group` and
   `serving_assignment`; the whole staff body reads, the staff role inserts and updates, nobody deletes.
