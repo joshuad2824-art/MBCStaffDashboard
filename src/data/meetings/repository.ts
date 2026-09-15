@@ -4,9 +4,12 @@ import type { Person } from '../types'
 import { normalisePayload } from './reports'
 import type { FiledPointer, Report, ReportFile, ReportKind, ReportPayload, ReportStatus, ReportVersion } from './reports'
 import { seedAgenda, seedAttendance, seedMeetings, seedMotions, seedReports, seedVersions } from './seed'
+import { seedDocuments, seedFindings, seedObligations } from './governance'
 import type {
   AgendaItem,
   Attendance,
+  GovernanceDocument,
+  Obligation,
   AttendanceStatus,
   BoardMember,
   Meeting,
@@ -146,6 +149,9 @@ export class LocalMeetingRepository implements MeetingRepository {
       roster: this.roster,
       me: stub.meId === null ? null : String(stub.meId),
       deaconYearStartMonth: 1,
+      obligations: seedObligations,
+      documents: seedDocuments,
+      findings: seedFindings,
     }
   }
 
@@ -349,7 +355,7 @@ export class SupabaseMeetingRepository implements MeetingRepository {
 
   async load(): Promise<MeetingsData> {
     const client = this.client()
-    const [meetings, agenda, attendance, motions, seats, settings, me, reports, versions, people, bodies] = await Promise.all([
+    const [meetings, agenda, attendance, motions, seats, settings, me, reports, versions, people, bodies, obligations, documents, findings] = await Promise.all([
       client.from('board_meeting').select('*').order('meets_on'),
       client.from('agenda_item').select('*').order('position'),
       client.from('meeting_attendance').select('*'),
@@ -365,8 +371,11 @@ export class SupabaseMeetingRepository implements MeetingRepository {
       client.from('report_version').select('*').order('version_no'),
       client.from('person').select('id, name'),
       client.from('body').select('id, slug, name'),
+      client.from('obligation').select('*').eq('active', true).order('position'),
+      client.from('governance_document').select('*').order('position'),
+      client.from('governance_finding').select('*').order('number'),
     ])
-    for (const [what, result] of [['read meetings', meetings], ['read the agenda', agenda], ['read attendance', attendance], ['read motions', motions], ['read the roll', seats], ['read reports', reports], ['read versions', versions], ['read names', people]] as const) {
+    for (const [what, result] of [['read meetings', meetings], ['read the agenda', agenda], ['read attendance', attendance], ['read motions', motions], ['read the roll', seats], ['read reports', reports], ['read versions', versions], ['read names', people], ['read the year', obligations], ['read the reference', documents], ['read the docket', findings]] as const) {
       if (result.error) fail(what, result.error)
     }
     // What was filed against each meeting: pointers, Board members only.
@@ -410,6 +419,20 @@ export class SupabaseMeetingRepository implements MeetingRepository {
       roster,
       me: meRow ? text(meRow.id) || null : null,
       deaconYearStartMonth: Number(settingsRow?.deacon_year_start_month ?? 1) || 1,
+      obligations: ((obligations.data ?? []) as Row[]).map((row) => ({
+        id: text(row.id), slug: text(row.slug), title: text(row.title), ruleSource: text(row.rule_source), requirement: text(row.requirement),
+        cadence: text(row.cadence) as Obligation['cadence'], anchor: text(row.anchor), noticeDays: Number(row.notice_days ?? 0) || 0,
+        ownerBodySlug: text(row.owner_body_slug), active: row.active === true, position: Number(row.position ?? 0) || 0,
+      })),
+      documents: ((documents.data ?? []) as Row[]).map((row) => ({
+        id: text(row.id), slug: text(row.slug), kind: text(row.kind) as GovernanceDocument['kind'], code: text(row.code), title: text(row.title),
+        body: text(row.body), position: Number(row.position ?? 0) || 0,
+      })),
+      findings: ((findings.data ?? []) as Row[]).map((row) => ({
+        id: text(row.id), number: Number(row.number ?? 0) || 0, title: text(row.title), body: text(row.body),
+        cites: Array.isArray(row.cites) ? (row.cites as unknown[]).filter((c): c is string => typeof c === 'string') : [],
+        status: text(row.status) === 'resolved' ? 'resolved' : 'open',
+      })),
     }
   }
 

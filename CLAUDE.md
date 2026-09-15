@@ -55,7 +55,7 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0009_…` |
+| Migrations | Continue the sequence: next is `supabase/migrations/0010_…` |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -101,6 +101,15 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   null is a staff working draft, and the check refuses a stamp on a `{staff}` audience, because
   publishing *is* widening. `src/lib/audience.ts` is the client's half: which room a row is shown
   in and what a composer proposes. It decides nothing about what anyone may read.
+- **`supabase/migrations/0009_year_and_reference.sql`** — the year and the reference. `obligation`
+  stores a rule — citation, cadence, anchor (`meeting`, `meeting:MM` or `MM-DD`), notice days,
+  owner body — and nothing derived: next due, announce by and which meeting it lands on are
+  computed in `src/data/meetings/year.ts` from the anchor and the Board's real meeting dates, the
+  way the cadence ledger works. `governance_document` and `governance_finding` hold the
+  transcribed corpus and the discrepancy docket, loaded by `supabase/governance/build-seed.mjs`.
+  All three are read across the deacon side and written by nobody through the API: no insert,
+  update or delete policy exists, and the test proves it. The corpus lives in the database, not
+  in the bundle, so that who may read the bylaws is a policy and not an accident of hosting.
 - **Seating.** Memberships change by SQL, by one administrator. The one automatic seat: an active
   person granted access who sits in no body yet is put in `staff`, so the People page keeps
   working. Seat a deacon first, grant access second, and the trigger adds nothing.

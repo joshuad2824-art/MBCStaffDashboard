@@ -80,6 +80,52 @@ export interface BoardMember {
   seat: SeatRole
 }
 
+/* The year. A dated obligation the bylaws or policies create (brief §3.3).
+   What is stored is the rule — its citation, cadence and anchor. Next due,
+   announce by and which meeting it lands on are derived, never stored. */
+export type ObligationCadence = 'monthly' | 'annual'
+
+export interface Obligation {
+  id: string
+  slug: string
+  title: string
+  /** The citation: "Art. II.C ¶2", "A009". Never a paraphrase. */
+  ruleSource: string
+  requirement: string
+  cadence: ObligationCadence
+  /** 'meeting' every regular meeting · 'meeting:MM' the regular meeting in
+      month MM · 'MM-DD' a fixed date. */
+  anchor: string
+  noticeDays: number
+  ownerBodySlug: string
+  active: boolean
+  position: number
+}
+
+/* The reference: the transcribed bylaws and policies, and the docket that
+   says where the manual disagrees with itself. Read here, edited nowhere. */
+export type DocumentKind = 'bylaws' | 'policy' | 'procedure'
+
+export interface GovernanceDocument {
+  id: string
+  slug: string
+  kind: DocumentKind
+  code: string
+  title: string
+  /** Markdown, as transcribed. */
+  body: string
+  position: number
+}
+
+export interface Finding {
+  id: string
+  number: number
+  title: string
+  body: string
+  cites: string[]
+  status: 'open' | 'resolved'
+}
+
 export interface MeetingsData {
   meetings: Meeting[]
   agenda: AgendaItem[]
@@ -97,6 +143,11 @@ export interface MeetingsData {
   me: string | null
   /** Month the deacon year begins in (1 = calendar year). From church_settings. */
   deaconYearStartMonth: number
+  /** The year's obligations, as the bylaws create them. */
+  obligations: Obligation[]
+  /** The reference and its docket. */
+  documents: GovernanceDocument[]
+  findings: Finding[]
 }
 
 export interface NewMotion {

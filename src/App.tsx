@@ -8,6 +8,8 @@ import { Huddle } from './screens/Huddle'
 import { Cadence } from './screens/Cadence'
 import { Discussion } from './screens/Discussion'
 import { Calendar } from './screens/Calendar'
+import { Year } from './screens/Year'
+import { Reference } from './screens/Reference'
 import { CarePipelines } from './screens/ComingLater'
 import { Communicator } from './screens/Communicator'
 import { Goals } from './screens/Goals'
@@ -23,6 +25,8 @@ const SCREENS: Record<string, ReactNode> = {
   whichSide: <WhichSide />,
   meeting: <Meeting />,
   reports: <Reports />,
+  year: <Year />,
+  reference: <Reference />,
   boardCalendar: <Calendar side="deacon" />,
   boardDiscussion: <Discussion side="deacon" />,
   today: <Today />,

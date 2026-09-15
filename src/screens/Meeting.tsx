@@ -21,6 +21,7 @@ import {
 import type { AttendanceStatus, Meeting as MeetingRecord, MeetingsData, Motion, MotionDisposition, Phase } from '../data/meetings/types'
 import { COMMITTEES, boardItems, emptyPayload } from '../data/meetings/reports'
 import { assembleFor } from '../data/meetings/render'
+import { obligationsForMeeting, onAgenda } from '../data/meetings/year'
 import { formatLong, formatShort, parseDate, startOfToday, todayIso } from '../lib/date'
 import { SURFACES } from './surfaces'
 
@@ -215,7 +216,9 @@ function AgendaPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingRe
     ...agenda.map((item) => ({
       key: item.id,
       title: item.title,
-      meta: [item.sourceRef, item.notes].filter(Boolean).join(' · '),
+      // A recurring item points at an obligation by slug; the slug is a key,
+      // not a label, so the row shows the rule's citation instead.
+      meta: [data.obligations.some((o) => o.slug === item.sourceRef) ? '' : item.sourceRef, item.notes].filter(Boolean).join(' · '),
       tag: item.source === 'old_business' ? 'old business' : item.source === 'new_business' ? 'new business' : item.source,
       tagColour: item.source === 'report' ? 'var(--mbc-yale-sage)' : item.source === 'old_business' ? 'var(--text-eyebrow)' : 'var(--text-muted)',
       remove: !locked && !closed && item.source !== 'recurring' ? () => void removeAgendaItem(item.id).then(() => say('Removed from the agenda. It stays in the record.')) : undefined,
@@ -344,6 +347,37 @@ function AgendaPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingRe
                 ) : null}
               </div>
             ))
+          )}
+        </Card>
+        <Card tone="panel" radius="card" pad="22px 24px" style={{ display: 'grid', gap: 10 }}>
+          <Eyebrow size="sm">The year, at this meeting</Eyebrow>
+          {obligationsForMeeting(data.obligations, data.meetings, meeting).length === 0 ? (
+            <p style={{ ...bodyText, margin: 0 }}>Nothing the bylaws date to this meeting.</p>
+          ) : (
+            obligationsForMeeting(data.obligations, data.meetings, meeting).map((d) => {
+              const item = onAgenda(data.agenda, meeting, d.obligation)
+              return (
+                <div key={d.obligation.id} style={{ display: 'grid', gap: 4 }}>
+                  <p style={{ ...bodyText, margin: 0, color: 'var(--text-heading)' }}>{d.obligation.title}</p>
+                  <p style={{ ...metaText, margin: 0 }}>
+                    {d.obligation.ruleSource}
+                    {d.nextDue && d.nextDue.toISOString().slice(0, 10) !== meeting.meetsOn ? ' · due ' + formatShort(d.nextDue) : ''}
+                    {item ? ' · on the agenda' : ''}
+                  </p>
+                  {!item && !locked && meeting.status !== 'held' ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void addAgendaItem({ meetingId: meeting.id, position: agenda.length + carried.length + 1, title: d.obligation.title, source: 'recurring', sourceRef: d.obligation.slug, notes: d.obligation.ruleSource })
+                      }
+                      style={linkButton}
+                    >
+                      Add it to the agenda
+                    </button>
+                  ) : null}
+                </div>
+              )
+            })
           )}
         </Card>
         <Card tone="panel" radius="card" pad="22px 24px" style={{ display: 'grid', gap: 0 }}>
