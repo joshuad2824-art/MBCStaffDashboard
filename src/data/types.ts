@@ -32,7 +32,62 @@ export function canSignIn(person: Person): boolean {
   return person.active && person.access !== 'none'
 }
 
-export type Ministry = 'All' | 'Children' | 'Students' | 'Men' | 'Women' | 'Music' | 'All groups'
+/** A ministry's name, as the `ministry` table spells it. It was a union of
+    seven strings; since 0018 the table is the constraint, at write time,
+    and a ministry can be added without a deploy. 'All' and 'All groups' are
+    church-wide values the ledger carries, not ministries in the directory. */
+export type Ministry = string
+
+export interface MinistryRecord {
+  id: Id
+  slug: string
+  name: string
+  description: string
+  position: number
+  active: boolean
+  /** Listed in the directory. False for the church-wide values. */
+  directory: boolean
+}
+
+export type GroupKind = 'class' | 'community-group' | 'team'
+
+/** A class, a community group or a ministry team: where and when it meets
+    and a note on whom it is for. Who serves in it is a ServingAssignment.
+    Never who attends — there is no field for it, on purpose. */
+export interface ServingGroup {
+  id: Id
+  ministryId: Id
+  kind: GroupKind
+  name: string
+  /** A sentence, not a schedule engine: 'Sundays 10:00 AM'. */
+  meets: string
+  location: string
+  /** Free text, never a roster: 'Grades 5–6'. */
+  audienceNote: string
+  notes: string
+  startedOn: string | null
+  /** The group ended on this date. Null is a live group. Never deleted. */
+  endedOn: string | null
+}
+
+export interface ServingRole {
+  slug: string
+  name: string
+  position: number
+  leads: boolean
+}
+
+export interface ServingAssignment {
+  id: Id
+  groupId: Id
+  personId: Id
+  roleSlug: string
+  startedOn: string
+  /** Stepped down on this date. Null is current. Never deleted. */
+  endedOn: string | null
+  /** The one to call. */
+  isPrimary: boolean
+}
 
 /** next_due and announce_by are never stored. See lib/derive.ts. */
 export interface CadenceItem {
@@ -253,4 +308,9 @@ export interface DashboardData {
   announcements: Announcement[]
   weeks: CommunicatorWeek[]
   settings: ChurchSettings
+  /** The directory: who serves, never who attends. */
+  ministries: MinistryRecord[]
+  servingRoles: ServingRole[]
+  groups: ServingGroup[]
+  assignments: ServingAssignment[]
 }

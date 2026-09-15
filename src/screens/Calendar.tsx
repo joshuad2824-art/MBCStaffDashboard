@@ -4,7 +4,7 @@ import { useData, useStore } from '../data/store'
 import { useMeetings } from '../data/meetings/store'
 import { useSession } from '../session/session'
 import type { Side } from '../session/session'
-import { MINISTRIES } from '../data/seed'
+import { ministryNames } from '../lib/serving'
 import type { ChurchEvent, Ministry } from '../data/types'
 import { composedAudience, noticesForEventPublish, otherRoom, reaches, roomOf, widen } from '../lib/audience'
 import { monthGrid } from '../lib/calendar'
@@ -329,6 +329,7 @@ function EventForm({
   onSave(event: Omit<ChurchEvent, 'id'>): void
   onDone(): void
 }) {
+  const data = useData()
   const [name, setName] = useState('')
   const [date, setDate] = useState(initialDate)
   const [time, setTime] = useState('')
@@ -350,7 +351,7 @@ function EventForm({
           <label style={labelStyle}>
             Ministry
             <select value={ministry} onChange={(event) => setMinistry(event.target.value as Ministry)} style={fieldStyle}>
-              {MINISTRIES.map((item) => (
+              {ministryNames(data).map((item) => (
                 <option key={item} value={item}>
                   {item}
                 </option>

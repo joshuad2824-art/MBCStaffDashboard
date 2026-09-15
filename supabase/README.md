@@ -35,6 +35,10 @@ deacon side); unconfigured local builds keep the seed-data repositories.
                        reference's kinds gain constitution and reference
 0014_governance_reach  audience text[] on governance_document, read by in_audience();
                        the docket stays the deacon side's; still no write policy
+0017_ministries        ministry, serving_role, serving_group, serving_assignment (who
+                       serves, never who attends); person.admin and claim_account() with it
+0018_ministry_reference
+                       cadence_item, event, notice_entry and goal reference ministry.name
 ```
 
 ## Loading the governance corpus

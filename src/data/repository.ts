@@ -8,6 +8,7 @@ import type {
   CareStatus,
   CommunicatorWeek,
   DashboardData,
+  GroupKind,
   HuddleColumn,
   Ministry,
   OrderItem,
@@ -90,6 +91,11 @@ function withAudiences(data: DashboardData): DashboardData {
       publishedAt: event.publishedAt ?? null,
     })),
     announcements: data.announcements ?? [],
+    // A board stored before 0017 has no directory; the stub's seed supplies one.
+    ministries: data.ministries?.length ? data.ministries : seed.ministries,
+    servingRoles: data.servingRoles?.length ? data.servingRoles : seed.servingRoles,
+    groups: data.groups ?? [],
+    assignments: data.assignments ?? [],
   }
 }
 
@@ -106,18 +112,23 @@ type Entity =
   | 'announcement'
   | 'goal'
   | 'week'
+  | 'ministry'
+  | 'group'
+  | 'assignment'
 
 type Row = Record<string, unknown>
 
 const entities: Entity[] = [
   'person', 'cadence', 'event', 'huddle', 'notice', 'care',
   'thread', 'post', 'mention', 'announcement', 'goal', 'week',
+  'ministry', 'group', 'assignment',
 ]
 
 function emptyDashboard(): DashboardData {
   return {
     people: [], cadence: [], huddle: [], notices: [], care: [], goals: [],
     threads: [], posts: [], mentions: [], events: [], announcements: [], weeks: [], settings: seed.settings,
+    ministries: [], servingRoles: [], groups: [], assignments: [],
   }
 }
 
@@ -251,7 +262,8 @@ export class SupabaseRepository implements Repository {
     await supabase.rpc('claim_account')
 
     const [peopleRows, cadenceRows, occurrenceRows, eventRows, huddleRows, noticeRows, careRows,
-      threadRows, postRows, mentionRows, announcementRows, goalRows, weekRows, settingsRows] = await Promise.all([
+      threadRows, postRows, mentionRows, announcementRows, goalRows, weekRows, settingsRows,
+      ministryRows, roleRows, groupRows, assignmentRows] = await Promise.all([
       this.read('person', 'id,name,role,email,access,active'),
       this.read('cadence_item', 'id,name,ministry,owner_id,interval_count,interval_label,notice_days,last_held,notes,archived'),
       this.read('cadence_occurrence', 'cadence_item_id,held_on'),
@@ -266,6 +278,10 @@ export class SupabaseRepository implements Repository {
       this.read('goal', 'id,title,ministry,owner_id,target,status,year,q1,q2,q3,q4'),
       this.read('communicator_week', 'id,service_date,series,sermon_title,cover_verse,verse_ref,order_json,notes_json,event_ids,prayer_lines,giving_json,status,updated_by,updated_at'),
       this.read('church_settings', 'meeting_times,address,welcome_text,families_text,contact_lines,ways_to_give'),
+      this.read('ministry', 'id,slug,name,description,position,active,directory'),
+      this.read('serving_role', 'slug,name,position,leads'),
+      this.read('serving_group', 'id,ministry_id,kind,name,meets,location,audience_note,notes,started_on,ended_on'),
+      this.read('serving_assignment', 'id,group_id,person_id,role_slug,started_on,ended_on,is_primary'),
     ])
 
     this.resetIds()
@@ -366,7 +382,25 @@ export class SupabaseRepository implements Repository {
       waysToGive: Array.isArray(settingsRow.ways_to_give) ? (settingsRow.ways_to_give as string[]) : [],
     } : seed.settings
 
-    const loaded = { people, cadence, huddle, notices, care, goals, threads, posts, mentions, events, announcements, weeks, settings }
+    const ministries = ministryRows.map((row) => ({
+      id: this.localId('ministry', row.id), slug: text(row.slug), name: text(row.name), description: text(row.description),
+      position: number(row.position), active: row.active !== false, directory: row.directory !== false,
+    })).sort((a, b) => a.position - b.position)
+    const servingRoles = roleRows.map((row) => ({
+      slug: text(row.slug), name: text(row.name), position: number(row.position), leads: row.leads === true,
+    })).sort((a, b) => a.position - b.position)
+    const groups = groupRows.map((row) => ({
+      id: this.localId('group', row.id), ministryId: this.localId('ministry', row.ministry_id),
+      kind: (['class', 'community-group', 'team'].includes(text(row.kind)) ? text(row.kind) : 'class') as GroupKind,
+      name: text(row.name), meets: text(row.meets), location: text(row.location), audienceNote: text(row.audience_note),
+      notes: text(row.notes), startedOn: nullableText(row.started_on), endedOn: nullableText(row.ended_on),
+    }))
+    const assignments = assignmentRows.map((row) => ({
+      id: this.localId('assignment', row.id), groupId: this.localId('group', row.group_id), personId: this.localId('person', row.person_id),
+      roleSlug: text(row.role_slug), startedOn: text(row.started_on), endedOn: nullableText(row.ended_on), isPrimary: row.is_primary === true,
+    }))
+
+    const loaded = { people, cadence, huddle, notices, care, goals, threads, posts, mentions, events, announcements, weeks, settings, ministries, servingRoles, groups, assignments }
     this.lastSnapshot = loaded
     return loaded
   }
@@ -437,6 +471,9 @@ export class SupabaseRepository implements Repository {
     const changedAnnouncements = changed(data.announcements, prior?.announcements)
     const changedGoals = changed(data.goals, prior?.goals)
     const changedWeeks = changed(data.weeks, prior?.weeks)
+    const changedMinistries = changed(data.ministries, prior?.ministries)
+    const changedGroups = changed(data.groups, prior?.groups)
+    const changedAssignments = changed(data.assignments, prior?.assignments)
     const priorCadence = new Map((prior?.cadence ?? []).map((item) => [item.id, item]))
 
     const peopleRows = data.people.map((person) => ({
@@ -530,6 +567,28 @@ export class SupabaseRepository implements Repository {
     await this.save('announcement', 'announcement', announcementRows.filter((row) => changedAnnouncements.has(this.localId('announcement', row.id))))
     await this.save('goal', 'goal', goalRows.filter((row) => changedGoals.has(this.localId('goal', row.id))))
     await this.save('week', 'communicator_week', weekRows.filter((row) => changedWeeks.has(this.localId('week', row.id))))
+
+    // The directory: who serves, never who attends. Ended with a date, never
+    // deleted, so there is no deleteMissing() for any of the three.
+    const ministryRows = data.ministries.map((m) => ({
+      id: this.remoteId('ministry', m.id), slug: m.slug, name: m.name, description: m.description,
+      position: m.position, active: m.active, directory: m.directory,
+    }))
+    const groupRows = data.groups.map((g) => ({
+      id: this.remoteId('group', g.id), ministry_id: this.remoteId('ministry', g.ministryId), kind: g.kind, name: g.name,
+      meets: g.meets, location: g.location, audience_note: g.audienceNote, notes: g.notes,
+      started_on: g.startedOn, ended_on: g.endedOn,
+    }))
+    const assignmentRows = data.assignments.map((a) => ({
+      id: this.remoteId('assignment', a.id), group_id: this.remoteId('group', a.groupId), person_id: this.remoteId('person', a.personId),
+      role_slug: a.roleSlug, started_on: a.startedOn, ended_on: a.endedOn, is_primary: a.isPrimary,
+    }))
+    await this.save('ministry', 'ministry', ministryRows.filter((row) => changedMinistries.has(this.localId('ministry', row.id))))
+    await this.save('group', 'serving_group', groupRows.filter((row) => changedGroups.has(this.localId('group', row.id))))
+    await this.save('assignment', 'serving_assignment', assignmentRows.filter((row) => changedAssignments.has(this.localId('assignment', row.id))))
+    this.knownRemote.set('ministry', ids('ministry', data.ministries))
+    this.knownRemote.set('group', ids('group', data.groups))
+    this.knownRemote.set('assignment', ids('assignment', data.assignments))
 
     const meetingTimes = data.settings.meetingBlocks.map((block) => [block.day, ...block.lines].join(' · ')).join('\n')
     const contactLines = data.settings.contacts.map((contact) => [contact.role, contact.name, contact.phone].join(' · '))
