@@ -37,6 +37,10 @@ deacon side); unconfigured local builds keep the seed-data repositories.
 0015_manual_open_to_all
                        the audience goes again: the manual is open to everyone who
                        signs in; the docket stays the deacon side's; still no write policy
+0017_ministries        ministry, serving_role, serving_group, serving_assignment (who
+                       serves, never who attends); person.admin and claim_account() with it
+0018_ministry_reference
+                       cadence_item, event, notice_entry and goal reference ministry.name
 ```
 
 ## Loading the governance corpus

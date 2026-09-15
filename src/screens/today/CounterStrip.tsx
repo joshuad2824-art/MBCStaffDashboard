@@ -5,6 +5,7 @@ import { useSession } from '../../session/session'
 import { carePastWindow, openCare, unannouncedNotices, unclaimedCount } from '../../lib/rollups'
 import { formatShort, parseDate, startOfToday } from '../../lib/date'
 import { currentWeek } from '../../lib/communicator'
+import { gapsIn, liveGroups } from '../../lib/serving'
 
 /* Four counts, each one a link to the surface it came from. The dividers are
    shared hairlines: a 1px-gap grid over the hairline colour inside one border. */
@@ -37,6 +38,12 @@ export function CounterStrip() {
       value: String(unannouncedNotices(data).length),
       meta: 'waiting on a notification',
       to: '/notice',
+    },
+    {
+      label: 'Groups without a leader named',
+      value: String(gapsIn(data).length),
+      meta: 'of ' + liveGroups(data).length + ' in the directory',
+      to: '/ministries',
     },
     {
       label: 'Sunday bulletin',

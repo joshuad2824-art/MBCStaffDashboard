@@ -104,10 +104,10 @@ insert into care_type (name, window_days, window_label) values ('Hospital', 2, '
 insert into church_settings (id) values (true);
 
 insert into cadence_item (id, name, ministry, interval_count, interval_label, notice_days) values
-  ('c0000000-0000-0000-0000-000000000001', 'Quarterly business meeting', 'Administration', 3, 'Quarterly', 21);
+  ('c0000000-0000-0000-0000-000000000001', 'Quarterly business meeting', 'All groups', 3, 'Quarterly', 21);
 
 insert into notice_entry (id, subject, ministry, category, decided_on) values
-  ('d0000000-0000-0000-0000-000000000001', 'Service time moves to 10:30', 'Worship', 'Schedule change', current_date);
+  ('d0000000-0000-0000-0000-000000000001', 'Service time moves to 10:30', 'Music', 'Schedule change', current_date);
 
 insert into care_entry (id, person_name, type, opened_on, owner_id, sensitive, notes) values
   ('e0000000-0000-0000-0000-000000000001', 'A Member', 'Hospital', current_date,
@@ -1247,3 +1247,122 @@ select test.assert((select count(*) from care_request) = 0,    'signed out: no r
 select test.assert((select count(*) from care_assignment) = 0, 'signed out: no assignments');
 select test.assert((select count(*) from deacon_week) = 0,     'signed out: no rotation');
 reset role;
+
+-- ------------------------------------------- 12. ministries and serving groups (0017, 0018)
+--
+-- Who serves, never who attends. The whole staff body reads the directory,
+-- the staff role writes it, nobody deletes from it, and no table in it has a
+-- column that could hold an attendee. 0018 makes a ministry name that is not
+-- in the table a refused write on the four columns that carry one.
+
+reset role;
+
+-- The structural rule first: no attendee, roster, enrolment, member or
+-- headcount column, on the pattern 0010's test uses for a notes column.
+select test.assert(
+  not exists (select 1 from information_schema.columns
+               where table_schema = 'public'
+                 and table_name in ('ministry', 'serving_role', 'serving_group', 'serving_assignment')
+                 and (column_name ilike '%attend%' or column_name ilike '%roster%' or column_name ilike '%enrol%'
+                      or column_name ilike '%member%' or column_name ilike '%headcount%' or column_name ilike '%student%')),
+  'groups: no table in the directory has an attendee, roster, enrolment, member or headcount column');
+select test.assert(
+  not exists (select 1 from information_schema.tables where table_schema = 'public' and (table_name ilike '%attend%' and table_name <> 'meeting_attendance')),
+  'groups: there is no attendance table for a group — the one attendance table is the Board''s roll');
+select test.assert(
+  (select count(*) from pg_policies where tablename in ('ministry', 'serving_role', 'serving_group', 'serving_assignment') and cmd = 'DELETE') = 0,
+  'groups: no delete policy on any of the four tables');
+select test.assert(
+  (select count(*) from pg_policies where tablename = 'serving_role' and cmd <> 'SELECT') = 0,
+  'groups: the roles are enumerated by migration, not written through the API');
+select test.assert((select count(*) from ministry where name in ('All', 'Children', 'Students', 'Men', 'Women', 'Music', 'All groups')) = 7,
+  'ministries: every string the ledger already used is seeded, so 0018 holds and no data moves');
+select test.assert((select count(*) from ministry where directory) = 7 and (select count(*) from ministry where not directory) = 2,
+  'ministries: All and All groups exist for the foreign key and are not listed in the directory');
+
+-- 12a. Signed out: nothing.
+
+set role anon;
+select test.assert((select count(*) from ministry) = 0,           'signed out: no ministries');
+select test.assert((select count(*) from serving_group) = 0,      'signed out: no groups');
+select test.assert((select count(*) from serving_assignment) = 0, 'signed out: no assignments');
+reset role;
+
+-- 12b. The staff role: writes a group and an assignment, in its own name or anyone's.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from ministry) = 9, 'staff: reads the ministries');
+select test.assert((select count(*) from serving_role) = 8, 'staff: reads the eight roles');
+insert into serving_group (id, ministry_id, kind, name, meets, location, audience_note)
+  values ('a4000000-0000-0000-0000-000000000001', (select id from ministry where slug = 'children'), 'class', 'Sunday Morning · Grades 1–6', 'Sundays 9:15 AM', 'Hall A', 'Grades 1–6');
+insert into serving_assignment (id, group_id, person_id, role_slug, is_primary)
+  values ('a5000000-0000-0000-0000-000000000001', 'a4000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000004', 'teacher', true);
+select test.assert((select count(*) from serving_group) = 1 and (select count(*) from serving_assignment) = 1, 'staff: adds a class and names its teacher');
+select test.refused(
+  $q$ insert into serving_assignment (group_id, person_id, role_slug) values ('a4000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000004', 'discussion-leader') $q$,
+  '23503', 'staff: a role outside the enumerated list is refused');
+select test.refused(
+  $q$ insert into serving_group (ministry_id, kind, name) values ((select id from ministry where slug = 'children'), 'club', 'A club') $q$,
+  '23514', 'staff: a kind outside class, community group and team is refused');
+update serving_assignment set ended_on = current_date where id = 'a5000000-0000-0000-0000-000000000001';
+select test.assert((select ended_on from serving_assignment where id = 'a5000000-0000-0000-0000-000000000001') = current_date, 'staff: ends an assignment with a date');
+delete from serving_assignment;
+delete from serving_group;
+select test.assert((select count(*) from serving_assignment) = 1 and (select count(*) from serving_group) = 1, 'staff: deletes nothing — an ended assignment is a fact about last spring');
+update ministry set description = 'Rewritten' where slug = 'children';
+select test.assert((select description from ministry where slug = 'children') = 'Rewritten', 'staff: edits what a ministry says about itself');
+select test.refused(
+  $q$ update person set admin = true where id = 'b0000000-0000-0000-0000-000000000001' $q$,
+  'P0001', 'staff: cannot make themselves an administrator through the site');
+select test.refused(
+  $q$ update person set admin = true where id = 'b0000000-0000-0000-0000-000000000003' $q$,
+  'P0001', 'staff: cannot make a colleague an administrator through the site either — the flag is the administrator''s, by SQL');
+reset role;
+
+-- 12c. A limited account reads the directory and writes nothing to it.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from serving_group) = 1,      'limited: reads the directory');
+select test.assert((select count(*) from serving_assignment) = 1, 'limited: reads who serves');
+select test.refused(
+  $q$ insert into serving_group (ministry_id, kind, name) values ((select id from ministry where slug = 'children'), 'team', 'Mine') $q$,
+  '42501', 'limited: cannot add a group');
+update serving_group set name = 'Renamed' where id = 'a4000000-0000-0000-0000-000000000001';
+reset role;
+select test.assert((select name from serving_group where id = 'a4000000-0000-0000-0000-000000000001') like 'Sunday Morning%', 'limited: an update aimed at a group changed nothing');
+
+-- 12d. A deacon: nothing of the directory — it is the staff side's in v1.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from ministry) = 0,           'deacon A: reads zero ministries');
+select test.assert((select count(*) from serving_group) = 0,      'deacon A: reads ZERO groups');
+select test.assert((select count(*) from serving_assignment) = 0, 'deacon A: reads zero assignments');
+reset role;
+
+-- 12e. 0018: a ministry name not in the table is refused on the four columns.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+select test.refused(
+  $q$ insert into cadence_item (name, ministry, interval_count, interval_label, notice_days) values ('Made up', 'Recreation', 1, 'Monthly', 0) $q$,
+  '23503', 'ledger: a ministry name not in ministry is refused on cadence');
+select test.refused(
+  $q$ insert into event (name, ministry, starts_at, audience) values ('Made up', 'Recreation', current_date, '{staff}') $q$,
+  '23503', 'calendar: a ministry name not in ministry is refused on event');
+select test.refused(
+  $q$ insert into notice_entry (subject, ministry, category, decided_on) values ('Made up', 'Recreation', 'Schedule change', current_date) $q$,
+  '23503', 'notice log: a ministry name not in ministry is refused on notice_entry');
+select test.refused(
+  $q$ insert into goal (title, ministry, target, status, year) values ('Made up', 'Recreation', '', 'on track', 2026) $q$,
+  '23503', 'goals: a ministry name not in ministry is refused on goal');
+insert into cadence_item (name, ministry, interval_count, interval_label, notice_days) values ('Preschool teacher training', 'Preschool', 12, 'Annually', 21);
+select test.assert((select count(*) from cadence_item where ministry = 'Preschool') = 1, 'ledger: a ministry added to the table is usable without a deploy');
+reset role;
+
+-- A rename cascades: the rows follow the name.
+update ministry set name = 'Pre-school' where slug = 'preschool';
+select test.assert((select count(*) from cadence_item where ministry = 'Pre-school') = 1, 'ministries: renaming a ministry moves the rows that carry its name');
+update ministry set name = 'Preschool' where slug = 'preschool';
