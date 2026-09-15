@@ -55,7 +55,7 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0013_…` |
+| Migrations | Continue the sequence: next is `supabase/migrations/0014_…` |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -125,6 +125,16 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   the join, it reads zero rows of it. No delete policy on any of the five. The committee rooms are
   the existing pieces drawn for a committee's slug: `membership` for the roster, `report` for the
   history, and the discussion board with `audience = {committee:…}` for the working notes.
+- **`supabase/migrations/0013_obligations_from_the_corpus.sql`** — the year, verified against the
+  manual. Fifteen obligations, each quoting or closely following the 2-11-2025 Bylaws, Policies &
+  Procedures Manual with a citation that resolves: the Treasurer's monthly report, A009's seven
+  dated budget steps, the annual report and audit (anchored to 1 March, with the fiscal-year
+  question named), the Senior Pastor's review, the nomination and election clocks, the officer
+  election and the October roster. A009 is *Building & Property Use Income*; its budget calendar
+  is a part of it, not its subject. The reference's document kinds gain `constitution` and
+  `reference`. The corpus itself: `supabase/governance/build-seed.mjs` reads the transcription's
+  front matter and **refuses every file marked `sensitivity: restricted`** — the salary plan, the
+  performance standards, E006 — naming each on stderr. They never enter the database.
 - **`supabase/migrations/0011_chairman_membership_admin.sql`** and **`0012_…`** — the chairman's seat
   editor: `chairman_roster()` and `set_managed_membership()`, both security definer and both refusing
   anyone but the Board chairman. They reach the Board and its committees, and a confidential

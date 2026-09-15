@@ -10,9 +10,11 @@ import type { Finding, GovernanceDocument } from '../data/meetings/types'
    of where the files are hosted. */
 
 const KINDS: { kind: GovernanceDocument['kind']; label: string }[] = [
+  { kind: 'constitution', label: 'Constitution' },
   { kind: 'bylaws', label: 'Bylaws' },
   { kind: 'policy', label: 'Policies' },
-  { kind: 'procedure', label: 'Procedures' },
+  { kind: 'procedure', label: 'Procedures and forms' },
+  { kind: 'reference', label: 'Reference · derived from the manual' },
 ]
 
 export function Reference() {
@@ -62,7 +64,7 @@ export function Reference() {
             <div key={kind} style={{ display: 'grid', gap: 2 }}>
               <Eyebrow size="sm" style={{ marginBottom: 8 }}>{label}</Eyebrow>
               {docs.map((d) => (
-                <NavRow key={d.slug} active={current === d.slug} onClick={() => setSelected(d.slug)} code={d.code} title={d.title.replace(/^[A-Z]\d{3}\s*[—–-]\s*|^Article\s+[IVX]+\s*[—–-]\s*/i, '')} count={hits?.get(d.slug)} />
+                <NavRow key={d.slug} active={current === d.slug} onClick={() => setSelected(d.slug)} code={d.code} title={shortTitle(d)} count={hits?.get(d.slug)} />
               ))}
             </div>
           )
@@ -142,6 +144,17 @@ function NavRow({ active, onClick, code, title, count }: { active: boolean; onCl
       {count ? <span className="tabular" style={{ font: '400 12px/1 var(--mbc-font-sans)', color: 'var(--mbc-yale-sage)' }}>{count}</span> : <span />}
     </button>
   )
+}
+
+/* The nav shows the part of a title the code does not already say:
+   "Policy A009 — Building & Property Use Income" → "Building & Property Use
+   Income"; "Bylaws, Article II. CHURCH LEADERSHIP" → "Church Leadership". */
+function shortTitle(d: GovernanceDocument): string {
+  let t = d.title
+  t = t.replace(/^Policy\s+[A-Z]\d{3}\s*[—–-]\s*/i, '').replace(/^[A-Z]\d{3}\s*[—–-]\s*/, '')
+  t = t.replace(/^Bylaws,\s*Article\s+[IVX]+\.?\s*/i, '').replace(/^Article\s+[IVX]+\s*[—–-]\s*/i, '')
+  if (t === t.toUpperCase() && t.length > 3) t = t.charAt(0) + t.slice(1).toLowerCase()
+  return t
 }
 
 /* Which document a citation points at: "Art. II.B §3 ¶12" → the document

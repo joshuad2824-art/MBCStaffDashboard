@@ -1048,14 +1048,16 @@ reset role;
 
 insert into governance_document (slug, kind, code, title, body, position) values
   ('article-ii', 'bylaws', 'Art. II', 'Article II — Officers and Boards', 'Transcribed text.', 1),
-  ('a009',       'policy', 'A009',    'A009 — Budget calendar',           'Transcribed text.', 2);
+  ('a009',       'policy', 'A009',    'A009 — Building & Property Use Income', 'Transcribed text.', 2),
+  ('constitution', 'constitution', 'Constitution', 'Constitution', 'Transcribed text.', 0),
+  ('quick-reference', 'reference', '', 'Quick reference', 'Derived.', 3);
 insert into governance_finding (number, title, body, cites) values
   (8, 'An amendment cites a paragraph that no longer resolves', 'The record captured a location, not the language.', '{"Art. II.B §3 ¶12"}');
 
 select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
 set role authenticated;
-select test.assert((select count(*) from obligation) = 8,           'deacon A: reads the year''s obligations');
-select test.assert((select count(*) from governance_document) = 2, 'deacon A: reads the reference');
+select test.assert((select count(*) from obligation) = 15,          'deacon A: reads the year''s obligations, as 0013 seeds them from the manual');
+select test.assert((select count(*) from governance_document) = 4, 'deacon A: reads the reference — constitution, bylaws, policy and derived material alike');
 select test.assert((select count(*) from governance_finding) = 1,  'deacon A: reads the docket');
 select test.refused(
   $q$ insert into obligation (slug, title, rule_source, cadence, anchor, owner_body_slug) values ('made-up', 'Made up', 'Nowhere', 'annual', '01-01', 'deacon-board') $q$,
@@ -1069,8 +1071,8 @@ select test.assert((select count(*) from governance_finding where number = 8) = 
 
 select test.sign_in('a0000000-0000-0000-0000-000000000011', 'grounds@memorial.test');
 set role authenticated;
-select test.assert((select count(*) from obligation) = 8,           'grounds chair: on the deacon side, reads the year');
-select test.assert((select count(*) from governance_document) = 2, 'grounds chair: reads the reference');
+select test.assert((select count(*) from obligation) = 15,          'grounds chair: on the deacon side, reads the year');
+select test.assert((select count(*) from governance_document) = 4, 'grounds chair: reads the reference');
 reset role;
 
 select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
