@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { repository } from './repository'
 import type { DashboardData } from './types'
+import { READ_ONLY, isPreviewLocked } from '../session/viewAs'
 
 /* Every mutating action commits {label, snapshot, timestamp} to a session stack.
    Undo restores the newest snapshot, one step at a time — the drawer lists them
@@ -95,6 +96,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const mutate = useCallback<Store['mutate']>(
     (label, change) => {
+      // View as is read-only, and the guard lives here rather than on the
+      // buttons: a composer somebody forgot to hide still cannot write.
+      if (isPreviewLocked()) {
+        showToast(READ_ONLY, false)
+        return
+      }
       setData((current) => {
         if (!current) return current
         const next = change(current)
@@ -110,6 +117,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   )
 
   const update = useCallback<Store['update']>((change) => {
+    if (isPreviewLocked()) return
     setData((current) => {
       if (!current) return current
       const next = change(current)
@@ -128,7 +136,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     })
   }, [showToast, write])
 
-  const say = useCallback((message: string) => showToast(message, false), [showToast])
+  /* While a seat is worn only the read-only notice speaks. A screen that
+     announces success after awaiting a store call cannot tell that the store
+     refused, and its "Removed from the agenda" would paint over the refusal. */
+  const say = useCallback(
+    (message: string) => {
+      if (isPreviewLocked() && message !== READ_ONLY) return
+      showToast(message, false)
+    },
+    [showToast],
+  )
 
   const value = useMemo<Store | null>(() => {
     if (!data) return null

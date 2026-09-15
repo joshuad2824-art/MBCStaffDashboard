@@ -26,6 +26,10 @@ Three files at the repo root say what this application is becoming, and
   same database, same sign-in, with what a person sees assembled from which
   bodies they belong to. Its §7 is the build order and its §10 is the handoff
   between design and code.
+- **`mbc-dashboard-expansion-brief.md`** — the current work: the manual on
+  both sides and searchable, ministries and serving groups, view-as, and the
+  domain. `docs/CLAUDE-CODE-KICKOFF.md` is its instruction sheet, one PR per
+  item; `supabase/governance/CORPUS-PREP.md` is the corpus session it leans on.
 
 The design system the deacon side inherits is in `design_handoff_staff_dashboard/`
 — the guide, the tokens, and the prototypes the staff surfaces were built from.

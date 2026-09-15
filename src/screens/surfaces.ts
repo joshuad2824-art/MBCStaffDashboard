@@ -1,5 +1,7 @@
 import type { Access } from '../data/types'
+import { sideOfBody } from '../session/session'
 import type { Side } from '../session/session'
+import type { PreviewSeat } from '../session/viewAs'
 
 /** Eyebrow, H1 and lead paragraph for each surface. The lead is the first thing
     on every page: 16px, 1.7, 66ch, in meta ink.
@@ -298,10 +300,24 @@ export const SURFACES: Record<string, Surface> = {
 }
 
 export interface Viewer {
+  /** The bodies the signed-in person really sits in. */
   bodies: readonly string[]
+  /** The access the interface is drawn for — the real one, or a seat's. */
   viewAs: Access
   sides: readonly Side[]
   context: Side
+  /** View as (brief §C): a seat the interface is redrawn for. It composes
+      into the viewer before `canOpen()` is asked and can only narrow. */
+  previewSeat?: PreviewSeat | null
+  /** The person's real access, when `viewAs` is a seat's. */
+  access?: Access
+}
+
+/** The viewer a seat is drawn for: the seat's bodies and access, the same
+    `canOpen()`. Without a seat, the viewer as given. */
+function asSeat(viewer: Viewer): Viewer {
+  const seat = viewer.previewSeat
+  return seat ? { ...viewer, bodies: seat.bodies, viewAs: seat.access } : viewer
 }
 
 /** Whether a person may open a surface: they sit in one of its bodies, and if
@@ -322,7 +338,19 @@ export function canOpen(surface: Surface, viewer: Viewer): boolean {
 /** The surfaces a person gets, in the order the sidebar lists them. What is not
     in this list is not rendered anywhere — not disabled, not dimmed, not there. */
 export function surfacesFor(viewer: Viewer): Surface[] {
-  return Object.values(SURFACES).filter((surface) => canOpen(surface, viewer))
+  return Object.values(SURFACES).filter((surface) => canOpen(surface, asSeat(viewer)))
+}
+
+/** In view-as, and only there: a surface the seat opens but the person's own
+    membership does not. It is listed, so the answer about the seat is true,
+    and it opens to a labelled stub, so nothing is shown that the person could
+    not read on their own account. A seat can only narrow. */
+export function isStub(surface: Surface, viewer: Viewer): boolean {
+  if (!viewer.previewSeat) return false
+  if (!surface.bodies.some((slug) => viewer.bodies.includes(slug))) return true
+  if (surface.staffOnly && (viewer.access ?? viewer.viewAs) !== 'staff') return true
+  if (surface.bothSides && new Set(viewer.bodies.map(sideOfBody)).size < 2) return true
+  return false
 }
 
 /** Where a side opens. */
