@@ -33,8 +33,10 @@ deacon side); unconfigured local builds keep the seed-data repositories.
 0013_obligations_from_the_corpus
                        the year's fifteen obligations as the manual states them; the
                        reference's kinds gain constitution and reference
-0014_governance_reach  audience text[] on governance_document, read by in_audience();
-                       the docket stays the deacon side's; still no write policy
+0014_governance_reach  audience text[] on governance_document, read by in_audience()
+0015_manual_open_to_all
+                       the audience goes again: the manual is open to everyone who
+                       signs in; the docket stays the deacon side's; still no write policy
 ```
 
 ## Loading the governance corpus
@@ -56,24 +58,10 @@ findings. The generated `seed.sql` is not committed — the corpus is church
 content and lives in the database, behind the policy, not in the repository or
 the bundle.
 
-**Who reads a document.** Since 0014 each document carries an `audience` of
-body slugs, and the policy is `in_audience(audience)` — the same shape as the
-calendar's. The loader reads it from a file's front matter:
-
-```
-audience: staff, deacon            # comma-separated, or bracketed: [staff, committee:finance]
-```
-
-`deacon` means the whole deacon side — the Board, the Deacon Body and the four
-standing committees — and `staff` means the staff body (a `limited` account sits
-in it, as it does for the calendar). A file with **no** `audience` key is
-addressed to the deacon side and nobody else, so the manual reaches the staff
-one document at a time and only when the corpus says so; a fresh 0014 with an
-unmarked corpus leaves the staff's reference empty, which is the intended
-behaviour. A re-load applies the current marks: the upsert sets
-`audience = excluded.audience`, so removing a mark takes the document back. A
-word that names no body stops the loader, and the trigger on the table would
-refuse it anyway. The docket has no audience and is never addressed to the staff.
+**Who reads a document.** Everyone who signs in, on either side, since 0015: the
+bylaws, policies and procedures are the church's own documents. An `audience:`
+key in a file's front matter is ignored, and the loader says once on stderr if
+it saw any. The docket is the deacon side's and is never addressed to the staff.
 
 **What the loader refuses.** Every file whose front matter says
 `sensitivity: restricted` — the salary plan, the fourteen performance standards
