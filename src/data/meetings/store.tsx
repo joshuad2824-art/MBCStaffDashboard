@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { useData } from '../store'
+import { useData, useStore } from '../store'
 import { useSession } from '../../session/session'
+import { READ_ONLY, isPreviewLocked } from '../../session/viewAs'
 import { meetingRepository } from './repository'
 import type { AgendaItem, AttendanceStatus, Meeting, MeetingKind, MeetingsData, NewMotion } from './types'
 import type { Report, ReportFile, ReportPayload, ReportVersion } from './reports'
@@ -37,6 +38,7 @@ const MeetingsContext = createContext<MeetingsStore | null>(null)
 
 export function MeetingsProvider({ children }: { children: ReactNode }) {
   const { people } = useData()
+  const { say } = useStore()
   const { member, bodies } = useSession()
   const [data, setData] = useState<MeetingsData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -83,6 +85,10 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
   const guard = useCallback(
     async <T,>(work: (me: string) => Promise<T>): Promise<T | null> => {
       if (!me) return null
+      if (isPreviewLocked()) {
+        say(READ_ONLY)
+        return null
+      }
       try {
         return await work(me)
       } catch (failure) {
@@ -90,7 +96,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
         return null
       }
     },
-    [me],
+    [me, say],
   )
 
   const value = useMemo<MeetingsStore>(

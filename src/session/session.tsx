@@ -7,6 +7,8 @@ import { loadAccount } from './account'
 import type { Account, Seat } from './account'
 import { seedSeatsFor } from '../data/seed'
 import type { Access, Person } from '../data/types'
+import { setPreviewLocked } from './viewAs'
+import type { PreviewSeat } from './viewAs'
 
 /* Who is signed in.
 
@@ -25,10 +27,10 @@ import type { Access, Person } from '../data/types'
    `npm run dev` runs on, and it is why a local checkout needs no secrets. It
    must never be what a deployed site runs on — see docs/LOGIN-SETUP.md.
 
-   `viewAs` is the "viewing as limited" toggle in the header. It is a preview of
-   what a limited account sees, nothing more: the real gate is Row Level
-   Security, and this switch must never be what stands between someone and a
-   care record. */
+   `viewAs` is the access the interface is drawn for: the person's own, or the
+   one a preview seat signs in with. View as (session/viewAs.ts) is a preview
+   of what a seat sees, nothing more: the real gate is Row Level Security, and
+   this switch must never be what stands between someone and a care record. */
 
 const SESSION_KEY = 'mbc.staff-dashboard.session'
 const CONTEXT_KEY = 'mbc.dashboard.context'
@@ -86,10 +88,17 @@ interface SessionValue {
       changes nothing about what the database returns. */
   context: Side
   setContext(side: Side): void
-  /** The role the interface is being drawn for — real role, or the preview. */
+  /** The role the interface is being drawn for — real role, or the seat's. */
   viewAs: Access
-  previewingLimited: boolean
-  setPreviewingLimited(value: boolean): void
+  /** The person's real access, whatever seat is worn. */
+  access: Access
+  /** View as: the seat the interface is redrawn for, or null. Narrows only;
+      read-only while set; gone on reload and on sign-out. */
+  previewSeat: PreviewSeat | null
+  setPreviewSeat(seat: PreviewSeat | null): void
+  /** Who is offered view-as: `person.admin`, which gates nothing in the
+      database and decides only who sees the control. */
+  admin: boolean
   /** The stub's way in. Does nothing once Supabase is configured. */
   signIn(staffId: number): void
   signOut(): void
@@ -127,7 +136,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [staffId, setStaffId] = useState<number | null>(() =>
     supabaseConfigured ? null : (readStored()?.staffId ?? null),
   )
-  const [previewingLimited, setPreviewingLimited] = useState(false)
+  const [previewSeat, setPreviewSeat] = useState<PreviewSeat | null>(null)
   const [presentMode, setPresentMode] = useState(false)
   const [chosenContext, setChosenContext] = useState<Side | null>(() => readContext())
 
@@ -157,10 +166,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     claimedFor.current = null
     setAccount(null)
     setStaffId(null)
-    setPreviewingLimited(false)
+    setPreviewSeat(null)
     setPresentMode(false)
     if (supabase) void supabase.auth.signOut()
   }, [])
+
+  /* Read-only has to be real: every store's write path asks this lock before
+     it writes, so a composer somebody forgot to hide cannot write anyway. */
+  useEffect(() => {
+    setPreviewLocked(previewSeat !== null)
+    return () => setPreviewLocked(false)
+  }, [previewSeat])
 
   /* A link that came back refused leaves its complaint on the address bar and
      produces no session, so nothing below will ever clean up after it. The text
@@ -375,12 +391,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return seedSeatsFor(member)
   }, [member, account])
   const bodies = useMemo(() => seats.map((seat) => seat.slug), [seats])
-  const isChairOf = useCallback((slug: string) => seats.some((seat) => seat.slug === slug && seat.role === 'chair'), [seats])
+  const isChairOf = useCallback(
+    (slug: string) => (previewSeat ? previewSeat.chairOf.includes(slug) : seats.some((seat) => seat.slug === slug && seat.role === 'chair')),
+    [seats, previewSeat],
+  )
 
+  /* The sides the interface is drawn for: the seat's while one is worn, else
+     the person's own. `bodies` above stays real — it is what the data
+     providers and the stub consult — and only the drawing follows the seat. */
   const sides = useMemo<Side[]>(() => {
-    const held = new Set(bodies.map(sideOfBody))
+    const held = new Set((previewSeat ? previewSeat.bodies : bodies).map(sideOfBody))
     return (['staff', 'deacon'] as Side[]).filter((side) => held.has(side))
-  }, [bodies])
+  }, [bodies, previewSeat])
+
+  const access: Access = member?.access ?? 'none'
+  const admin = supabaseConfigured ? (account?.admin ?? false) : (member?.admin ?? false)
 
   /* The context narrows and never widens. A person who holds one side is on
      it; a person who holds both is on the one they chose, remembered in this
@@ -423,16 +448,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       sides,
       context,
       setContext,
-      viewAs: previewingLimited ? 'limited' : (member?.access ?? 'none'),
-      previewingLimited,
-      setPreviewingLimited,
+      viewAs: previewSeat ? previewSeat.access : access,
+      access,
+      previewSeat,
+      setPreviewSeat,
+      admin,
       signIn,
       signOut,
       presentMode,
       setPresentMode,
       auth,
     }),
-    [member, seats, bodies, isChairOf, sides, context, setContext, previewingLimited, presentMode, signIn, signOut, auth],
+    [member, seats, bodies, isChairOf, sides, context, setContext, previewSeat, access, admin, presentMode, signIn, signOut, auth],
   )
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>

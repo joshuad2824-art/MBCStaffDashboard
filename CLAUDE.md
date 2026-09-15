@@ -4,8 +4,10 @@ One application, two sides. The staff dashboard and the deacons' dashboard are t
 the same database, and the same sign-in. What a person sees is assembled from which bodies they
 belong to.
 
-Read `mbc-staff-dashboard-brief.md` and `mbc-deacons-dashboard-brief.md` before changing anything
-structural. The invariants below are the ones that are easy to break by accident and expensive to
+Read `mbc-staff-dashboard-brief.md`, `mbc-deacons-dashboard-brief.md` and
+`mbc-dashboard-expansion-brief.md` before changing anything structural (the third is the current
+work; `docs/CLAUDE-CODE-KICKOFF.md` is its instruction sheet and `supabase/governance/CORPUS-PREP.md`
+the corpus session that feeds it). The invariants below are the ones that are easy to break by accident and expensive to
 discover later.
 
 ---
@@ -37,6 +39,16 @@ rows. Only the third is a security control; the other two exist so the interface
 **The context toggle narrows, never widens.** It is a view filter for the two people who hold both
 sides. It changes nothing about RLS. If it ever becomes the thing deciding what someone may read,
 the model has been broken.
+
+**View-as narrows, never widens, and moves no policy.** An administrator previews a *seat* — the
+sidebar it would have, the routes it would allow — and the rows on screen stay his own. It changes
+nothing about RLS; if a change to view-as ever needs a policy, the feature has been misunderstood.
+It is read-only while worn, and the guard is in the stores (`isPreviewLocked()`), not in the
+buttons. **The one exception to absence-not-greyed-out lives here**: in view-as, and only in
+view-as, a surface belonging to a body the administrator is not in appears in the sidebar and opens
+to a labelled stub naming the room. The question being asked is about somebody else's access, and a
+truthful answer requires naming the room; showing its contents would be impersonation, which the
+confidential committee's policies exist to prevent. Outside view-as, nothing changes.
 
 **Audience is never empty.** `audience text[]` with no entries is a bug, not a private record.
 
@@ -101,6 +113,14 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   which bodies they sit in and in what role. Both are read in `account.ts`; `session.tsx` exposes
   `seats`, `bodies`, `isChairOf()`, `sides` and the `context` — the side the interface is drawn
   for, a view filter that narrows and never reaches a query.
+- **`src/session/viewAs.ts`** — view as. `SEATS` is the fixed list from the expansion brief §C.3;
+  `seatOf()` turns a person's readable seat set into one, labelled as a seat. `previewSeat` on the
+  session composes into `Viewer` (`surfaces.ts`): `surfacesFor()` asks the same `canOpen()` with the
+  seat's bodies, and `isStub()` says which of those the administrator's own membership does not
+  open — those render `components/shell/Stub.tsx`. `bodies` on the session stays real; only
+  `viewAs`, `sides`, `context` and `isChairOf()` follow the seat. The lock is module state read by
+  every store's write path, because the stores sit above the session in the tree. Who is offered
+  the control is `person.admin`, which gates nothing in the database and arrives with 0016.
 - **`supabase/migrations/0004_bodies.sql`** — `body`, `membership`, `my_bodies()`, `is_member_of()`,
   `is_chair_of()`, and `is_staff_role()` reimplemented on top of them. It is membership in `staff`
   *and* `access = 'staff'`, not membership alone: the staff body is the whole staff roster, limited

@@ -72,7 +72,7 @@ function Item({ item, large }: { item: NavItem; large: boolean }) {
 }
 
 export function Sidebar({ unread }: { unread: { staff: number; deacon: number } }) {
-  const { member, seats, bodies, viewAs, sides, context, signOut, auth } = useSession()
+  const { member, seats, bodies, viewAs, sides, context, signOut, auth, previewSeat, access } = useSession()
   const narrow = useMediaQuery(NARROW)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const deacon = context === 'deacon'
@@ -80,7 +80,7 @@ export function Sidebar({ unread }: { unread: { staff: number; deacon: number } 
   /* Assembled from membership. A surface this person cannot open is not here
      — not locked, not dimmed, not there. The router gives the same answer. */
   const groups: NavItem[][] = []
-  for (const surface of surfacesFor({ bodies, viewAs, sides, context })) {
+  for (const surface of surfacesFor({ bodies, viewAs, sides, context, previewSeat, access })) {
     const item: NavItem = { to: surface.path, label: surface.nav }
     if (surface === SURFACES.discussion) item.badge = unread.staff
     if (surface === SURFACES.boardDiscussion) item.badge = unread.deacon
@@ -187,7 +187,9 @@ export function Sidebar({ unread }: { unread: { staff: number; deacon: number } 
         {/* On the deacon side a man is described by what he belongs to, not
             by where he sits on a ladder. */}
         <span style={{ font: deacon ? '400 13px/1.4 var(--mbc-font-sans)' : '400 12px/1.4 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
-          {deacon
+          {previewSeat
+            ? `Viewing as — ${previewSeat.label}`
+            : deacon
             ? seats
                 .filter((seat) => seat.slug !== 'staff')
                 .map((seat) => bodyName(seat.slug) + (seat.role === 'chair' ? ' · chair' : seat.role === 'ex_officio' ? ' · ex officio' : ''))

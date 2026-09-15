@@ -55,6 +55,7 @@ export function Reference() {
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
       <Card radius="card" pad={22} style={{ flex: '1 1 280px', maxWidth: 340, display: 'grid', gap: 16, minWidth: 0 }}>
         <input
+          data-reads=""
           value={query}
           placeholder="Search the manual"
           onChange={(event) => setQuery(event.target.value)}

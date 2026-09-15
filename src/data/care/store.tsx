@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { useData } from '../store'
+import { useData, useStore } from '../store'
 import { useSession } from '../../session/session'
+import { READ_ONLY, isPreviewLocked } from '../../session/viewAs'
 import { careRepository } from './repository'
 import type { CareData, HelpKind, VisitKind } from './types'
 
@@ -28,6 +29,7 @@ const CareContext = createContext<CareStore | null>(null)
 
 export function CareProvider({ children }: { children: ReactNode }) {
   const { people } = useData()
+  const { say } = useStore()
   const { member, bodies, viewAs } = useSession()
   const [data, setData] = useState<CareData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -62,6 +64,10 @@ export function CareProvider({ children }: { children: ReactNode }) {
   const guard = useCallback(
     async <T,>(work: (me: string) => Promise<T>): Promise<T | null> => {
       if (!me) return null
+      if (isPreviewLocked()) {
+        say(READ_ONLY)
+        return null
+      }
       try {
         return await work(me)
       } catch (failure) {
@@ -69,7 +75,7 @@ export function CareProvider({ children }: { children: ReactNode }) {
         return null
       }
     },
-    [me],
+    [me, say],
   )
 
   const value = useMemo<CareStore>(
