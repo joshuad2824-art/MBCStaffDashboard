@@ -24,6 +24,10 @@ import type {
 export interface Repository {
   load(): Promise<DashboardData>
   persist(data: DashboardData): Promise<void>
+  /** The database's own id for a care entry. The one place the care seam
+      names a staff row: it goes into care_request_link, a staff-only table,
+      and nowhere else. It never carries the entry itself. */
+  careEntryRef(local: number): string | null
 }
 
 const STORAGE_KEY = 'mbc.staff-dashboard.v1'
@@ -47,6 +51,10 @@ export function purgeExpired(data: DashboardData): DashboardData {
 }
 
 export class LocalRepository implements Repository {
+  careEntryRef(local: number): string | null {
+    return String(local)
+  }
+
   async load(): Promise<DashboardData> {
     let data = freshenSeed(seed)
     try {
@@ -216,6 +224,10 @@ export class SupabaseRepository implements Repository {
 
   private remoteOptional(entity: Entity, local: number | null): string | null {
     return local === null ? null : this.remoteId(entity, local)
+  }
+
+  careEntryRef(local: number): string | null {
+    return this.remoteByLocal.get('care')?.get(local) ?? null
   }
 
   private async read(table: string, columns: string): Promise<Row[]> {

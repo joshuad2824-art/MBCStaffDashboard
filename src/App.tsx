@@ -10,7 +10,10 @@ import { Discussion } from './screens/Discussion'
 import { Calendar } from './screens/Calendar'
 import { Year } from './screens/Year'
 import { Reference } from './screens/Reference'
-import { CarePipelines } from './screens/ComingLater'
+import { Care } from './screens/Care'
+import { CareList } from './screens/CareList'
+import { DeaconWeek } from './screens/DeaconWeek'
+import { CommitteeRoom } from './screens/CommitteeRoom'
 import { Communicator } from './screens/Communicator'
 import { Goals } from './screens/Goals'
 import { People } from './screens/People'
@@ -36,7 +39,13 @@ const SCREENS: Record<string, ReactNode> = {
   discussion: <Discussion side="staff" />,
   calendar: <Calendar side="staff" />,
   communicator: <Communicator />,
-  care: <CarePipelines />,
+  care: <Care />,
+  boardCare: <CareList />,
+  deaconWeek: <DeaconWeek />,
+  committeeFinance: <CommitteeRoom slug="committee:finance" />,
+  committeePersonnel: <CommitteeRoom slug="committee:personnel" />,
+  committeeGrounds: <CommitteeRoom slug="committee:building-grounds" />,
+  committeeFamily: <CommitteeRoom slug="committee:family-assistance" />,
   goals: <Goals />,
   people: <People />,
 }

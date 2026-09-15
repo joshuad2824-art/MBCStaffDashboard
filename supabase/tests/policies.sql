@@ -1041,3 +1041,132 @@ select test.assert((select count(*) from obligation) = 0,           'signed out:
 select test.assert((select count(*) from governance_document) = 0, 'signed out: no reference');
 select test.assert((select count(*) from governance_finding) = 0,  'signed out: no docket');
 reset role;
+
+-- ------------------------------------------------- 11. care: pointers, not content (0010)
+--
+-- The one place something crosses the sensitivity boundary. The staff
+-- compose a request; the deacons act on it; the circumstance stays behind.
+
+reset role;
+
+-- The structural rule first: no notes column on the deacon side's care tables.
+select test.assert(
+  not exists (select 1 from information_schema.columns
+               where table_schema = 'public'
+                 and table_name in ('care_assignment', 'care_request', 'deacon_week', 'deacon_visit')
+                 and (column_name ilike '%note%' or column_name ilike '%detail%' or column_name ilike '%reason%' or column_name ilike '%circumstance%')),
+  'pointers: none of the deacon side''s care tables has a notes column');
+
+-- 11a. Staff compose a request, in their own name, and keep their own thread.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+insert into care_request (id, household_label, help_kind, needed_by, requested_by) values
+  ('a1000000-0000-0000-0000-000000000001', 'The Hendersons', 'visit', current_date + 7, 'b0000000-0000-0000-0000-000000000001');
+insert into care_request_link (care_request_id, care_entry_id) values
+  ('a1000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000001');
+select test.assert((select count(*) from care_request) = 1,      'staff: composes a request and reads it back');
+select test.assert((select count(*) from care_request_link) = 1, 'staff: keeps the thread to their own care entry');
+select test.refused(
+  $q$ insert into care_request (household_label, help_kind, requested_by) values ('Someone', 'call', 'b0000000-0000-0000-0000-000000000003') $q$,
+  '42501', 'staff: cannot compose a request in someone else''s name');
+select test.refused(
+  $q$ insert into care_request (household_label, help_kind, requested_by, status) values ('Someone', 'call', 'b0000000-0000-0000-0000-000000000001', 'done') $q$,
+  '42501', 'staff: cannot compose a request already done — the policy admits only an open, unassigned one');
+select test.refused(
+  $q$ update care_request set status = 'accepted' where id = 'a1000000-0000-0000-0000-000000000001' $q$,
+  'P0001', 'staff: cannot act on a request — only the Board does');
+update care_request set needed_by = current_date + 5 where id = 'a1000000-0000-0000-0000-000000000001';
+select test.assert((select needed_by from care_request where id = 'a1000000-0000-0000-0000-000000000001') = current_date + 5,
+  'staff: may correct what was asked while it is open');
+select test.assert((select count(*) from care_assignment) = 0, 'staff: reads ZERO care assignments — the deacon plan is the Board''s');
+select test.assert((select count(*) from deacon_visit) = 0,    'staff: reads zero visits');
+reset role;
+
+-- 11b. A deacon: sees the request, not the thread; acts on it; cannot rewrite it.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from care_request) = 1,      'deacon A: reads the request');
+select test.assert((select count(*) from care_request_link) = 0, 'deacon A: reads ZERO rows of the link to the staff care entry');
+select test.assert((select count(*) from care_entry) = 0,        'deacon A: still reads ZERO care entries');
+select test.refused(
+  $q$ insert into care_request (household_label, help_kind, requested_by) values ('Someone', 'call', 'b0000000-0000-0000-0000-000000000009') $q$,
+  '42501', 'deacon A: cannot compose a request — the push runs one way');
+select test.refused(
+  $q$ insert into care_request_link (care_request_id, care_entry_id) values ('a1000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000001') $q$,
+  '42501', 'deacon A: cannot write a link to a care entry');
+select test.refused(
+  $q$ update care_request set household_label = 'Rewritten' where id = 'a1000000-0000-0000-0000-000000000001' $q$,
+  'P0001', 'deacon A: cannot rewrite what was asked');
+select test.refused(
+  $q$ update care_request set requested_by = 'b0000000-0000-0000-0000-000000000009' where id = 'a1000000-0000-0000-0000-000000000001' $q$,
+  'P0001', 'deacon A: cannot rewrite who asked');
+update care_request set status = 'accepted', assigned_to = 'b0000000-0000-0000-0000-000000000009' where id = 'a1000000-0000-0000-0000-000000000001';
+select test.assert((select status from care_request where id = 'a1000000-0000-0000-0000-000000000001') = 'accepted', 'deacon A: takes the request up');
+select test.refused(
+  $q$ update care_request set status = 'done' where id = 'a1000000-0000-0000-0000-000000000001' $q$,
+  '23514', 'deacon A: done without a date is refused');
+update care_request set status = 'done', completed_on = current_date where id = 'a1000000-0000-0000-0000-000000000001';
+select test.refused(
+  $q$ update care_request set status = 'open', completed_on = null where id = 'a1000000-0000-0000-0000-000000000001' $q$,
+  'P0001', 'deacon A: a request marked done stays done');
+
+insert into care_assignment (id, household_label, assigned_to, created_by) values
+  ('a2000000-0000-0000-0000-000000000001', 'The Whitfields', 'b0000000-0000-0000-0000-000000000010', 'b0000000-0000-0000-0000-000000000009');
+update care_assignment set last_contact_on = current_date where id = 'a2000000-0000-0000-0000-000000000001';
+select test.assert((select last_contact_on from care_assignment where id = 'a2000000-0000-0000-0000-000000000001') = current_date, 'deacon A: records a contact as a date');
+select test.refused(
+  $q$ insert into care_assignment (household_label, assigned_to, created_by) values ('Someone', 'b0000000-0000-0000-0000-000000000010', 'b0000000-0000-0000-0000-000000000010') $q$,
+  '42501', 'deacon A: cannot assign in another man''s name');
+
+insert into deacon_week (id, week_of, person_id, backup_person_id, created_by) values
+  ('a3000000-0000-0000-0000-000000000001', date_trunc('week', current_date)::date - 1, 'b0000000-0000-0000-0000-000000000009', 'b0000000-0000-0000-0000-000000000010', 'b0000000-0000-0000-0000-000000000009');
+select test.refused(
+  $q$ insert into deacon_week (week_of, person_id, created_by) values (date_trunc('week', current_date)::date, 'b0000000-0000-0000-0000-000000000009', 'b0000000-0000-0000-0000-000000000009') $q$,
+  '23514', 'deacon A: a week is named by its Sunday');
+insert into deacon_visit (deacon_week_id, household_label, kind, person_id) values
+  ('a3000000-0000-0000-0000-000000000001', 'The Whitfields', 'call', 'b0000000-0000-0000-0000-000000000009');
+select test.refused(
+  $q$ insert into deacon_visit (deacon_week_id, household_label, person_id) values ('a3000000-0000-0000-0000-000000000001', 'Someone', 'b0000000-0000-0000-0000-000000000010') $q$,
+  '42501', 'deacon A: cannot log a visit as another man');
+select test.assert((select count(*) from deacon_visit) = 1, 'deacon A: reads the visit log');
+-- No delete policies: the statements touch nothing.
+delete from care_request; delete from care_assignment; delete from deacon_week; delete from deacon_visit;
+reset role;
+select test.assert((select count(*) from care_request) + (select count(*) from care_assignment) + (select count(*) from deacon_week) + (select count(*) from deacon_visit) = 4,
+  'deacon A: deletes nothing — nothing on the deacon side is deleted');
+
+-- 11c. The loop closes for the staff member who asked: done, on this date, by this man.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+select test.assert(
+  (select status = 'done' and completed_on = current_date and assigned_to = 'b0000000-0000-0000-0000-000000000009' from care_request where id = 'a1000000-0000-0000-0000-000000000001'),
+  'staff: sees the request done, dated, and by whom — and nothing else');
+select test.assert((select count(*) from deacon_week) = 1, 'staff: reads who the Deacon of the Week is');
+reset role;
+
+-- 11d. Everyone else: nothing.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from care_request) = 0,      'limited: reads ZERO care requests');
+select test.assert((select count(*) from care_request_link) = 0, 'limited: reads zero links');
+select test.assert((select count(*) from care_assignment) = 0,   'limited: reads zero assignments');
+select test.assert((select count(*) from deacon_week) = 1,       'limited: may read who is on call');
+reset role;
+
+select test.sign_in('a0000000-0000-0000-0000-000000000011', 'grounds@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from care_request) = 0,    'grounds chair: reads ZERO care requests — a committee seat is not the Board');
+select test.assert((select count(*) from care_assignment) = 0, 'grounds chair: reads zero assignments');
+select test.assert((select count(*) from deacon_visit) = 0,    'grounds chair: reads zero visits');
+reset role;
+
+select test.sign_out();
+set role anon;
+select test.assert((select count(*) from care_request) = 0,    'signed out: no requests');
+select test.assert((select count(*) from care_assignment) = 0, 'signed out: no assignments');
+select test.assert((select count(*) from deacon_week) = 0,     'signed out: no rotation');
+reset role;
