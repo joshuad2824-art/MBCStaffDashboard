@@ -125,9 +125,11 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   the join, it reads zero rows of it. No delete policy on any of the five. The committee rooms are
   the existing pieces drawn for a committee's slug: `membership` for the roster, `report` for the
   history, and the discussion board with `audience = {committee:…}` for the working notes.
-- **Seating.** Memberships change by SQL, by one administrator. The one automatic seat: an active
-  person granted access who sits in no body yet is put in `staff`, so the People page keeps
-  working. Seat a deacon first, grant access second, and the trigger adds nothing.
+- **Seating.** The Board chairman maintains Board and non-confidential committee memberships from
+  the People page; the confidential Family Assistance roster remains visible and manageable only
+  inside that room. The one automatic seat: an active person granted access who sits in no body yet
+  is put in `staff`, so the People page keeps working. Seat a deacon first, grant access second, and
+  the trigger adds nothing.
 
 ## The policy test, and what Phase 1 owes it
 
