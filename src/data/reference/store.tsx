@@ -5,10 +5,8 @@ import { referenceRepository } from './repository'
 import type { ReferenceData } from './repository'
 
 /* The manual, loaded once a person is signed in — whichever side they are on.
-   What comes back is the policies' answer: the documents whose audience names
-   a body they sit in, and the docket only on the deacon side. A staff member
-   for whom nothing has been marked gets an empty list, and that is a true
-   answer, not a failure. */
+   What comes back is the policies' answer: the whole manual, and the docket
+   only on the deacon side. */
 
 interface ReferenceStore {
   data: ReferenceData | null

@@ -74,10 +74,9 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   takes a `care_entry` and produces a request from it. `CareProvider` loads it for the Board and
   for the staff role.
 - **`src/data/reference/repository.ts`** — the reference's seam, split from the Board's room in 0014
-  because the manual is no longer the Board's alone: two reads, no writes. `ReferenceProvider` loads it
-  for anyone signed in, and what comes back is the policies' answer — a document by its audience, the
-  docket only on the deacon side. A staff member for whom nothing has been marked gets an empty list,
-  which is a true answer and not a failure, and `Reference.tsx` draws the docket only when there is one.
+  because the manual is not the Board's alone: two reads, no writes. `ReferenceProvider` loads it for
+  anyone signed in, and what comes back is the policies' answer — the whole manual, the docket only on
+  the deacon side. `Reference.tsx` draws the docket only when there is one.
 - **`src/screens/surfaces.ts`** — every surface names its `bodies`; `surfacesFor(bodies, viewAs)`
   is what the sidebar and the router are assembled from. `staffOnly` survives inside the staff
   body: it is the staff role versus a limited account, as before.
@@ -140,15 +139,15 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   `reference`. The corpus itself: `supabase/governance/build-seed.mjs` reads the transcription's
   front matter and **refuses every file marked `sensitivity: restricted`** — the salary plan, the
   performance standards, E006 — naming each on stderr. They never enter the database.
-- **`supabase/migrations/0014_governance_reach.sql`** — the manual reaches the staff. `governance_document`
-  carries `audience text[]` on 0008's pattern (never empty, every slug a body, 0008's trigger reused) and
-  its read policy is `in_audience(audience)`; `governance_finding` is untouched and stays the deacon
-  side's. The default is the deacon side — all six non-staff bodies, because there is no body named
-  `deacon` and `in_audience()` overlaps body slugs — and **not** `{staff,deacon}`: nothing reaches the
-  staff unless the corpus marks it, file by file, in an `audience:` front-matter key the loader reads
-  and expands. Which documents are marked is Joshua's decision and arrives through the corpus; whether a
-  `limited` account should read the manual at all is an open question, and today `in_audience()`
-  answers it the way the calendar does. Still no write policy on either table.
+- **`supabase/migrations/0014_governance_reach.sql`** and **`0015_manual_open_to_all.sql`** — the manual,
+  on both sides. 0014 gave `governance_document` an audience on 0008's pattern so the staff could read
+  the parts the corpus marked for them; 0015 took the column away again on Joshua's decision of
+  15 September 2026: the bylaws, policies and procedures are the church's own documents, available to
+  its members as a matter of course, and a gate nobody wants is a switch waiting to be thrown by
+  accident. The read policy is `is_signed_in()` — any account on the roster with access, limited
+  included. `governance_finding` is untouched and stays the deacon side's: the docket is the Board's
+  working record, not the manual. Still no write policy on either table, and the loader ignores an
+  `audience:` key if a corpus still carries one, saying so once on stderr.
 - **`supabase/migrations/0011_chairman_membership_admin.sql`** and **`0012_…`** — the chairman's seat
   editor: `chairman_roster()` and `set_managed_membership()`, both security definer and both refusing
   anyone but the Board chairman. They reach the Board and its committees, and a confidential

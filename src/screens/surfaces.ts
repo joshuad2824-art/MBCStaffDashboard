@@ -90,11 +90,9 @@ export const SURFACES: Record<string, Surface> = {
     title: 'The deacon year',
     lead: 'Every dated obligation the bylaws and policies create — the Treasurer’s report, the committee reports, the July nominations, the August election, the October filing — with its citation. The dates are computed from each rule’s anchor and the Board’s meeting dates, and an obligation goes on the agenda of the meeting it lands on.',
   },
-  /* Since 0014 the manual reaches the staff body too, and the surface is drawn
-     on whichever side the person is on. Which documents it shows is each
-     row's audience — decided in the corpus, applied by the policy — and a
-     staff member who sits on no deacon body gets what was marked for the
-     staff and never the docket. */
+  /* The manual is open to everyone who signs in (0015) and the surface is
+     drawn on whichever side the person is on. Only the docket is the deacon
+     side's, and the screen draws it only when there is one. */
   reference: {
     nav: 'Reference',
     group: 2,
@@ -103,7 +101,7 @@ export const SURFACES: Record<string, Surface> = {
     path: '/reference',
     eyebrow: 'The manual, as transcribed',
     title: 'Governance reference',
-    lead: 'The parts of the bylaws, policies and procedures addressed to you, searchable. The deacon side also sees the discrepancy docket — the places where the manual disagrees with itself. This surface reads; nothing here edits the record.',
+    lead: 'The bylaws, policies and procedures, searchable. The deacon side also sees the discrepancy docket — the places where the manual disagrees with itself. This surface reads; nothing here edits the record.',
   },
   boardCare: {
     nav: 'Care',
