@@ -5,17 +5,15 @@ import type { Finding, GovernanceDocument } from '../meetings/types'
 /* The reference's persistence seam.
    ---------------------------------
    Separate from the Board's room (src/data/meetings/repository.ts) because the
-   manual is no longer the Board's alone: since 0014 each document carries an
-   audience of body slugs, and a staff member who sits on no deacon body reads
-   the documents the corpus marked for the staff. Loading the reference must
-   not mean loading the meeting, so it has its own two reads and nothing else.
+   manual is not the Board's alone: since 0015 it is open to everyone who
+   signs in, on either side. Loading the reference must not mean loading the
+   meeting, so it has its own two reads and nothing else.
 
    It reads. There is no write here, as there is no write policy on either
    table: the corpus is loaded by supabase/governance/build-seed.mjs, by SQL.
 
-   The docket is not audience-scoped. It stays the deacon side's, and a staff
-   account gets zero rows of it — which the screen must not mistake for a
-   loading failure. */
+   The docket stays the deacon side's, and a staff account gets zero rows of
+   it — which the screen must not mistake for a loading failure. */
 
 export interface ReferenceData {
   documents: GovernanceDocument[]
@@ -23,7 +21,7 @@ export interface ReferenceData {
 }
 
 export interface StubContext {
-  /** The bodies the signed-in person sits in, for the stub's copy of in_audience(). */
+  /** The bodies the signed-in person sits in, for the stub's copy of the docket's policy. */
   bodies: string[]
 }
 
@@ -40,7 +38,6 @@ function readDocument(row: Row): GovernanceDocument {
   return {
     id: text(row.id), slug: text(row.slug), kind: KINDS.includes(kind) ? kind : 'reference', code: text(row.code), title: text(row.title),
     body: text(row.body), position: Number(row.position ?? 0) || 0,
-    audience: Array.isArray(row.audience) ? (row.audience as unknown[]).filter((a): a is string => typeof a === 'string') : [],
   }
 }
 
@@ -52,8 +49,8 @@ function readFinding(row: Row): Finding {
   }
 }
 
-/** The reference in Postgres. The policies decide what comes back — a
-    document by its audience, the docket by the deacon side — and this class
+/** The reference in Postgres. The policies decide what comes back — the
+    manual to anyone signed in, the docket to the deacon side — and this class
     adds nothing to them and hides nothing. */
 export class SupabaseReferenceRepository implements ReferenceRepository {
   async load(): Promise<ReferenceData> {
@@ -71,14 +68,14 @@ export class SupabaseReferenceRepository implements ReferenceRepository {
   }
 }
 
-/** The stub's copy of the two policies: a document is readable if its
-    audience names a body the person sits in, and the docket if they sit
-    anywhere but staff. Same answers the database gives; nothing else decides. */
+/** The stub's copy of the two policies: the manual to anyone signed in, the
+    docket if they sit anywhere but staff. Same answers the database gives;
+    nothing else decides. */
 export class LocalReferenceRepository implements ReferenceRepository {
   async load(stub: StubContext): Promise<ReferenceData> {
     const onDeaconSide = stub.bodies.some((slug) => slug !== 'staff')
     return {
-      documents: seedDocuments.filter((doc) => doc.audience.some((slug) => stub.bodies.includes(slug))),
+      documents: seedDocuments,
       findings: onDeaconSide ? seedFindings : [],
     }
   }

@@ -115,9 +115,6 @@ export interface GovernanceDocument {
   /** Markdown, as transcribed. */
   body: string
   position: number
-  /** Body slugs the document is addressed to (0014). The policy has already
-      applied it before a row arrives; the client only shows what it holds. */
-  audience: string[]
 }
 
 export interface Finding {
