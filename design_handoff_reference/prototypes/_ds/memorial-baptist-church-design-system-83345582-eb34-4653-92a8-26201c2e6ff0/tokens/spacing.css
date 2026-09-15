@@ -1,0 +1,33 @@
+/* Page rhythm. Sections breathe with clamps; interior spacing is a fixed 4px-derived set. */
+:root{
+  --mbc-space-1:4px;
+  --mbc-space-2:6px;
+  --mbc-space-3:8px;
+  --mbc-space-4:10px;
+  --mbc-space-5:12px;
+  --mbc-space-6:14px;
+  --mbc-space-7:16px;
+  --mbc-space-8:20px;
+  --mbc-space-9:22px;
+  --mbc-space-10:26px;
+  --mbc-space-11:28px;
+  --mbc-space-12:30px;
+  --mbc-space-13:32px;
+  --mbc-space-14:36px;
+  --mbc-space-15:44px;
+  --mbc-space-16:52px;
+  --mbc-space-17:56px;
+  --mbc-space-18:72px;
+
+  --mbc-page-max:1320px;
+  --mbc-page-max-prose:880px;
+  --mbc-guide-max:1180px;
+  --mbc-gutter:clamp(20px,4vw,56px); /* @kind spacing */
+  --mbc-section-y:clamp(56px,6vw,92px); /* @kind spacing */
+  --mbc-section-y-lg:clamp(64px,7vw,110px); /* @kind spacing */
+  --mbc-card-pad:clamp(28px,3.5vw,44px);
+  --mbc-grid-gap:20px;
+  --mbc-grid-gap-lg:clamp(32px,5vw,72px);
+  --mbc-header-h:96px;
+  --mbc-tap-min:44px;
+}

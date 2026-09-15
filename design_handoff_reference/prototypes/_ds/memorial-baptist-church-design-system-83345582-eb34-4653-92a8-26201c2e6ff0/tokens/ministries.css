@@ -1,0 +1,36 @@
+/* Ministry sub-brands — MBC Kids and MBC Students. Additive: nothing above this file changes value.
+   Every hue is derived from a colour already in colors.css, or is the parent value promoted to a new role. */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Anton&display=swap');
+:root{
+  /* MBC Kids */
+  --mbc-doorway-blue:#2F6C8C;
+  --mbc-doorway-blue-deep:#245571;
+  --mbc-sunbeam:#E8A33D;
+  --mbc-meadow:#6F9E63;
+  --mbc-chalk:#FDF6E7;
+  --mbc-chalk-panel:#F6E8CE;
+
+  /* MBC Students */
+  --mbc-night:#221E1B;
+  --mbc-night-card:#2A2420;
+  --mbc-night-rule:#3B342E;
+  --mbc-ember:#D2703C;
+  --mbc-ember-deep:#B85E2E;
+  --mbc-chalk-dim:#EDE4D6;
+  --mbc-signal-sage:#8FBE86;
+  --mbc-stripe-night-a:#332C27;
+  --mbc-stripe-night-b:#2A241F;
+
+  /* Ministry display faces — Nunito and Anton, both SIL OFL like Lora and Lato.
+     Loaded from Google Fonts as an interim; drop woff2 subsets into assets/fonts/ and swap. */
+  --mbc-font-kids-display:'Nunito',var(--mbc-font-sans);
+  --mbc-font-students-display:'Anton','Arial Narrow',var(--mbc-font-sans);
+
+  /* Ministry shape */
+  --mbc-radius-doorway:999px 999px 24px 24px;   /* Kids: one unbroken sweep, no shoulders */
+  --mbc-radius-arch-drawn:260px 260px 4px 4px;  /* Students: the parent arch, drawn not filled */
+  --mbc-radius-photo-hard:4px;                  /* Students: photography sits in a hard crop */
+  --mbc-rule-students:2px;                      /* Students: rules are 2px, not hairlines */
+
+  --photo-placeholder-night:repeating-linear-gradient(135deg,var(--mbc-stripe-night-a) 0 9px,var(--mbc-stripe-night-b) 9px 18px);
+}

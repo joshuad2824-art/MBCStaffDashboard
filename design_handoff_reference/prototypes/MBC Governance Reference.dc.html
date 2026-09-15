@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/radii.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/shadows.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/semantic.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/styles.css">
+  <script src="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/_ds_bundle.js"></script>
+  <style>
+    body { margin: 0; background: var(--surface-page); color: var(--text-body); font-family: var(--mbc-font-sans); }
+    * { box-sizing: border-box; }
+    textarea, input, select, button { font-family: var(--mbc-font-sans); }
+    a { color: var(--text-link); text-decoration: none; }
+    a:hover { color: var(--text-link-hover); }
+  </style>
+</helmet>
+
+<div style="min-height: 100vh; background: var(--surface-page); font-family: var(--mbc-font-sans); color: var(--text-body); -webkit-font-smoothing: antialiased;">
+
+  <div style="background: var(--surface-dark); padding: 10px 26px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: baseline; justify-content: center;">
+    <span style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .2em; text-transform: uppercase; color: var(--text-on-dark-accent);">Prototype</span>
+    <span style="font: 400 14px/1.5 var(--mbc-font-sans); color: var(--text-on-dark-soft);">The search works against a seeded corpus. Every sentence of quoted bylaw and policy text below is written for the mockup — quote the real manual, never this.</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 258px) minmax(0, 1fr); align-items: start;">
+
+    <aside style="position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; background: var(--surface-card); border-right: 1px solid var(--border-section); padding: 24px 16px; display: flex; flex-direction: column; gap: 24px;">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 0 8px;">
+        <img src="assets/mbc-mark.png" alt="" style="width: 38px; height: 38px; object-fit: contain; flex: none;">
+        <span style="display: flex; flex-direction: column; line-height: 1;">
+          <span style="font: 600 18px/1 var(--mbc-font-serif); letter-spacing: -.015em; color: var(--text-heading);">Memorial</span>
+          <span style="font: 700 8px/1 var(--mbc-font-sans); letter-spacing: .26em; color: var(--text-muted); margin-top: 4px;">{{ lockupLine }}</span>
+        </span>
+      </div>
+
+      <nav style="display: grid; gap: 3px;">
+        <sc-for list="{{ nav }}" as="item" hint-placeholder-count="7">
+          <sc-if value="{{ item.isDivider }}">
+            <div style="height: 1px; background: var(--border-card); margin: 12px 8px;"></div>
+          </sc-if>
+          <sc-if value="{{ item.active }}">
+            <button type="button" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: 10px; padding: 13px 14px; cursor: pointer; font: 700 15px/1.25 var(--mbc-font-sans); color: var(--text-heading); min-height: 48px;">
+              <span>{{ item.label }}</span>
+            </button>
+          </sc-if>
+          <sc-if value="{{ item.inactive }}">
+            <button type="button" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: 10px; padding: 13px 14px; cursor: pointer; font: 400 15px/1.25 var(--mbc-font-sans); color: var(--text-body); min-height: 48px; transition: var(--motion-hover);" style-hover="background: var(--surface-panel);">
+              <span>{{ item.label }}</span>
+            </button>
+          </sc-if>
+        </sc-for>
+      </nav>
+
+      <p style="font: 400 13px/1.7 var(--mbc-font-mono); color: var(--text-muted); margin: 0; padding: 14px 8px 0; border-top: 1px solid var(--border-card);">{{ navFootnote }}</p>
+
+      <div style="margin-top: auto; border-top: 1px solid var(--border-card); padding: 18px 8px 0; display: grid; gap: 12px;">
+        <div>
+          <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="stone" size="sm" hint-size="auto,12px">Signed in as</x-import>
+          <p style="font: 700 15px/1.3 var(--mbc-font-sans); color: var(--text-heading); margin: 8px 0 3px;">Wendell Harper</p>
+          <p style="font: 400 14px/1.5 var(--mbc-font-sans); color: var(--text-meta); margin: 0;">{{ myBodiesLine }}</p>
+        </div>
+      </div>
+    </aside>
+
+    <main style="min-width: 0;">
+
+      <div style="position: sticky; top: 0; z-index: 6; background: var(--surface-dark); padding: 14px clamp(20px, 3vw, 40px); display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between;">
+        <p style="margin: 0; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline;">
+          <span style="font: 700 20px/1 var(--mbc-font-serif); letter-spacing: -.01em; color: var(--text-on-dark-strong);">{{ contextName }}</span>
+          <span style="font: 400 14px/1.4 var(--mbc-font-sans); color: var(--text-on-dark-label);">{{ contextExplain }}</span>
+        </p>
+        <button type="button" onClick="{{ onSwitchContext }}" style="background: none; border: 1px solid var(--mbc-dark-border); border-radius: 999px; padding: 0 20px; min-height: 48px; cursor: pointer; font: 700 14px/1 var(--mbc-font-sans); color: var(--text-on-dark); transition: var(--motion-hover);" style-hover="border-color: var(--mbc-on-dark);">{{ switchLabel }}</button>
+      </div>
+
+      <header style="position: sticky; top: 0; z-index: 5; background: rgba(248, 243, 235, .94); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-section); padding: 20px clamp(20px, 3vw, 40px); display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between;">
+        <div style="min-width: 0;">
+          <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="lamplight" size="sm" hint-size="auto,12px">Governance reference</x-import>
+          <h1 style="font: 600 clamp(24px, 2.4vw, 32px)/1.1 var(--mbc-font-serif); letter-spacing: -.02em; color: var(--text-heading); margin: 9px 0 0;">{{ surfaceTitle }}</h1>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+          <span style="font: 400 14px/1 var(--mbc-font-sans); color: var(--text-muted); font-variant-numeric: tabular-nums;">Constitution, bylaws and 43 policies</span>
+          <sc-if value="{{ atDoc }}">
+            <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="outline" size="md" on-click="{{ onPrint }}" hint-size="auto,48px">Print this section</x-import>
+          </sc-if>
+        </div>
+      </header>
+
+      <div style="padding: clamp(24px, 3vw, 40px) clamp(20px, 3vw, 40px) 120px; max-width: 1380px; display: grid; gap: 22px;">
+
+        <sc-if value="{{ showRail }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: var(--mbc-radius-card); padding: 16px 20px;">
+            <span style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .2em; text-transform: uppercase; color: var(--text-eyebrow);">For review only · never built</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+              <sc-for list="{{ rail }}" as="r" hint-placeholder-count="3">
+                <button type="button" onClick="{{ r.onClick }}" style="background: {{ r.bg }}; border: 1px solid {{ r.border }}; border-radius: 999px; padding: 0 18px; min-height: 44px; cursor: pointer; font: 700 14px/1 var(--mbc-font-sans); color: var(--text-heading); transition: var(--motion-hover);" style-hover="border-color: var(--text-heading);">{{ r.label }}</button>
+              </sc-for>
+            </div>
+            <span style="font: 400 14px/1.6 var(--mbc-font-sans); color: var(--text-meta); flex: 1 1 300px; min-width: 0;">Handoff scaffolding. The states are the search field&rsquo;s own states in production — typing moves you to results, opening a result moves you to the document. The field is the first tab stop and is never autofocused.</span>
+          </div>
+        </sc-if>
+
+        <section style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-panel); padding: clamp(24px, 2.4vw, 34px);">
+          <label style="display: grid; gap: 12px;">
+            <span style="font: 700 17px/1.4 var(--mbc-font-sans); color: var(--text-heading);">Search the bylaws, policies and procedures</span>
+            <input type="search" value="{{ q }}" onChange="{{ onQ }}" placeholder="A word, a phrase or a citation — chairman, kitchen, flowers, A009" style="width: 100%; background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: 12px; padding: 0 18px; min-height: 56px; font: 400 18px/1 var(--mbc-font-sans); color: var(--text-heading);">
+          </label>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: baseline; justify-content: space-between; margin-top: 16px;">
+            <p style="font: 400 17px/1.6 var(--mbc-font-sans); color: var(--text-meta); margin: 0; max-width: 70ch; text-wrap: pretty;">{{ countLine }}</p>
+            <sc-if value="{{ hasQuery }}">
+              <button type="button" onClick="{{ onClear }}" style="background: none; border: none; padding: 0; cursor: pointer; font: 400 17px/1.4 var(--mbc-font-sans); color: var(--text-link);">Clear the search</button>
+            </sc-if>
+          </div>
+        </section>
+
+        <sc-if value="{{ atCats }}" hint-placeholder-val="{{ true }}">
+          <section style="display: grid; gap: 22px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 20px;">
+              <sc-for list="{{ cats }}" as="c" hint-placeholder-count="6">
+                <button type="button" onClick="{{ c.onOpen }}" style="text-align: left; background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-panel); padding: 28px clamp(22px, 2vw, 30px); cursor: pointer; display: grid; gap: 14px; align-content: start; transition: var(--motion-hover);" style-hover="border-color: var(--border-control);">
+                  <div style="display: flex; gap: 18px; align-items: baseline; justify-content: space-between;">
+                    <span style="font: 600 26px/1.15 var(--mbc-font-serif); letter-spacing: -.015em; color: var(--text-heading);">{{ c.name }}</span>
+                    <span style="font: 600 26px/1.15 var(--mbc-font-serif); color: var(--text-meta); font-variant-numeric: tabular-nums; flex: none;">{{ c.count }}</span>
+                  </div>
+                  <p style="font: 400 17px/1.6 var(--mbc-font-sans); color: var(--text-body); margin: 0; max-width: 46ch; text-wrap: pretty;">{{ c.line }}</p>
+                  <span style="font: 400 17px/1.4 var(--mbc-font-sans); color: var(--text-link);">{{ c.action }}</span>
+                </button>
+              </sc-for>
+            </div>
+
+            <div style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 30px);">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: baseline; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">
+                <span style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow);">Recently opened</span>
+                <span style="font: 400 14px/1.4 var(--mbc-font-sans); color: var(--text-meta);">The five you opened last, newest first</span>
+              </div>
+              <div style="display: grid; gap: 1px; background: var(--border-hairline);">
+                <sc-for list="{{ recent }}" as="r" hint-placeholder-count="5">
+                  <button type="button" onClick="{{ r.onOpen }}" style="text-align: left; background: var(--surface-card); border: none; padding: 16px 2px; cursor: pointer; display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; justify-content: space-between; min-height: 48px;">
+                    <span style="font: 400 17px/1.5 var(--mbc-font-sans); color: var(--text-heading);">{{ r.label }}</span>
+                    <span style="font: 400 15px/1.4 var(--mbc-font-sans); color: var(--text-meta); font-variant-numeric: tabular-nums;">{{ r.when }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ atPolicies }}">
+          <section style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-panel); padding: clamp(24px, 2.4vw, 34px);">
+            <button type="button" onClick="{{ onBackToCats }}" style="background: none; border: none; padding: 0; cursor: pointer; font: 400 17px/1.4 var(--mbc-font-sans); color: var(--text-link);">&larr; All categories</button>
+            <div style="padding: 18px 0 20px; border-bottom: 1px solid var(--border-hairline);">
+              <p style="font: 600 30px/1.15 var(--mbc-font-serif); letter-spacing: -.02em; color: var(--text-heading); margin: 0;">Policies</p>
+              <p style="font: 400 17px/1.65 var(--mbc-font-sans); color: var(--text-body); margin: 10px 0 0; max-width: 66ch; text-wrap: pretty;">Twenty-nine numbered policies in seven letter series. The series is the level worth choosing: nobody looks for &ldquo;policy nineteen,&rdquo; they look for the one about the vans.</p>
+            </div>
+            <div style="display: grid; gap: 1px; background: var(--border-hairline);">
+              <sc-for list="{{ letters }}" as="L" hint-placeholder-count="7">
+                <div style="background: var(--surface-card);">
+                  <button type="button" onClick="{{ L.onClick }}" style="width: 100%; text-align: left; background: none; border: none; padding: 20px 2px; cursor: pointer; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 8px 18px; align-items: baseline; min-height: 52px;">
+                    <span style="font: 600 26px/1 var(--mbc-font-serif); color: var(--text-eyebrow);">{{ L.letter }}</span>
+                    <span style="display: grid; gap: 6px;">
+                      <span style="font: 700 17px/1.4 var(--mbc-font-sans); color: var(--text-heading);">{{ L.name }}</span>
+                      <span style="font: 400 16px/1.55 var(--mbc-font-sans); color: var(--text-meta); max-width: 60ch;">{{ L.line }}</span>
+                    </span>
+                    <span style="font: 400 17px/1.4 var(--mbc-font-sans); color: var(--text-meta); font-variant-numeric: tabular-nums;">{{ L.countLabel }}</span>
+                  </button>
+                  <sc-if value="{{ L.open }}">
+                    <div style="display: grid; gap: 1px; background: var(--border-hairline); margin: 0 0 18px; padding-left: 62px;">
+                      <sc-for list="{{ L.docs }}" as="d" hint-placeholder-count="3">
+                        <button type="button" onClick="{{ d.onOpen }}" style="text-align: left; background: var(--surface-panel); border: none; padding: 15px 16px; cursor: pointer; display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; justify-content: space-between; min-height: 48px;">
+                          <span style="font: 400 17px/1.5 var(--mbc-font-sans); color: var(--text-heading);">{{ d.title }}</span>
+                          <span style="font: 400 15px/1.4 var(--mbc-font-sans); color: var(--text-meta); font-variant-numeric: tabular-nums;">{{ d.meta }}</span>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ atResults }}">
+          <section style="display: grid; gap: 20px;">
+            <sc-for list="{{ results }}" as="g" hint-placeholder-count="2">
+              <div style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 24px clamp(22px, 2vw, 30px);">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">
+                  <span style="display: grid; gap: 7px;">
+                    <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="sage" size="sm" hint-size="auto,12px">{{ g.group }}</x-import>
+                    <span style="font: 600 24px/1.2 var(--mbc-font-serif); color: var(--text-heading);">{{ g.title }}</span>
+                  </span>
+                  <span style="font: 400 17px/1.4 var(--mbc-font-sans); color: var(--text-meta); font-variant-numeric: tabular-nums;">{{ g.hitLabel }}</span>
+                </div>
+                <div style="display: grid; gap: 1px; background: var(--border-hairline);">
+                  <sc-for list="{{ g.hits }}" as="h" hint-placeholder-count="2">
+                    <button type="button" onClick="{{ h.onOpen }}" style="text-align: left; background: var(--surface-card); border: none; padding: 20px 2px; cursor: pointer; display: grid; gap: 9px; transition: var(--motion-hover);" style-hover="background: var(--surface-panel);">
+                      <span style="font: 700 17px/1.45 var(--mbc-font-sans); color: var(--text-heading);">{{ h.heading }}</span>
+                      <span style="font: 400 17px/1.65 var(--mbc-font-sans); color: var(--text-body); max-width: 78ch; text-wrap: pretty;"><sc-for list="{{ h.tokens }}" as="t" hint-placeholder-count="3"><sc-if value="{{ t.hit }}"><span style="font-weight: 700; color: var(--text-heading); background: var(--mbc-lamplight-tint); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px;">{{ t.text }}</span></sc-if><sc-if value="{{ t.plain }}"><span>{{ t.text }}</span></sc-if></sc-for></span>
+                      <span style="font: 400 16px/1.4 var(--mbc-font-sans); color: var(--text-link);">Open the section &rarr;</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+
+            <sc-if value="{{ noResults }}">
+              <div style="background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: var(--mbc-radius-panel); padding: clamp(30px, 3vw, 44px); max-width: 720px; display: grid; gap: 14px;">
+                <p style="font: 600 30px/1.2 var(--mbc-font-serif); letter-spacing: -.015em; color: var(--text-heading); margin: 0;">Nothing in the manual says that.</p>
+                <p style="font: 400 17px/1.7 var(--mbc-font-sans); color: var(--text-body); margin: 0; max-width: 60ch; text-wrap: pretty;">That is an answer, not a failure — it is often the answer a deacon needs in a meeting. Try a word the manual would use: kitchen, memorial, designated, vehicle, quorum.</p>
+                <div style="margin-top: 6px;">
+                  <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="outline" size="md" on-click="{{ onClear }}" hint-size="auto,48px">Browse the categories instead</x-import>
+                </div>
+              </div>
+            </sc-if>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ atDoc }}">
+          <section style="display: grid; gap: 20px;">
+            <nav style="display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline;">
+              <sc-for list="{{ crumbs }}" as="c" hint-placeholder-count="3">
+                <button type="button" onClick="{{ c.onClick }}" style="background: none; border: none; padding: 0; cursor: pointer; font: 400 17px/1.5 var(--mbc-font-sans); color: {{ c.ink }};">{{ c.label }}</button>
+                <sc-if value="{{ c.hasSep }}">
+                  <span style="font: 400 17px/1.5 var(--mbc-font-sans); color: var(--text-muted);">&rsaquo;</span>
+                </sc-if>
+              </sc-for>
+            </nav>
+
+            <div style="display: grid; grid-template-columns: minmax(0, 262px) minmax(0, 1fr); gap: clamp(22px, 3vw, 44px); align-items: start;">
+
+              <div style="position: sticky; top: 210px; background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 22px 20px; display: grid; gap: 16px;">
+                <span style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow);">Contents</span>
+                <div style="display: grid; gap: 2px;">
+                  <sc-for list="{{ contents }}" as="s" hint-placeholder-count="6">
+                    <button type="button" onClick="{{ s.onClick }}" style="text-align: left; background: {{ s.bg }}; border: none; border-radius: 8px; padding: 11px 12px; cursor: pointer; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: baseline; min-height: 44px; font: {{ s.font }} var(--mbc-font-sans); color: var(--text-heading);">
+                      <span style="color: var(--text-meta); font-variant-numeric: tabular-nums;">{{ s.cite }}</span>
+                      <span>{{ s.title }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+                <p style="font: 400 15px/1.6 var(--mbc-font-sans); color: var(--text-meta); margin: 0; padding-top: 14px; border-top: 1px solid var(--border-hairline);">{{ docAdopted }}</p>
+              </div>
+
+              <div style="display: grid; gap: 24px; min-width: 0;">
+                <div style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-panel); padding: clamp(26px, 3vw, 44px);">
+                  <header style="padding-bottom: 22px; border-bottom: 1px solid var(--border-hairline);">
+                    <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="sage" size="sm" hint-size="auto,12px">{{ docGroup }}</x-import>
+                    <h2 style="font: 600 clamp(26px, 2.6vw, 36px)/1.15 var(--mbc-font-serif); letter-spacing: -.02em; color: var(--text-heading); margin: 12px 0 0; max-width: 34ch; text-wrap: pretty;">{{ docTitle }}</h2>
+                    <p style="font: 400 17px/1.65 var(--mbc-font-sans); color: var(--text-meta); margin: 12px 0 0; max-width: 66ch;">{{ docNote }}</p>
+                  </header>
+
+                  <div style="display: grid; gap: 30px; padding-top: 26px;">
+                    <sc-for list="{{ docSections }}" as="s" hint-placeholder-count="4">
+                      <div style="background: {{ s.bg }}; border-radius: 14px; padding: {{ s.pad }};">
+                        <sc-if value="{{ s.arrived }}">
+                          <p style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow); margin: 0 0 12px;">You arrived here</p>
+                        </sc-if>
+                        <p style="font: 700 17px/1.45 var(--mbc-font-sans); color: var(--text-heading); margin: 0; display: flex; flex-wrap: wrap; gap: 10px;">
+                          <span style="color: var(--text-meta); font-variant-numeric: tabular-nums;">{{ s.cite }}</span>
+                          <span>{{ s.title }}</span>
+                        </p>
+                        <div style="display: grid; gap: 14px; margin-top: 12px;">
+                          <sc-for list="{{ s.paras }}" as="p" hint-placeholder-count="2">
+                            <p style="font: 400 17px/1.7 var(--mbc-font-sans); color: var(--text-body); margin: 0; max-width: 72ch; text-wrap: pretty;">{{ p.text }}</p>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <sc-if value="{{ showPrintInset }}">
+                  <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 26px clamp(22px, 2vw, 30px);">
+                    <div style="flex: 1 1 260px; min-width: 0;">
+                      <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="stone" size="sm" hint-size="auto,12px">What Print sends</x-import>
+                      <p style="font: 600 22px/1.3 var(--mbc-font-serif); color: var(--text-heading); margin: 12px 0 0;">The section, the citation, the adoption line.</p>
+                      <p style="font: 400 16px/1.65 var(--mbc-font-sans); color: var(--text-body); margin: 10px 0 0; max-width: 46ch; text-wrap: pretty;">Not the rail, not the nav, not the search field. A page that prints its own navigation gets photographed on a phone instead, and then the photograph is what gets quoted.</p>
+                    </div>
+                    <div style="flex: 0 1 300px; background: var(--surface-print); border: 1px solid var(--border-card); border-radius: 4px; box-shadow: var(--mbc-shadow-print-sm); padding: 26px 24px; display: grid; gap: 10px;">
+                      <span style="font: 700 9px/1 var(--mbc-font-sans); letter-spacing: .24em; text-transform: uppercase; color: var(--text-meta);">Memorial Baptist Church</span>
+                      <span style="font: 600 17px/1.3 var(--mbc-font-serif); color: var(--text-heading);">{{ printTitle }}</span>
+                      <span style="font: 400 13px/1.6 var(--mbc-font-sans); color: var(--text-body);">{{ printBody }}</span>
+                      <span style="font: 400 11px/1.5 var(--mbc-font-sans); color: var(--text-meta); padding-top: 8px; border-top: 1px solid var(--border-hairline);">{{ docAdopted }}</span>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </section>
+        </sc-if>
+      </div>
+    </main>
+  </div>
+
+  <sc-if value="{{ hasToast }}">
+    <div style="position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 20; background: var(--surface-dark); color: var(--text-on-dark); border-radius: 999px; padding: 16px 26px; box-shadow: var(--mbc-shadow-bar); font: 400 16px/1.4 var(--mbc-font-sans); max-width: 78ch;">{{ toast }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;side&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;deacon&quot;,&quot;staff&quot;],&quot;default&quot;:&quot;deacon&quot;,&quot;tsType&quot;:&quot;'deacon' | 'staff'&quot;,&quot;section&quot;:&quot;Which side&quot;},&quot;showStateRail&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Handoff scaffolding&quot;},&quot;showPrintInset&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Handoff scaffolding&quot;}}">
+class Component extends DCLogic {
+  state = { q: '', mode: 'cats', letter: 'A', doc: null, sec: null, arrived: false, toast: '', recent: ['bylawsII|s3', 'a009|s4', 'f003|s2', 'm001|s1', 'a009|s7'] };
+
+  DOCS = {
+    a009: {
+      id: 'a009', group: 'Policies \u00b7 A series', short: 'A009',
+      title: 'Policy A009 \u2014 Building & Property Use Income',
+      note: 'How income from outside use of the buildings is received, priced and budgeted. Carries the fee schedule and the budget calendar.',
+      adopted: 'Adopted March 1998 \u00b7 revised October 2019 \u00b7 fee schedule reviewed annually',
+      sections: [
+        { id: 's1', cite: '\u00a71', title: 'Purpose', paras: ['The buildings and grounds are held for the ministry of the church. Use by anyone other than the church is a courtesy, not a rental business, and the income received under this policy is treated as offsetting the cost of that courtesy rather than as revenue the budget depends on.'] },
+        { id: 's2', cite: '\u00a72', title: 'Who may reserve a room', paras: ['A member in good standing may reserve a room for a family occasion at no charge apart from custodial cost. An outside group may reserve a room only with the approval of the Building and Grounds committee, and only for a purpose consistent with the church\u2019s stated vision.', 'No reservation is confirmed until the form is signed and the deposit is received in the church office.'] },
+        { id: 's3', cite: '\u00a73', title: 'Classes of user', paras: ['Three classes: member occasions, affiliated ministries, and outside groups. The fee schedule in \u00a74 applies the three classes to each space. A group that has met here continuously for more than two years may be moved to the affiliated class by the Finance committee.'] },
+        { id: 's4', cite: '\u00a74', title: 'Fee schedule and the budget calendar', paras: ['The fee schedule is reviewed every year in August, so that any change is in the Finance committee\u2019s hands before the budget is assembled in September, before the Board sees it in October, and before the church votes in November.', 'Fees for the sanctuary, the fellowship hall, the gymnasium and the kitchen are set separately. The kitchen may not be reserved apart from the space it serves, and Policy F003 governs who may operate it.', 'Income received under this schedule is posted to the building use account. It is not designated, it does not roll over, and it is reported to the Board in the Finance committee\u2019s monthly report.'] },
+        { id: 's5', cite: '\u00a75', title: 'Custodial and setup cost', paras: ['Every reservation carries a custodial charge whether or not the group cleans up after itself, because the floor is stripped and the trash is hauled either way. Setup and teardown by church staff is charged at the hourly rate in the current schedule.'] },
+        { id: 's6', cite: '\u00a76', title: 'Insurance and indemnity', paras: ['An outside group provides a certificate of insurance naming the church as an additional insured, in the amount stated in the schedule, before the first use. The requirement is not waived for groups the church knows well.'] },
+        { id: 's7', cite: '\u00a77', title: 'Deposits and damage', paras: ['The deposit is refunded within thirty days of use unless there is damage, in which case the cost of repair is deducted and the balance returned with an itemised statement. Damage beyond the deposit is billed.', 'A group whose deposit has been withheld twice may not reserve again without the Board\u2019s approval.'] },
+        { id: 's8', cite: '\u00a78', title: 'Review', paras: ['This policy is reviewed by the Finance committee every third year, and at any time on the Board\u2019s request.'] }
+      ]
+    },
+    bylawsII: {
+      id: 'bylawsII', group: 'Bylaws', short: 'Art. II',
+      title: 'Bylaws, Article II \u2014 Church Leadership',
+      note: 'The longest article in the bylaws: deacons, the officers of the Board, and the standing committees.',
+      adopted: 'Adopted 1948 \u00b7 amended 1974, 1996, 2008 and 2017',
+      sections: [
+        { id: 's1', cite: 'II.A \u00a71', title: 'The deacons', paras: ['The church shall elect deacons from among its male members, to serve terms of three years, so arranged that approximately one third of the body rotates off each year. A deacon completing a full term shall not serve again until one year has passed.', 'The number of deacons shall be not fewer than nine and not more than eighteen, as the church determines at the annual meeting.'] },
+        { id: 's2', cite: 'II.A \u00a74', title: 'Duties of the deacons', paras: ['The deacons shall serve the church in the care of its members, in the ordinances, and in counsel with the pastor. They shall not exercise authority over the pastor, and they shall not act for the church in any matter the church has reserved to itself.'] },
+        { id: 's3', cite: 'II.B \u00a73', title: 'Officers of the Board', paras: ['The Board shall elect from its membership a chairman, a vice-chairman and a secretary at the regular meeting in September, to serve for the deacon year then beginning. No man shall serve as chairman for more than two consecutive years.', 'The chairman shall preside, shall set the agenda in consultation with the pastor, and shall sign the minutes as approved. In his absence the vice-chairman shall preside.', 'The secretary shall keep the minutes, shall file the roster of the Board with the church each October, and shall exclude from that filing the membership of any committee the Board has designated confidential.'] },
+        { id: 's4', cite: 'II.B \u00a76', title: 'Meetings and quorum', paras: ['The Board shall meet monthly. A quorum shall be a majority of the men then serving, and no action requiring a vote shall be taken without a quorum present.', 'An action amending these bylaws, or recommending an amendment to the church, shall require the affirmative vote of three fourths of the men present.'] },
+        { id: 's5', cite: 'II.C \u00a72', title: 'Standing committees', paras: ['The standing committees shall be Finance, Building and Grounds, Personnel, Nominating, and Family Assistance. Each shall report to the Board at least quarterly, and Finance shall report monthly.', 'The membership of the Family Assistance committee shall be known to the Board and shall not be published.'] }
+      ]
+    },
+    f003: {
+      id: 'f003', group: 'Policies \u00b7 F series', short: 'F003',
+      title: 'Policy F003 \u2014 Kitchen & Dining Facilities',
+      note: 'Short, staff-facing, and the kind of thing somebody looks up once and then forgets for two years.',
+      adopted: 'Adopted January 2006 \u00b7 revised February 2016',
+      sections: [
+        { id: 's1', cite: '\u00a71', title: 'Scope', paras: ['This policy covers the fellowship hall kitchen, the serving line and the dining room. It does not cover the coffee station in the foyer, which anyone may use.'] },
+        { id: 's2', cite: '\u00a72', title: 'Who may operate the kitchen', paras: ['The kitchen may be operated only by a person the Food Service coordinator has trained on the ovens and the dishwasher, and a trained person shall be present whenever the kitchen is in use. A group may be served from the kitchen without anyone in the group entering it.', 'No outside caterer may use the kitchen without the coordinator\u2019s written consent, and the coordinator may require that a church-trained person be present at the group\u2019s cost.'] },
+        { id: 's3', cite: '\u00a73', title: 'Cleaning and closing', paras: ['The kitchen is left as it was found: surfaces wiped, floor swept, dishwasher run and emptied, refrigerator cleared of anything not labelled. Labelled food may be left for one week.'] },
+        { id: 's4', cite: '\u00a74', title: 'Cost', paras: ['Use of the kitchen carries the charge set out in the schedule under Policy A009 \u00a74. It may not be reserved apart from the space it serves.'] }
+      ]
+    },
+    m001: {
+      id: 'm001', group: 'Policies \u00b7 M series', short: 'M001',
+      title: 'Policy M001 \u2014 Bereavement Flowers',
+      note: 'Two paragraphs, and one of the most frequently opened documents in the manual.',
+      adopted: 'Adopted May 1991 \u00b7 amount revised October 2022',
+      sections: [
+        { id: 's1', cite: '\u00a71', title: 'The practice', paras: ['On the death of a member, or of the spouse, parent or child of a member, the church sends flowers to the service in the amount set by the Finance committee, presently one hundred and fifty dollars. The church office sends them; no family is asked to request them.', 'Memorial gifts received in that person\u2019s name are handled under Policy A014 and are never applied to the cost of the flowers.'] }
+      ]
+    }
+  };
+
+  LETTERS = [
+    { letter: 'A', name: 'Accounting and finance', line: 'Receipts, designated funds, building use income, reimbursement authority.', count: 9, docs: [['a009', 'Policy A009 \u2014 Building & Property Use Income', 'Eight sections \u00b7 revised 2019'], [null, 'Policy A002 \u2014 Budget preparation', 'Four sections \u00b7 revised 2018'], [null, 'Policy A014 \u2014 Memorial and designated gifts', 'Three sections \u00b7 revised 2021']] },
+    { letter: 'B', name: 'Balloting and elections', line: 'How the church votes, and who counts.', count: 3, docs: [[null, 'Policy B001 \u2014 Balloting procedure', 'Five sections \u00b7 revised 2015'], [null, 'Policy B002 \u2014 Tellers', 'Two sections \u00b7 adopted 2015']] },
+    { letter: 'D', name: 'Designated funds', line: 'What may be designated, what may not, and what happens to a fund nobody spends.', count: 4, docs: [[null, 'Policy D001 \u2014 Establishing a designated fund', 'Four sections \u00b7 revised 2020'], [null, 'Policy D003 \u2014 Dormant funds', 'Two sections \u00b7 adopted 2020']] },
+    { letter: 'E', name: 'Education and childcare', line: 'Curriculum approval, two-adult rule, background checks.', count: 5, docs: [[null, 'Policy E002 \u2014 Two adults in every room', 'Three sections \u00b7 revised 2017'], [null, 'Policy E004 \u2014 Background checks', 'Four sections \u00b7 revised 2022']] },
+    { letter: 'F', name: 'Facilities', line: 'Rooms, keys, the kitchen, the gymnasium, the sign.', count: 6, docs: [['f003', 'Policy F003 \u2014 Kitchen & Dining Facilities', 'Four sections \u00b7 revised 2016'], [null, 'Policy F001 \u2014 Keys and access', 'Three sections \u00b7 revised 2014']] },
+    { letter: 'M', name: 'Memorials and bereavement', line: 'Flowers, memorial gifts, the columbarium question.', count: 2, docs: [['m001', 'Policy M001 \u2014 Bereavement Flowers', 'One section \u00b7 revised 2022'], [null, 'Policy M002 \u2014 Use of the sanctuary for a service', 'Two sections \u00b7 adopted 1991']] },
+    { letter: 'V', name: 'Vehicles', line: 'The vans: who may drive them, and who pays for the gas.', count: 3, docs: [[null, 'Policy V001 \u2014 Drivers', 'Four sections \u00b7 revised 2021'], [null, 'Policy V002 \u2014 Trip authorisation', 'Two sections \u00b7 revised 2021']] }
+  ];
+
+  side() { return (this.props.side || 'deacon') === 'deacon'; }
+  set(p) { this.setState(p); }
+  say(m) { this.setState({ toast: m }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 4200); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._a); }
+
+  openSection(docId, secId) {
+    const key = docId + '|' + secId;
+    const recent = [key].concat(this.state.recent.filter(r => r !== key)).slice(0, 5);
+    this.setState({ doc: docId, sec: secId, mode: 'doc', arrived: true, recent: recent });
+    clearTimeout(this._a);
+    this._a = setTimeout(() => this.setState({ arrived: false }), 4000);
+  }
+
+  index() {
+    const out = [];
+    Object.keys(this.DOCS).forEach(k => {
+      const d = this.DOCS[k];
+      d.sections.forEach(s => out.push({
+        docId: k, group: d.group, docTitle: d.title, secId: s.id,
+        heading: d.short + ' \u00b7 ' + s.cite + ' \u2014 ' + s.title,
+        text: s.paras.join(' ')
+      }));
+    });
+    return out;
+  }
+
+  tokens(text, q) {
+    if (!q) return [{ text: text, hit: false, plain: true }];
+    const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(esc, 'ig');
+    const out = []; let last = 0, m;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) out.push({ text: text.slice(last, m.index), hit: false, plain: true });
+      out.push({ text: m[0], hit: true, plain: false });
+      last = m.index + m[0].length;
+      if (re.lastIndex === m.index) re.lastIndex++;
+    }
+    if (last < text.length) out.push({ text: text.slice(last), hit: false, plain: true });
+    return out;
+  }
+
+  snippet(text, q) {
+    const i = text.toLowerCase().indexOf(q.toLowerCase());
+    if (i < 0) return text.slice(0, 210) + '\u2026';
+    let start = Math.max(0, i - 100);
+    if (start > 0) { const sp = text.indexOf(' ', start); start = sp < 0 ? start : sp + 1; }
+    let end = Math.min(text.length, start + 230);
+    if (end < text.length) { const sp = text.lastIndexOf(' ', end); end = sp > start ? sp : end; }
+    return (start > 0 ? '\u2026' : '') + text.slice(start, end) + (end < text.length ? '\u2026' : '');
+  }
+
+  search(q) {
+    const hits = this.index().filter(e => e.text.toLowerCase().indexOf(q.toLowerCase()) >= 0 || e.heading.toLowerCase().indexOf(q.toLowerCase()) >= 0);
+    const groups = [];
+    hits.forEach(h => {
+      let g = groups.find(x => x.key === h.docId);
+      if (!g) { g = { key: h.docId, group: h.group, title: h.docTitle, hits: [], n: 0 }; groups.push(g); }
+      const n = (h.text.toLowerCase().split(q.toLowerCase()).length - 1);
+      g.n += n;
+      g.hits.push({
+        heading: h.heading,
+        tokens: this.tokens(this.snippet(h.text, q), q),
+        onOpen: h.docId === 'finding' ? () => this.say('Findings open in the deacon-side findings list, which is already drawn.') : () => this.openSection(h.docId, h.secId)
+      });
+    });
+    return groups;
+  }
+
+  renderVals() {
+    const s = this.state, deacon = this.side();
+    const q = s.q.trim();
+    const results = q.length >= 2 ? this.search(q) : [];
+    const total = results.reduce((a, g) => a + g.n, 0);
+    const sections = results.reduce((a, g) => a + g.hits.length, 0);
+    const atDoc = s.mode === 'doc' && !!s.doc;
+    const atResults = q.length >= 2 && !atDoc;
+    const atCats = !atDoc && !atResults && s.mode !== 'policies';
+    const atPolicies = !atDoc && !atResults && s.mode === 'policies';
+
+    const nav = (deacon
+      ? ['Which side today?', 'The meeting', 'Finance committee', 'Care assignments', 'The deacon year', '|', 'Governance reference', 'Announcements', 'Calendar', 'Discussion']
+      : ['Today at Memorial', 'Cadence ledger', 'Notice log', 'Care pipelines', 'Bulletin', 'People', '|', 'Governance reference', 'Ministries', 'Calendar']
+    ).map(l => l === '|'
+      ? { isDivider: true, active: false, inactive: false, label: '' }
+      : { isDivider: false, label: l, active: l === 'Governance reference', inactive: l !== 'Governance reference' });
+
+    const cats = [
+      { name: 'Constitution', count: '1', line: 'How the church is organised and governed.', action: 'Open the document \u2192', conditional: false, onOpen: () => this.say('The Constitution is one document. It opens straight to its first article.') },
+      { name: 'Bylaws', count: '7', line: 'Membership, leadership, committees, meetings, amendments.', action: 'Seven articles \u2192', conditional: false, onOpen: () => this.openSection('bylawsII', 's1') },
+      { name: 'Policies', count: '29', line: 'Numbered policies, A through V \u2014 accounting, designated funds, education, facilities, vehicles.', action: 'Seven letter series \u2192', conditional: false, onOpen: () => this.set({ mode: 'policies' }) },
+      { name: 'Procedures and forms', count: '7', line: 'Reimbursement, nomination, balloting \u2014 the forms as the manual prints them.', action: 'Seven forms \u2192', conditional: false, onOpen: () => this.say('Forms open as the manual prints them, with a Print button and nothing else on the page.') },
+      { name: 'Derived reference', count: '6', line: 'Quick reference, amendment history, appendix, index.', action: 'Six documents \u2192', conditional: false, onOpen: () => this.say('Derived reference is assembled from the manual rather than voted on. Each one says so at its head.') }
+    ];
+    const doc = atDoc ? this.DOCS[s.doc] : null;
+
+    const arrivedSec = doc ? (doc.sections.find(x => x.id === s.sec) || doc.sections[0]) : null;
+
+    return {
+      lockupLine: deacon ? 'DEACON BOARD' : 'CHURCH STAFF',
+      myBodiesLine: deacon ? 'Deacon Board \u00b7 Finance committee \u00b7 chair' : 'Staff \u00b7 student ministry',
+      navFootnote: 'the reference is now one surface, identical on both sides \u2014 the findings category and the docket block were removed',
+      nav: nav,
+      contextName: deacon ? 'Deacon view' : 'Staff view',
+      contextExplain: deacon ? 'The manual as the Board reads it. Records you write default to the Board.' : 'The manual as staff read it. Records you write default to staff.',
+      switchLabel: deacon ? 'Switch to the staff view' : 'Switch to the deacon view',
+      onSwitchContext: () => this.say('The toggle is a view filter. In production it is the same prop on this screen \u2014 flip it in the Tweaks panel.'),
+      surfaceTitle: atDoc ? doc.short + ' \u00b7 ' + arrivedSec.cite : 'The manual, by category',
+
+      showRail: this.props.showStateRail !== false,
+      rail: [
+        { label: 'A \u00b7 The landing', bg: atCats || atPolicies ? 'var(--surface-card)' : 'none', border: atCats || atPolicies ? 'var(--text-heading)' : 'var(--border-control)', onClick: () => this.set({ q: '', mode: 'cats', doc: null }) },
+        { label: 'B \u00b7 Results', bg: atResults ? 'var(--surface-card)' : 'none', border: atResults ? 'var(--text-heading)' : 'var(--border-control)', onClick: () => this.set({ q: 'chairman', mode: 'cats', doc: null }) },
+        { label: 'C \u00b7 The document', bg: atDoc ? 'var(--surface-card)' : 'none', border: atDoc ? 'var(--text-heading)' : 'var(--border-control)', onClick: () => this.openSection('a009', 's4') },
+        { label: 'The empty answer', bg: 'none', border: 'var(--border-control)', onClick: () => this.set({ q: 'columbarium', mode: 'cats', doc: null }) }
+      ],
+
+      q: s.q,
+      onQ: e => this.setState({ q: e.target.value, mode: 'cats', doc: null }),
+      onClear: () => this.set({ q: '', mode: 'cats', doc: null }),
+      hasQuery: q.length > 0,
+      countLine: q.length < 2
+        ? 'Fifty-one documents. Search finds any sentence in any of them; the categories below are for when you would rather look than ask.'
+        : (total === 0
+          ? 'No matches for \u201c' + q + '\u201d.'
+          : total + (total === 1 ? ' match' : ' matches') + ' for \u201c' + q + '\u201d, in ' + sections + (sections === 1 ? ' section' : ' sections') + ' of ' + results.length + (results.length === 1 ? ' document' : ' documents') + '. Matched words are bold and underlined.'),
+
+      atCats: atCats, atPolicies: atPolicies, atResults: atResults, atDoc: atDoc,
+      cats: cats,
+      recent: s.recent.map(k => {
+        const p = k.split('|'), d = this.DOCS[p[0]];
+        const sec = d ? d.sections.find(x => x.id === p[1]) : null;
+        return {
+          label: d && sec ? d.short + ' \u00b7 ' + sec.cite + ' \u2014 ' + sec.title : k,
+          when: ['this morning', 'yesterday', 'four days ago', 'last Wednesday', 'August 27'][s.recent.indexOf(k)] || 'earlier',
+          onOpen: () => this.openSection(p[0], p[1])
+        };
+      }),
+
+      onBackToCats: () => this.set({ mode: 'cats' }),
+      letters: this.LETTERS.map(L => ({
+        letter: L.letter, name: L.name, line: L.line,
+        countLabel: L.count + (L.count === 1 ? ' policy' : ' policies'),
+        open: s.letter === L.letter,
+        onClick: () => this.set({ letter: s.letter === L.letter ? null : L.letter }),
+        docs: L.docs.map(d => ({
+          title: d[1], meta: d[2],
+          onOpen: d[0] ? () => this.openSection(d[0], 's1') : () => this.say('Seeded corpus: four documents carry full text in this prototype. The rest are titles.')
+        }))
+      })),
+
+      results: results.map(g => ({
+        group: g.group, title: g.title, hits: g.hits,
+        hitLabel: g.n + (g.n === 1 ? ' match' : ' matches') + ' in ' + g.hits.length + (g.hits.length === 1 ? ' section' : ' sections')
+      })),
+      noResults: atResults && results.length === 0,
+
+      crumbs: doc ? [
+        { label: 'Reference', ink: 'var(--text-link)', hasSep: true, onClick: () => this.set({ mode: 'cats', doc: null, q: '' }) },
+        { label: doc.group.split(' \u00b7 ')[0], ink: 'var(--text-link)', hasSep: true, onClick: () => this.set({ mode: doc.id === 'bylawsII' ? 'cats' : 'policies', doc: null, q: '' }) },
+        { label: doc.short, ink: 'var(--text-heading)', hasSep: false, onClick: () => {} }
+      ] : [],
+      docGroup: doc ? doc.group : '',
+      docTitle: doc ? doc.title : '',
+      docNote: doc ? doc.note : '',
+      docAdopted: doc ? doc.adopted : '',
+      contents: doc ? doc.sections.map(x => ({
+        cite: x.cite, title: x.title,
+        bg: x.id === s.sec ? 'var(--surface-panel)' : 'none',
+        font: x.id === s.sec ? '700 16px/1.45' : '400 16px/1.45',
+        onClick: () => this.openSection(doc.id, x.id)
+      })) : [],
+      docSections: doc ? doc.sections.map(x => ({
+        cite: x.cite, title: x.title,
+        arrived: x.id === s.sec && s.arrived,
+        bg: x.id === s.sec && s.arrived ? 'var(--surface-panel)' : 'none',
+        pad: x.id === s.sec && s.arrived ? '22px 24px' : '0',
+        paras: x.paras.map(t => ({ text: t }))
+      })) : [],
+      showPrintInset: atDoc && this.props.showPrintInset !== false,
+      printTitle: doc ? doc.short + ' ' + arrivedSec.cite + ' \u2014 ' + arrivedSec.title : '',
+      printBody: arrivedSec ? arrivedSec.paras[0].slice(0, 190) + '\u2026' : '',
+      onPrint: () => this.say('Printed ' + (doc ? doc.short + ' ' + arrivedSec.cite : '') + ' \u2014 the section, its citation and the adoption line. The rail, the nav and the search field do not print.'),
+
+      hasToast: !!s.toast, toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>
