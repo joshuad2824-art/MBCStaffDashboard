@@ -1,0 +1,3 @@
+# A private staff dashboard. Nothing here is for a search index.
+User-agent: *
+Disallow: /

@@ -69,8 +69,9 @@ decides whether an emailed link arrives anywhere useful. Do not skip either half
 2. **Email** should be on. Turn **Confirm email** on.
 3. Turn **Allow new users to sign up** **off**.
 4. Under **Authentication → URL Configuration**:
-   - **Site URL** — the site's real address, `https://mbcstaff.netlify.app`.
-     This is where every emailed link comes back to. Left at its default, a link
+   - **Site URL** — the site's real address: `https://mbctulsa.team` once the
+     domain is live, `https://mbcstaff.netlify.app` until then (see "Moving to
+     mbctulsa.team" below). This is where every emailed link comes back to. Left at its default, a link
      walks the person to `localhost:3000`, which on a phone is nowhere at all.
    - **Redirect URLs** — add `https://mbcstaff.netlify.app/**`, and
      `http://localhost:5173/**` if anyone works on this locally. A link that
@@ -175,6 +176,63 @@ Netlify.
 Until both variables are set, the site keeps running on its own sample data with
 the stubbed sign-in, and says so on the sign-in screen. That is also what a
 local `npm run dev` runs on, which is why working on a screen needs no secrets.
+
+---
+
+## Moving to mbctulsa.team
+
+The site is moving from its `.netlify.app` address to `https://mbctulsa.team`.
+Most of that is configuration in two dashboards. One part of it has to happen
+**before DNS cuts over**, and it is the part that breaks loudest if it is
+missed: every emailed sign-in link is built from Supabase's Site URL and checked
+against its Redirect URLs. Change the domain without changing those first and
+every link fails at once, for everybody, with "Redirect URL not allowed".
+
+Work down this list in order.
+
+**Before DNS changes**
+
+- [ ] **Supabase → Authentication → URL Configuration → Redirect URLs.** The
+      list has to carry all four of these, each on its own line:
+      - `https://mbctulsa.team/**`
+      - `https://www.mbctulsa.team/**`
+      - `https://mbcstaff.netlify.app/**` (the `.netlify.app` origin — keep it;
+        Netlify still serves the site there, and deploy previews and the
+        fallback address go through it)
+      - `http://localhost:5173/**` (local development)
+- [ ] **Supabase → Authentication → URL Configuration → Site URL** is the apex:
+      `https://mbctulsa.team`. Not `www`, not the Netlify address. This is the
+      address every emailed link comes back to.
+- [ ] **Netlify → Domain management.** Add `mbctulsa.team` as the primary
+      domain and `www.mbctulsa.team` redirecting to it. Let Netlify provision
+      the certificate; wait until it says the certificate is issued.
+- [ ] Check that `netlify.toml` still carries the `[[headers]]` block for `/*`
+      (`X-Robots-Tag: noindex`, `X-Frame-Options: DENY`, and the rest) and that
+      `public/robots.txt` disallows everything. Neither is a security control —
+      RLS is — but they are why a staff dashboard does not turn up in a search
+      for the church's name.
+
+**Cut over**
+
+- [ ] At the registrar, point the apex and `www` at Netlify as its Domain
+      management page instructs (an `A`/`ALIAS` record for the apex, a `CNAME`
+      for `www`).
+- [ ] Wait for the domain to resolve and the padlock to show on
+      `https://mbctulsa.team`.
+
+**After**
+
+- [ ] Ask for a sign-in link from `https://mbctulsa.team`, open it, and confirm
+      it lands back on `mbctulsa.team` signed in. Do the same from
+      `https://www.mbctulsa.team`.
+- [ ] Open a link from the old `.netlify.app` address once, to confirm it still
+      works for anyone with it bookmarked.
+- [ ] Tell the staff the new address. Old bookmarks keep working; new links
+      will carry the new domain.
+
+If a link ever comes back with "Redirect URL not allowed" after the move, it is
+the Redirect URLs list above — the address the link was requested from is not
+on it.
 
 ---
 

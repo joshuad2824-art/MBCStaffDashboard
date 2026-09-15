@@ -7,6 +7,19 @@
   to = "/index.html"
   status = 200
 
+# Not a security control — there is no sign-up and Row Level Security is the
+# gate. These exist so a church staff dashboard does not turn up in a search
+# for the church's name, is not framed by another site, and does not leak the
+# address it was opened from. public/robots.txt says the same to a crawler.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+
 [[headers]]
   for = "/fonts/*"
   [headers.values]
