@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/radii.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/shadows.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/tokens/semantic.css">
+  <link rel="stylesheet" href="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/styles.css">
+  <script src="_ds/memorial-baptist-church-design-system-83345582-eb34-4653-92a8-26201c2e6ff0/_ds_bundle.js"></script>
+  <style>
+    body { margin: 0; background: var(--surface-page); color: var(--text-body); font-family: var(--mbc-font-sans); }
+    * { box-sizing: border-box; }
+    textarea, input, select, button { font-family: var(--mbc-font-sans); }
+    a { color: var(--text-link); text-decoration: none; }
+    a:hover { color: var(--text-link-hover); }
+  </style>
+</helmet>
+
+<div style="min-height: 100vh; background: var(--surface-page); font-family: var(--mbc-font-sans); color: var(--text-body); -webkit-font-smoothing: antialiased;">
+
+  <div style="background: var(--surface-dark); padding: 10px 26px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: baseline; justify-content: center;">
+    <span style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .2em; text-transform: uppercase; color: var(--text-on-dark-accent);">Prototype</span>
+    <span style="font: 400 13px/1.5 var(--mbc-font-sans); color: var(--text-on-dark-soft);">Names, groups and meeting times are seed data. Every field here records who serves; there is no attendee roster on this screen and no field that could become one.</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 258px) minmax(0, 1fr); align-items: start;">
+
+    <aside style="position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; background: var(--surface-card); border-right: 1px solid var(--border-section); padding: 24px 16px; display: flex; flex-direction: column; gap: 24px;">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 0 8px;">
+        <img src="assets/mbc-mark.png" alt="" style="width: 38px; height: 38px; object-fit: contain; flex: none;">
+        <span style="display: flex; flex-direction: column; line-height: 1;">
+          <span style="font: 600 18px/1 var(--mbc-font-serif); letter-spacing: -.015em; color: var(--text-heading);">Memorial</span>
+          <span style="font: 700 8px/1 var(--mbc-font-sans); letter-spacing: .26em; color: var(--text-muted); margin-top: 4px;">CHURCH STAFF</span>
+        </span>
+      </div>
+
+      <nav style="display: grid; gap: 3px;">
+        <sc-for list="{{ nav }}" as="item" hint-placeholder-count="8">
+          <sc-if value="{{ item.isDivider }}">
+            <div style="height: 1px; background: var(--border-card); margin: 12px 8px;"></div>
+          </sc-if>
+          <sc-if value="{{ item.active }}">
+            <button type="button" onClick="{{ item.onClick }}" style="display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: 10px; padding: 12px 14px; cursor: pointer; font: 700 14px/1.25 var(--mbc-font-sans); color: var(--text-heading); min-height: 44px;">{{ item.label }}</button>
+          </sc-if>
+          <sc-if value="{{ item.inactive }}">
+            <button type="button" onClick="{{ item.onClick }}" style="display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: 10px; padding: 12px 14px; cursor: pointer; font: 400 14px/1.25 var(--mbc-font-sans); color: var(--text-body); min-height: 44px; transition: var(--motion-hover);" style-hover="background: var(--surface-panel);">{{ item.label }}</button>
+          </sc-if>
+        </sc-for>
+      </nav>
+
+      <div style="margin-top: auto; border-top: 1px solid var(--border-card); padding: 18px 8px 0; display: grid; gap: 12px;">
+        <div>
+          <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="stone" size="sm" hint-size="auto,12px">Signed in as</x-import>
+          <p style="font: 700 14px/1.3 var(--mbc-font-sans); color: var(--text-heading); margin: 8px 0 2px;">Morgan Bice</p>
+          <p style="font: 400 13px/1.45 var(--mbc-font-sans); color: var(--text-meta); margin: 0;">Staff · student ministry</p>
+        </div>
+      </div>
+    </aside>
+
+    <main style="min-width: 0;">
+      <header style="position: sticky; top: 0; z-index: 5; background: rgba(248, 243, 235, .94); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-section); padding: 20px clamp(20px, 3vw, 40px); display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between;">
+        <div style="min-width: 0;">
+          <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="lamplight" size="sm" hint-size="auto,12px">{{ crumbLabel }}</x-import>
+          <h1 style="font: 600 clamp(24px, 2.4vw, 32px)/1.1 var(--mbc-font-serif); letter-spacing: -.02em; color: var(--text-heading); margin: 9px 0 0;">{{ ministryName }}</h1>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+          <span style="font: 400 13px/1 var(--mbc-font-sans); color: var(--text-muted); font-variant-numeric: tabular-nums;">{{ headerCount }}</span>
+          <sc-if value="{{ atMinistry }}">
+            <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="primary" size="sm" on-click="{{ onAddGroup }}" hint-size="auto,44px">Add a group</x-import>
+          </sc-if>
+        </div>
+      </header>
+
+      <div style="padding: clamp(24px, 3vw, 40px) clamp(20px, 3vw, 40px) 120px; max-width: 1380px; display: grid; gap: 20px;">
+
+        <sc-if value="{{ atIndex }}">
+          <section style="display: grid; gap: 20px;">
+            <p style="font: 400 17px/1.7 var(--mbc-font-sans); color: var(--text-meta); margin: 0; max-width: 66ch; text-wrap: pretty;">Five ministries. Open the one you need — the groups inside it, and who serves in each, live on its page. Classes, community groups and teams all sit under the ministry they belong to.</p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+              <sc-for list="{{ indexCards }}" as="c" hint-placeholder-count="5">
+                <button type="button" onClick="{{ c.onOpen }}" style="text-align: left; background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-panel); padding: 26px clamp(20px, 2vw, 28px); cursor: pointer; display: grid; gap: 14px; align-content: start; transition: var(--motion-hover);" style-hover="border-color: var(--border-control);">
+                  <div style="display: flex; gap: 18px; align-items: baseline; justify-content: space-between;">
+                    <span style="font: 600 26px/1.15 var(--mbc-font-serif); letter-spacing: -.015em; color: var(--text-heading);">{{ c.name }}</span>
+                    <span style="font: 600 26px/1.15 var(--mbc-font-serif); color: var(--text-meta); font-variant-numeric: tabular-nums; flex: none;">{{ c.groupCount }}</span>
+                  </div>
+                  <p style="font: 400 16px/1.65 var(--mbc-font-sans); color: var(--text-body); margin: 0; max-width: 46ch; text-wrap: pretty;">{{ c.blurb }}</p>
+                  <div style="display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--border-hairline);">
+                    <span style="font: 400 13px/1.5 var(--mbc-font-sans); color: var(--text-meta); font-variant-numeric: tabular-nums;">{{ c.kindLine }}</span>
+                    <sc-if value="{{ c.hasGap }}">
+                      <span style="font: 700 13px/1.4 var(--mbc-font-sans); color: var(--text-eyebrow);">{{ c.gapLine }}</span>
+                    </sc-if>
+                    <sc-if value="{{ c.noGap }}">
+                      <span style="font: 400 13px/1.5 var(--mbc-font-sans); color: var(--text-meta);">{{ c.gapLine }}</span>
+                    </sc-if>
+                  </div>
+                  <span style="font: 400 16px/1.4 var(--mbc-font-sans); color: var(--text-link);">{{ c.action }}</span>
+                </button>
+              </sc-for>
+            </div>
+
+            <div style="background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: var(--mbc-radius-card); padding: 22px clamp(20px, 2vw, 28px); display: flex; flex-wrap: wrap; gap: 18px 32px; align-items: baseline; justify-content: space-between;">
+              <div style="display: flex; align-items: baseline; gap: 14px;">
+                <span style="font: 600 40px/1 var(--mbc-font-serif); color: var(--text-heading); font-variant-numeric: tabular-nums;">{{ indexGapCount }}</span>
+                <div>
+                  <p style="font: 700 13px/1.3 var(--mbc-font-sans); color: var(--text-heading); margin: 0;">{{ indexGapLabel }}</p>
+                  <p style="font: 400 13px/1.4 var(--mbc-font-sans); color: var(--text-meta); margin: 4px 0 0;">Across every ministry. A leading role with nobody in it is a state, not a blank.</p>
+                </div>
+              </div>
+              <p style="font: 400 13px/1.6 var(--mbc-font-sans); color: var(--text-body); margin: 0; max-width: 50ch; text-wrap: pretty;">{{ indexGapWhere }}</p>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ atMinistry }}">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+          <span style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .2em; text-transform: uppercase; color: var(--text-eyebrow); margin-right: 6px;">Ministries</span>
+          <sc-for list="{{ ministryTabs }}" as="m" hint-placeholder-count="5">
+            <button type="button" onClick="{{ m.onClick }}" style="background: {{ m.bg }}; border: 1px solid {{ m.border }}; border-radius: 999px; padding: 0 17px; min-height: 44px; cursor: pointer; font: {{ m.font }} var(--mbc-font-sans); color: var(--text-heading); transition: var(--motion-hover);" style-hover="border-color: var(--text-heading);">{{ m.label }}</button>
+          </sc-for>
+        </div>
+
+        <section style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 24px clamp(20px, 2vw, 28px); display: flex; flex-wrap: wrap; gap: 18px 32px; align-items: baseline; justify-content: space-between;">
+          <div style="min-width: 0;">
+            <sc-if value="{{ noteEditing }}">
+              <div style="display: grid; gap: 8px; justify-items: start;">
+                <input value="{{ ministryNote }}" onChange="{{ onNoteChange }}" style="width: 100%; min-width: 280px; background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: var(--mbc-radius-input); padding: 0 12px; min-height: 44px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading);">
+                <button type="button" onClick="{{ onNoteDone }}" style="background: none; border: none; padding: 0; cursor: pointer; font: 700 13px/1 var(--mbc-font-sans); color: var(--text-link);">Done</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ noteAtRest }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-start;">
+                <button type="button" onClick="{{ onNoteEdit }}" style="text-align: left; background: none; border: 1px solid transparent; border-radius: 8px; padding: 6px 8px; margin: -6px 0 -6px -8px; cursor: pointer; font: 400 16px/1.65 var(--mbc-font-sans); color: var(--text-body); max-width: 62ch; text-wrap: pretty; transition: var(--motion-hover);" style-hover="background: var(--surface-panel); border-color: var(--border-hairline);">{{ ministryNote }}</button>
+                <button type="button" onClick="{{ onNoteEdit }}" title="{{ noteEditTitle }}" aria-label="{{ noteEditTitle }}" style="background: none; border: 1px solid transparent; border-radius: 999px; width: 36px; min-height: 36px; cursor: pointer; font: 400 15px/1 var(--mbc-font-sans); color: var(--text-meta); transition: var(--motion-hover);" style-hover="border-color: var(--border-control); color: var(--text-heading);">&#9998;</button>
+              </div>
+            </sc-if>
+            <p style="font: 400 13px/1.5 var(--mbc-font-sans); color: var(--text-meta); margin: 8px 0 0;">{{ editHint }}</p>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            <sc-if value="{{ hasArchived }}">
+              <button type="button" onClick="{{ onToggleArchived }}" style="background: none; border: 1px solid var(--border-control); border-radius: 999px; padding: 0 16px; min-height: 44px; cursor: pointer; font: 400 13px/1 var(--mbc-font-sans); color: var(--text-heading); transition: var(--motion-hover);" style-hover="background: var(--surface-panel);">{{ archivedLabel }}</button>
+            </sc-if>
+            <sc-if value="{{ hasGaps }}">
+              <button type="button" onClick="{{ onToggleGaps }}" style="background: {{ gapsBg }}; border: 1px solid {{ gapsBorder }}; border-radius: 999px; padding: 0 16px; min-height: 44px; cursor: pointer; font: 400 13px/1 var(--mbc-font-sans); color: var(--text-heading); transition: var(--motion-hover);" style-hover="background: var(--surface-panel);">{{ gapsLabel }}</button>
+            </sc-if>
+          </div>
+        </section>
+
+        <sc-if value="{{ showGapBand }}">
+          <section style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: var(--mbc-radius-card); padding: 22px clamp(20px, 2vw, 28px);">
+            <div style="display: flex; align-items: baseline; gap: 14px;">
+              <span style="font: 600 40px/1 var(--mbc-font-serif); color: var(--text-heading); font-variant-numeric: tabular-nums;">{{ gapCount }}</span>
+              <div>
+                <p style="font: 700 13px/1.3 var(--mbc-font-sans); color: var(--text-heading); margin: 0;">{{ gapCountLabel }}</p>
+                <p style="font: 400 13px/1.4 var(--mbc-font-sans); color: var(--text-meta); margin: 4px 0 0;">A leading role with nobody in it is a state, not a blank.</p>
+              </div>
+            </div>
+            <p style="font: 400 13px/1.6 var(--mbc-font-sans); color: var(--text-body); margin: 0; max-width: 52ch; text-wrap: pretty;">{{ gapBandNote }}</p>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ isEmpty }}">
+          <section style="background: var(--surface-card); border: 1px dashed var(--border-control); border-radius: var(--mbc-radius-panel); padding: clamp(30px, 3.4vw, 48px); max-width: 720px; display: grid; gap: 14px;">
+            <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="stone" size="sm" hint-size="auto,12px">No groups yet</x-import>
+            <p style="font: 600 26px/1.2 var(--mbc-font-serif); letter-spacing: -.015em; color: var(--text-heading); margin: 0;">{{ emptyTitle }}</p>
+            <p style="font: 400 16px/1.7 var(--mbc-font-sans); color: var(--text-body); margin: 0; max-width: 56ch; text-wrap: pretty;">A group is a class, a community group or a team, with a name, a time, a room and at least one person serving in it. You can add the first one now and fill in the rest as it settles.</p>
+            <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 12px;">
+              <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="outline" size="md" on-click="{{ onAddGroup }}" hint-size="auto,44px">Add the first group</x-import>
+            </div>
+          </section>
+        </sc-if>
+
+        <section style="display: grid; gap: 18px;">
+          <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+            <article style="background: {{ g.cardBg }}; border: 1px solid {{ g.cardBorder }}; border-radius: var(--mbc-radius-panel); padding: clamp(22px, 2.2vw, 30px);">
+
+              <div style="display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: flex-start; justify-content: space-between; padding-bottom: 18px; border-bottom: 1px solid var(--border-hairline);">
+                <div style="min-width: 0; display: grid; gap: 9px;">
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;">
+                    <sc-if value="{{ g.kindLocked }}">
+                      <span style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-category);">{{ g.kindLabel }}</span>
+                    </sc-if>
+                    <sc-if value="{{ g.editable }}">
+                      <select value="{{ g.kind }}" onChange="{{ g.onKind }}" aria-label="What kind of group this is" style="background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: var(--mbc-radius-input); padding: 0 10px; min-height: 44px; font: 700 12px/1 var(--mbc-font-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--text-category);">
+                        <sc-for list="{{ kindOptions }}" as="k" hint-placeholder-count="3">
+                          <option value="{{ k.value }}">{{ k.label }}</option>
+                        </sc-for>
+                      </select>
+                    </sc-if>
+                    <sc-if value="{{ g.archived }}">
+                      <span style="font: 400 13px/1 var(--mbc-font-sans); color: var(--text-meta); border: 1px solid var(--mbc-border-chip); border-radius: 999px; padding: 6px 12px;">{{ g.endedLabel }}</span>
+                    </sc-if>
+                  </div>
+                  <sc-if value="{{ g.nameEditing }}">
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                      <input value="{{ g.name }}" onChange="{{ g.onNameChange }}" style="background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: var(--mbc-radius-input); padding: 0 14px; min-height: 44px; min-width: 320px; font: 600 22px/1 var(--mbc-font-serif); color: var(--text-heading);">
+                      <button type="button" onClick="{{ g.onNameDone }}" style="background: none; border: none; padding: 0; cursor: pointer; font: 700 13px/1 var(--mbc-font-sans); color: var(--text-link);">Done</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ g.nameAtRest }}">
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
+                      <button type="button" onClick="{{ g.onNameEdit }}" style="text-align: left; background: none; border: 1px solid transparent; border-radius: 8px; padding: 4px 8px; margin-left: -8px; cursor: pointer; font: 600 22px/1.25 var(--mbc-font-serif); color: var(--text-heading); transition: var(--motion-hover);" style-hover="background: var(--surface-panel); border-color: var(--border-hairline);">{{ g.name }}</button>
+                      <sc-if value="{{ g.editable }}">
+                        <button type="button" onClick="{{ g.onNameEdit }}" title="{{ g.renameTitle }}" aria-label="{{ g.renameTitle }}" style="background: none; border: 1px solid transparent; border-radius: 999px; width: 44px; min-height: 44px; cursor: pointer; font: 400 17px/1 var(--mbc-font-sans); color: var(--text-meta); transition: var(--motion-hover);" style-hover="border-color: var(--border-control); color: var(--text-heading);">&#9998;</button>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+                <div style="display: grid; gap: 10px; justify-items: end;">
+                  <sc-if value="{{ g.hasGap }}">
+                    <div style="display: grid; gap: 8px; justify-items: start;">
+                      <p style="font: 700 13px/1.3 var(--mbc-font-sans); color: var(--text-eyebrow); margin: 0;">{{ g.gapLabel }}</p>
+                      <button type="button" onClick="{{ g.onFillGap }}" style="background: none; border: 1px solid var(--border-control); border-radius: 999px; padding: 0 16px; min-height: 44px; cursor: pointer; font: 400 13px/1 var(--mbc-font-sans); color: var(--text-heading); transition: var(--motion-hover);" style-hover="background: var(--surface-panel);">{{ g.gapAction }}</button>
+                    </div>
+                  </sc-if>
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;">
+                    <sc-if value="{{ g.editable }}">
+                      <button type="button" onClick="{{ g.onEnd }}" style="background: none; border: none; padding: 0 4px; min-height: 44px; cursor: pointer; font: 400 14px/1 var(--mbc-font-sans); color: var(--text-link);">End this group</button>
+                    </sc-if>
+                    <sc-if value="{{ g.archived }}">
+                      <button type="button" onClick="{{ g.onReopen }}" style="background: none; border: none; padding: 0 4px; min-height: 44px; cursor: pointer; font: 400 14px/1 var(--mbc-font-sans); color: var(--text-link);">Reopen this group</button>
+                    </sc-if>
+                    <button type="button" onClick="{{ g.onRemoveAsk }}" title="{{ g.removeTitle }}" aria-label="{{ g.removeTitle }}" style="background: none; border: 1px solid transparent; border-radius: 999px; width: 44px; min-height: 44px; cursor: pointer; font: 400 19px/1 var(--mbc-font-sans); color: var(--text-meta); transition: var(--motion-hover);" style-hover="border-color: var(--border-control); color: var(--text-heading);">&times;</button>
+                  </div>
+                </div>
+              </div>
+
+              <sc-if value="{{ g.confirming }}">
+                <div style="background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: var(--mbc-radius-input); padding: 16px; margin-top: 16px; display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; justify-content: space-between;">
+                  <p style="font: 400 15px/1.6 var(--mbc-font-sans); color: var(--text-heading); margin: 0; max-width: 62ch; text-wrap: pretty;">{{ g.confirmCopy }}</p>
+                  <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
+                    <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="dark" size="sm" on-click="{{ g.onRemoveConfirm }}" hint-size="auto,44px">Remove it</x-import>
+                    <button type="button" onClick="{{ g.onRemoveCancel }}" style="background: none; border: none; padding: 0; cursor: pointer; font: 400 14px/1 var(--mbc-font-sans); color: var(--text-meta);">Keep it</button>
+                  </div>
+                </div>
+              </sc-if>
+
+              <div style="display: flex; flex-wrap: wrap; gap: 1px; margin-top: 18px;">
+                <sc-for list="{{ g.facts }}" as="f" hint-placeholder-count="3">
+                  <div style="flex: 1 1 210px; min-width: 0; background: {{ g.cardBg }}; border-left: {{ f.rule }}; padding: 14px 16px 16px; display: grid; gap: 7px; align-content: start;">
+                    <span style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
+                      <span style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-meta);">{{ f.label }}</span>
+                      <sc-if value="{{ f.atRest }}">
+                        <button type="button" onClick="{{ f.onEdit }}" title="{{ f.editTitle }}" aria-label="{{ f.editTitle }}" style="background: none; border: 1px solid transparent; border-radius: 999px; width: 36px; min-height: 36px; margin: -6px -8px -6px 0; cursor: pointer; font: 400 15px/1 var(--mbc-font-sans); color: var(--text-meta); transition: var(--motion-hover);" style-hover="border-color: var(--border-control); color: var(--text-heading);">&#9998;</button>
+                      </sc-if>
+                    </span>
+                    <sc-if value="{{ f.editing }}">
+                      <div style="display: grid; gap: 8px; justify-items: start;">
+                        <input value="{{ f.value }}" onChange="{{ f.onChange }}" placeholder="{{ f.placeholder }}" style="width: 100%; background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: var(--mbc-radius-input); padding: 0 12px; min-height: 44px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading);">
+                        <button type="button" onClick="{{ f.onDone }}" style="background: none; border: none; padding: 0; cursor: pointer; font: 700 13px/1 var(--mbc-font-sans); color: var(--text-link);">Done</button>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ f.atRest }}">
+                      <button type="button" onClick="{{ f.onEdit }}" style="text-align: left; background: none; border: 1px solid transparent; border-radius: 8px; padding: 6px 8px; margin: -6px -8px; cursor: pointer; font: 400 16px/1.5 var(--mbc-font-sans); color: {{ f.ink }}; transition: var(--motion-hover);" style-hover="background: var(--surface-panel); border-color: var(--border-hairline);">{{ f.display }}</button>
+                    </sc-if>
+                    <sc-if value="{{ f.locked }}">
+                      <span style="font: 400 16px/1.5 var(--mbc-font-sans); color: {{ f.ink }};">{{ f.display }}</span>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="margin-top: 22px;">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: baseline; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border-hairline);">
+                  <span style="font: 700 11px/1 var(--mbc-font-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--text-eyebrow);">Who serves</span>
+                  <span style="font: 400 13px/1.4 var(--mbc-font-sans); color: var(--text-meta); font-variant-numeric: tabular-nums;">{{ g.servesNote }}</span>
+                </div>
+
+                <div style="display: grid; gap: 1px; background: var(--border-hairline);">
+                  <sc-for list="{{ g.serves }}" as="p" hint-placeholder-count="3">
+                    <div style="background: {{ g.cardBg }}; padding: 13px 2px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; min-height: 52px;">
+                      <sc-if value="{{ p.editing }}">
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                          <input value="{{ p.name }}" onChange="{{ p.onName }}" style="background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: var(--mbc-radius-input); padding: 0 12px; min-height: 44px; min-width: 200px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading);">
+                          <select value="{{ p.role }}" onChange="{{ p.onRole }}" style="background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: var(--mbc-radius-input); padding: 0 12px; min-height: 44px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading);">
+                            <sc-for list="{{ roleOptions }}" as="r" hint-placeholder-count="8">
+                              <option value="{{ r.value }}">{{ r.label }}</option>
+                            </sc-for>
+                          </select>
+                          <button type="button" onClick="{{ p.onDone }}" style="background: none; border: none; padding: 0; cursor: pointer; font: 700 13px/1 var(--mbc-font-sans); color: var(--text-link);">Done</button>
+                          <button type="button" onClick="{{ p.onRemove }}" style="background: none; border: none; padding: 0; cursor: pointer; font: 400 13px/1 var(--mbc-font-sans); color: var(--text-meta);">Remove from this group</button>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ p.atRest }}">
+                        <button type="button" onClick="{{ p.onEdit }}" style="text-align: left; background: none; border: 1px solid transparent; border-radius: 8px; padding: 7px 9px; margin: -7px -9px; cursor: pointer; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; transition: var(--motion-hover);" style-hover="background: var(--surface-panel); border-color: var(--border-hairline);">
+                          <span style="font: 400 16px/1.45 var(--mbc-font-sans); color: var(--text-heading);">{{ p.name }}</span>
+                          <span style="font: 400 16px/1.45 var(--mbc-font-sans); color: var(--text-meta);">· {{ p.roleLabel }}</span>
+                          <sc-if value="{{ p.isPrimary }}">
+                            <span style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .16em; text-transform: uppercase; color: var(--text-category); align-self: center;">Primary contact</span>
+                          </sc-if>
+                          <sc-if value="{{ p.isLead }}">
+                            <span style="font: 700 10px/1 var(--mbc-font-sans); letter-spacing: .16em; text-transform: uppercase; color: var(--text-meta); align-self: center;">{{ p.leadTag }}</span>
+                          </sc-if>
+                        </button>
+                      </sc-if>
+                      <sc-if value="{{ p.atRest }}">
+                        <div style="display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center;">
+                          <select value="{{ p.role }}" onChange="{{ p.onRole }}" aria-label="Role" style="background: var(--surface-field); border: 1px solid var(--mbc-border-input); border-radius: var(--mbc-radius-input); padding: 0 10px; min-height: 44px; font: 400 15px/1 var(--mbc-font-sans); color: var(--text-heading);">
+                            <sc-for list="{{ roleOptions }}" as="r" hint-placeholder-count="8">
+                              <option value="{{ r.value }}">{{ r.label }}</option>
+                            </sc-for>
+                          </select>
+                          <button type="button" onClick="{{ p.onEdit }}" title="{{ p.editTitle }}" aria-label="{{ p.editTitle }}" style="background: none; border: 1px solid transparent; border-radius: 999px; width: 44px; min-height: 44px; cursor: pointer; font: 400 17px/1 var(--mbc-font-sans); color: var(--text-meta); transition: var(--motion-hover);" style-hover="border-color: var(--border-control); color: var(--text-heading);">&#9998;</button>
+                          <button type="button" onClick="{{ p.onRemove }}" title="{{ p.removeTitle }}" aria-label="{{ p.removeTitle }}" style="background: none; border: 1px solid transparent; border-radius: 999px; width: 44px; min-height: 44px; cursor: pointer; font: 400 19px/1 var(--mbc-font-sans); color: var(--text-meta); transition: var(--motion-hover);" style-hover="border-color: var(--border-control); color: var(--text-heading);">&times;</button>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ p.locked }}">
+                        <span style="font: 400 16px/1.45 var(--mbc-font-sans); color: var(--text-meta);">{{ p.name }} · {{ p.roleLabel }}</span>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+
+                  <sc-if value="{{ g.noneServing }}">
+                    <div style="background: {{ g.cardBg }}; padding: 15px 2px;">
+                      <p style="font: 400 16px/1.6 var(--mbc-font-sans); color: var(--text-meta); margin: 0;">Nobody is named in this group yet.</p>
+                    </div>
+                  </sc-if>
+                </div>
+
+                <sc-if value="{{ g.adding }}">
+                  <div style="background: var(--surface-panel); border: 1px solid var(--border-section); border-radius: var(--mbc-radius-input); padding: 16px; margin-top: 14px; display: grid; gap: 12px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                      <input value="{{ draftName }}" onChange="{{ onDraftName }}" placeholder="Type a name" list="mbc-roster" style="background: var(--surface-card); border: 1px solid var(--mbc-border-input); border-radius: var(--mbc-radius-input); padding: 0 12px; min-height: 44px; min-width: 230px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading);">
+                      <select value="{{ draftRole }}" onChange="{{ onDraftRole }}" style="background: var(--surface-card); border: 1px solid var(--mbc-border-input); border-radius: var(--mbc-radius-input); padding: 0 12px; min-height: 44px; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading);">
+                        <sc-for list="{{ roleOptions }}" as="r" hint-placeholder-count="8">
+                          <option value="{{ r.value }}">{{ r.label }}</option>
+                        </sc-for>
+                      </select>
+                      <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Button" variant="dark" size="sm" on-click="{{ g.onAddConfirm }}" hint-size="auto,44px">Add to this group</x-import>
+                      <button type="button" onClick="{{ g.onAddCancel }}" style="background: none; border: none; padding: 0; cursor: pointer; font: 400 13px/1 var(--mbc-font-sans); color: var(--text-meta);">Cancel</button>
+                    </div>
+                    <p style="font: 400 13px/1.55 var(--mbc-font-sans); color: var(--text-meta); margin: 0; max-width: 64ch;">{{ addNote }}</p>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ g.canAdd }}">
+                  <button type="button" onClick="{{ g.onAddOpen }}" style="background: none; border: 1px dashed var(--border-control); border-radius: var(--mbc-radius-input); padding: 0 16px; min-height: 44px; margin-top: 14px; cursor: pointer; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading); transition: var(--motion-hover);" style-hover="background: var(--surface-panel); border-color: var(--text-heading);">Add someone…</button>
+                </sc-if>
+              </div>
+            </article>
+          </sc-for>
+
+          <button type="button" onClick="{{ onAddGroup }}" style="justify-self: start; background: none; border: 1px dashed var(--border-control); border-radius: var(--mbc-radius-input); padding: 0 20px; min-height: 48px; cursor: pointer; font: 400 16px/1 var(--mbc-font-sans); color: var(--text-heading); transition: var(--motion-hover);" style-hover="background: var(--surface-panel); border-color: var(--text-heading);">Add a class, community group or team…</button>
+        </section>
+
+        <sc-if value="{{ showPatternNotes }}">
+          <section style="background: var(--surface-card); border: 1px solid var(--border-card); border-radius: var(--mbc-radius-card); padding: 26px clamp(20px, 2vw, 28px);">
+            <div style="padding-bottom: 16px; border-bottom: 1px solid var(--border-hairline);">
+              <x-import component-from-global-scope="MemorialBaptistChurchDesignSystem_833455.Eyebrow" tone="lamplight" size="sm" hint-size="auto,12px">The pattern the index and the group page follow</x-import>
+              <p style="font: 600 22px/1.3 var(--mbc-font-serif); color: var(--text-heading); margin: 12px 0 0;">Four decisions this screen makes for the rest of the directory.</p>
+            </div>
+            <div style="display: grid; gap: 1px; background: var(--border-hairline);">
+              <sc-for list="{{ patternNotes }}" as="n" hint-placeholder-count="4">
+                <div style="background: var(--surface-card); display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 16px; padding: 16px 2px;">
+                  <span style="font: 600 20px/1.3 var(--mbc-font-serif); color: var(--text-eyebrow); font-variant-numeric: tabular-nums;">{{ n.n }}</span>
+                  <div>
+                    <p style="font: 700 16px/1.45 var(--mbc-font-sans); color: var(--text-heading); margin: 0;">{{ n.title }}</p>
+                    <p style="font: 400 15px/1.65 var(--mbc-font-sans); color: var(--text-body); margin: 6px 0 0; max-width: 78ch; text-wrap: pretty;">{{ n.body }}</p>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </sc-if>
+        </sc-if>
+      </div>
+    </main>
+  </div>
+
+  <datalist id="mbc-roster">
+    <sc-for list="{{ rosterOptions }}" as="r" hint-placeholder-count="6">
+      <option value="{{ r.value }}"></option>
+    </sc-for>
+  </datalist>
+
+  <sc-if value="{{ hasToast }}">
+    <div style="position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 20; background: var(--surface-dark); color: var(--text-on-dark); border-radius: 999px; padding: 15px 26px; box-shadow: var(--mbc-shadow-bar); font: 400 15px/1.4 var(--mbc-font-sans); max-width: 80ch;">{{ toast }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;ministry&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;index&quot;,&quot;adults&quot;,&quot;students&quot;,&quot;children&quot;,&quot;preschool&quot;,&quot;music&quot;],&quot;default&quot;:&quot;index&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Which page opens first&quot;},&quot;showGapBand&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Treatments&quot;},&quot;showPatternNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Handoff scaffolding&quot;}}">
+class Component extends DCLogic {
+  ROLES = ['Leader', 'Co-leader', 'Teacher', 'Co-teacher', 'Apprentice', 'Host', 'Coordinator', 'Volunteer', 'Discussion leader'];
+  LEAD = { class: ['Teacher', 'Co-teacher'], group: ['Host', 'Leader', 'Co-leader'], team: ['Coordinator', 'Leader'] };
+  LEAD_WORD = { class: 'teacher', group: 'host', team: 'coordinator' };
+  KIND_LABEL = { class: 'Class', group: 'Community group', team: 'Ministry team' };
+
+  ROSTER = ['Joshua Davis', 'Morgan Bice', 'Sarah Williams', 'Dana Kirkpatrick', 'Ray Shelton', 'Carl Meeks', 'Ben McGuire', 'Allison McGuire', 'Trisha Owens', 'Kim Abernathy', 'Doyle Pratt', 'Renee Stack'];
+
+  state = {
+    slug: null,
+    edit: null, editPerson: null, adding: null, confirming: null, nextId: 900,
+    draftName: '', draftRole: 'Teacher',
+    gapsOnly: false, showArchived: false, toast: '',
+    data: {
+      students: {
+        name: 'Students', note: 'Seventh through twelfth grade, upstairs and in the student building. Two groups meet weekly.',
+        groups: [
+          { id: 1, name: 'Sunday Morning · Grades 7–12', kind: 'class', meets: 'Sundays 10:00 AM', location: 'Student Ministry Building', audience: 'Grades 7–12', archived: false, ended: '', serves: [
+            { name: 'Joshua Davis', role: 'Leader' }, { name: 'Morgan Bice', role: 'Teacher' }, { name: 'Brycen Hollis', role: 'Discussion leader' }, { name: 'Sarah Williams', role: 'Discussion leader' }
+          ] },
+          { id: 2, name: 'Wednesday Night · The Loft', kind: 'group', meets: 'Wednesdays 6:00 PM', location: 'Student Ministry Building, upstairs', audience: 'Grades 7–12', archived: false, ended: '', serves: [
+            { name: 'Morgan Bice', role: 'Leader' }, { name: 'Doyle Pratt', role: 'Volunteer' }, { name: 'Renee Stack', role: 'Volunteer' }
+          ] },
+          { id: 3, name: 'Summer 2026 · Wednesday cookouts', kind: 'group', meets: 'Wednesdays 6:00 PM, June through July', location: 'The Davis home', audience: 'Grades 9–12', archived: true, ended: 'Ended July 2026', serves: [{ name: 'Joshua Davis', role: 'Host' }] }
+        ]
+      },
+      children: {
+        name: 'Children', note: 'First through sixth grade, Hall A. A Sunday class and the Wednesday club.',
+        groups: [
+          { id: 41, name: 'Sunday Morning · Grades 1–6', kind: 'class', meets: 'Sundays 9:15 AM', location: 'Hall A, Room 118', audience: 'Grades 1–6', archived: false, ended: '', serves: [
+            { name: 'Renee Stack', role: 'Teacher' }, { name: 'Dana Kirkpatrick', role: 'Co-teacher' }, { name: 'Trisha Owens', role: 'Volunteer' }
+          ] },
+          { id: 42, name: 'Wednesday Night · Kids Club', kind: 'team', meets: 'Wednesdays 6:00 PM', location: 'Hall A, gymnasium', audience: 'Grades 1–6', archived: false, ended: '', serves: [
+            { name: 'Doyle Pratt', role: 'Coordinator' }, { name: 'Carl Meeks', role: 'Volunteer' }
+          ] }
+        ]
+      },
+      preschool: {
+        name: 'Preschool', note: 'Birth through four, Hall B. One class meets during Bible study.',
+        groups: [
+          { id: 11, name: 'Sunday Morning · Ages 3–4', kind: 'class', meets: 'Sundays 9:15 AM', location: 'Hall B, Room 104', audience: 'Ages 3–4', archived: false, ended: '', serves: [{ name: 'Dana Kirkpatrick', role: 'Teacher' }] }
+        ]
+      },
+      adults: {
+        name: 'Adults', note: 'A Sunday class and two community groups. The groups meet in homes and set their own year.',
+        groups: [
+          { id: 21, name: 'Sunday Morning · The Bereans', kind: 'class', meets: 'Sundays 9:15 AM', location: 'Room 210', audience: 'Adults, any age', archived: false, ended: '', serves: [{ name: 'Ray Shelton', role: 'Teacher' }, { name: 'Carl Meeks', role: 'Co-teacher' }] },
+          { id: 22, name: 'Tuesday Night · McGuire', kind: 'group', meets: 'Tuesdays 7:00 PM', location: 'The McGuire home, Brookside', audience: 'Couples, thirties and forties', archived: false, ended: '', serves: [{ name: 'Ben McGuire', role: 'Host' }, { name: 'Allison McGuire', role: 'Host' }] },
+          { id: 23, name: 'Thursday Morning · Women', kind: 'group', meets: 'Thursdays 9:30 AM', location: 'The parlor', audience: 'Women, all ages', archived: false, ended: '', serves: [{ name: 'Trisha Owens', role: 'Volunteer' }] },
+          { id: 24, name: 'Spring 2026 · Financial Peace', kind: 'class', meets: 'Sundays 5:00 PM, nine weeks', location: 'Room 212', audience: 'Adults, any age', archived: true, ended: 'Ended May 2026', serves: [{ name: 'Carl Meeks', role: 'Teacher' }] }
+        ]
+      },
+      music: {
+        name: 'Music', note: 'The worship team and the handbell choir. Both rehearse midweek.',
+        groups: [
+          { id: 31, name: 'Worship team', kind: 'team', meets: 'Wednesdays 6:30 PM rehearsal', location: 'Sanctuary', audience: 'Anyone who can carry a part', archived: false, ended: '', serves: [{ name: 'Kim Abernathy', role: 'Coordinator' }] },
+          { id: 32, name: 'Handbells', kind: 'team', meets: 'Wednesdays 5:15 PM rehearsal', location: 'Choir room', audience: 'Adults and older students', archived: false, ended: '', serves: [] }
+        ]
+      },
+    }
+  };
+
+  ORDER = ['adults', 'students', 'children', 'preschool', 'music'];
+  BLURB = {
+    adults: 'The Sunday class, and the community groups that meet in homes and set their own year. Community groups live here rather than in a directory of their own.',
+    students: 'Seventh through twelfth grade, upstairs and in the student building.',
+    children: 'First through sixth grade in Hall A — the Sunday class and the Wednesday club.',
+    preschool: 'Birth through four, Hall B, during Bible study.',
+    music: 'The worship team and the handbell choir, both rehearsing midweek.'
+  };
+
+  target() { return this.state.slug || this.props.ministry || 'index'; }
+  slug() { const t = this.target(); return t === 'index' ? 'students' : t; }
+  set(p) { this.setState(p); }
+  say(m) { this.setState({ toast: m }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 4200); }
+  componentWillUnmount() { clearTimeout(this._t); }
+
+  mutate(gid, fn) {
+    const slug = this.slug();
+    const data = JSON.parse(JSON.stringify(this.state.data));
+    const g = data[slug].groups.find(x => x.id === gid);
+    fn(g, data[slug]);
+    this.setState({ data: data });
+  }
+
+  gapOf(g) {
+    const lead = this.LEAD[g.kind] || [];
+    return !g.serves.some(p => lead.indexOf(p.role) >= 0);
+  }
+
+  renderVals() {
+    const s = this.state, slug = this.slug(), m = s.data[slug];
+    const live = m.groups.filter(g => !g.archived);
+    const archived = m.groups.filter(g => g.archived);
+    const gaps = live.filter(g => this.gapOf(g));
+    const people = live.reduce((a, g) => a + g.serves.length, 0);
+
+    let shown = s.showArchived ? live.concat(archived) : live;
+    if (s.gapsOnly) shown = shown.filter(g => this.gapOf(g));
+
+    const atIndex = this.target() === 'index';
+    const toIndex = () => this.set({ slug: 'index', edit: null, editPerson: null, adding: null, gapsOnly: false, showArchived: false });
+
+    const nav = ['Today at Memorial', 'Cadence ledger', 'Notice log', 'Care pipelines', 'Bulletin', 'People', '|', 'Ministries', 'Governance reference', 'Calendar']
+      .map(l => l === '|'
+        ? { isDivider: true, active: false, inactive: false, label: '' }
+        : { isDivider: false, label: l, active: l === 'Ministries', inactive: l !== 'Ministries', onClick: l === 'Ministries' ? toIndex : () => this.say('That surface is drawn in the staff dashboard prototype.') });
+
+    const nWord = n => ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'][n] || String(n);
+
+    const cardSlugs = this.ORDER;
+    const indexCards = cardSlugs.map(k => {
+      const mm = s.data[k];
+      const liveG = mm.groups.filter(g => !g.archived);
+      const gapG = liveG.filter(g => this.gapOf(g));
+      const kinds = ['class', 'group', 'team'].map(kind => {
+        const n = liveG.filter(g => g.kind === kind).length;
+        return n ? nWord(n) + ' ' + (n === 1 ? { class: 'class', group: 'community group', team: 'team' }[kind] : { class: 'classes', group: 'community groups', team: 'teams' }[kind]) : null;
+      }).filter(Boolean);
+      const ppl = liveG.reduce((a, g) => a + g.serves.length, 0);
+      return {
+        name: mm.name, blurb: this.BLURB[k],
+        groupCount: String(liveG.length),
+        kindLine: liveG.length
+          ? kinds.join(' \u00b7 ') + ' \u00b7 ' + ppl + (ppl === 1 ? ' person serving' : ' people serving')
+          : 'No groups yet',
+        hasGap: gapG.length > 0,
+        noGap: gapG.length === 0 && liveG.length > 0,
+        gapLine: gapG.length
+          ? gapG.length + (gapG.length === 1 ? ' group needs a ' : ' groups need a ') + (gapG.length === 1 ? this.LEAD_WORD[gapG[0].kind] : 'leading role filled')
+          : 'Every leading role is named',
+        action: liveG.length ? 'Open ' + mm.name + ' \u2192' : 'Add the first group \u2192',
+        onOpen: () => this.set({ slug: k, edit: null, editPerson: null, adding: null, gapsOnly: false, showArchived: false })
+      };
+    });
+    const allGaps = this.ORDER.reduce((a, k) => a.concat(s.data[k].groups.filter(g => !g.archived && this.gapOf(g)).map(g => s.data[k].name)), []);
+    const allGroups = this.ORDER.reduce((a, k) => a + s.data[k].groups.filter(g => !g.archived).length, 0);
+
+    return {
+      nav: nav,
+      atIndex: atIndex,
+      atMinistry: !atIndex,
+      crumbLabel: atIndex ? 'The staff directory' : 'Ministries \u203a ' + m.name,
+      ministryName: atIndex ? 'Ministries' : m.name,
+      ministryNote: m.note,
+      noteEditing: !!(s.edit && s.edit.gid === 'ministry'),
+      noteAtRest: !(s.edit && s.edit.gid === 'ministry'),
+      noteEditTitle: 'Edit what ' + m.name + ' says about itself',
+      onNoteEdit: () => this.set({ edit: { gid: 'ministry', field: 'note' }, editPerson: null, adding: null }),
+      onNoteDone: () => this.set({ edit: null }),
+      onNoteChange: e => { const v = e.target.value, slug2 = this.slug(); const data = JSON.parse(JSON.stringify(s.data)); data[slug2].note = v; this.setState({ data: data }); },
+
+      indexCards: indexCards,
+      indexGapCount: String(allGaps.length),
+      indexGapLabel: allGaps.length === 1 ? 'group with nobody in its leading role' : 'groups with nobody in their leading role',
+      indexGapWhere: allGaps.length
+        ? 'In ' + allGaps.filter((x, i, arr) => arr.indexOf(x) === i).join(' and ') + '. Open the ministry to name someone; nothing on this page edits a group.'
+        : 'Nothing to chase this week.',
+      headerCount: atIndex
+        ? this.ORDER.length + ' ministries \u00b7 ' + allGroups + ' groups'
+        : live.length + (live.length === 1 ? ' group' : ' groups') + ' \u00b7 ' + people + (people === 1 ? ' person serving' : ' people serving'),
+      editHint: 'Every value on this page is editable in place \u2014 the \u270e opens it, \u00d7 removes it. Nothing here saves a list of who attends, only who serves.',
+
+      ministryTabs: [{ label: '\u2190 All ministries', bg: 'none', border: 'var(--border-control)', font: '400 14px/1', onClick: toIndex }].concat(
+        cardSlugs.map(k => ({
+          label: s.data[k].name,
+          bg: k === slug ? 'var(--surface-card)' : 'none',
+          border: k === slug ? 'var(--text-heading)' : 'var(--border-control)',
+          font: k === slug ? '700 14px/1' : '400 14px/1',
+          onClick: () => this.set({ slug: k, edit: null, editPerson: null, adding: null, gapsOnly: false, showArchived: false })
+        }))),
+
+      isEmpty: m.groups.length === 0,
+      emptyTitle: 'Nothing meets under ' + m.name + ' yet.',
+
+      hasArchived: archived.length > 0,
+      archivedLabel: s.showArchived
+        ? 'Hide the ' + nWord(archived.length) + (archived.length === 1 ? ' group that has ended' : ' groups that have ended')
+        : 'Show the ' + nWord(archived.length) + (archived.length === 1 ? ' group that has ended' : ' groups that have ended'),
+      onToggleArchived: () => this.set({ showArchived: !s.showArchived }),
+
+      hasGaps: gaps.length > 0,
+      gapsLabel: 'Gaps only \u00b7 ' + gaps.length,
+      gapsBg: s.gapsOnly ? 'var(--surface-panel)' : 'none',
+      gapsBorder: s.gapsOnly ? 'var(--text-heading)' : 'var(--border-control)',
+      onToggleGaps: () => this.set({ gapsOnly: !s.gapsOnly }),
+
+      showGapBand: gaps.length > 0 && this.props.showGapBand !== false,
+      gapCount: String(gaps.length),
+      gapCountLabel: gaps.length === 1 ? 'group with nobody in its leading role' : 'groups with nobody in their leading role',
+      gapBandNote: 'A class with no teacher, a community group with no host, a team with no coordinator. It is the one thing this directory exists to make visible, so it is said in a number and a sentence \u2014 never in a colour.',
+
+      roleOptions: this.ROLES.map(r => ({ value: r, label: r })),
+      rosterOptions: this.ROSTER.map(r => ({ value: r })),
+
+      draftName: s.draftName,
+      draftRole: s.draftRole,
+      onDraftName: e => this.setState({ draftName: e.target.value }),
+      onDraftRole: e => this.setState({ draftRole: e.target.value }),
+      addNote: 'A name typed here that is not already on the roster creates the person and assigns them in one motion. Leaving to create a record first is how a class ends up with no teacher on file.',
+
+      groups: shown.map(g => {
+        const lead = this.LEAD[g.kind] || [];
+        const gap = this.gapOf(g);
+        const locked = g.archived;
+        const editing = s.edit && s.edit.gid === g.id ? s.edit.field : null;
+        const facts = [
+          { key: 'meets', label: 'Meets', value: g.meets, placeholder: 'Sundays 10:00 AM', ink: 'var(--text-heading)' },
+          { key: 'location', label: 'Location', value: g.location, placeholder: 'Room or building', ink: 'var(--text-heading)' },
+          { key: 'audience', label: 'Audience note', value: g.audience, placeholder: 'Free text \u2014 never a roster', ink: 'var(--text-body)' }
+        ].map((f, fi) => ({
+          label: f.label, value: f.value, placeholder: f.placeholder, ink: f.ink,
+          rule: fi === 0 ? 'none' : '1px solid var(--border-hairline)',
+          editTitle: 'Edit ' + f.label.toLowerCase() + ' for ' + g.name,
+          display: f.value || 'Not set',
+          editing: !locked && editing === f.key,
+          atRest: !locked && editing !== f.key,
+          locked: locked,
+          onEdit: () => this.set({ edit: { gid: g.id, field: f.key }, editPerson: null }),
+          onDone: () => this.set({ edit: null }),
+          onChange: e => { const v = e.target.value; this.mutate(g.id, x => { x[f.key] = v; }); }
+        }));
+
+        return {
+          name: g.name, kindLabel: this.KIND_LABEL[g.kind], archived: g.archived, endedLabel: g.ended,
+          kind: g.kind, kindLocked: locked, editable: !locked,
+          onKind: e => { const v = e.target.value; this.mutate(g.id, x => { x.kind = v; }); this.say('Kind changed to ' + this.KIND_LABEL[e.target.value].toLowerCase() + '. The leading role it needs changed with it.'); },
+          renameTitle: 'Rename ' + g.name,
+          removeTitle: 'Remove ' + g.name + ' from ' + m.name,
+          confirming: s.confirming === g.id,
+          confirmCopy: 'Remove ' + g.name + ' and its ' + g.serves.length + (g.serves.length === 1 ? ' serving assignment' : ' serving assignments') + '? Ending it instead keeps it as a record of ' + (g.ended ? 'when it ran' : 'this year') + '.',
+          onRemoveAsk: () => this.set({ confirming: g.id, edit: null, editPerson: null, adding: null }),
+          onRemoveCancel: () => this.set({ confirming: null }),
+          onRemoveConfirm: () => {
+            const nm = g.name, slug2 = this.slug();
+            const data = JSON.parse(JSON.stringify(s.data));
+            data[slug2].groups = data[slug2].groups.filter(x => x.id !== g.id);
+            this.setState({ data: data, confirming: null });
+            this.say(nm + ' was removed from ' + m.name + '. People records are untouched.');
+          },
+          onEnd: () => { this.mutate(g.id, x => { x.archived = true; x.ended = 'Ended September 2026'; }); this.set({ edit: null, editPerson: null, adding: null }); this.say(g.name + ' has ended. It is kept, not deleted \u2014 show the ended groups to find it.'); },
+          onReopen: () => { this.mutate(g.id, x => { x.archived = false; x.ended = ''; }); this.say(g.name + ' is open again, and editable.'); },
+          cardBg: g.archived ? 'var(--surface-panel)' : 'var(--surface-card)',
+          cardBorder: g.archived ? 'var(--border-section)' : 'var(--border-card)',
+          nameEditing: !locked && editing === 'name',
+          nameAtRest: locked || editing !== 'name',
+          onNameEdit: locked ? () => this.say('An ended group is a fact about last spring. Reopen it to edit it.') : () => this.set({ edit: { gid: g.id, field: 'name' }, editPerson: null }),
+          onNameDone: () => this.set({ edit: null }),
+          onNameChange: e => { const v = e.target.value; this.mutate(g.id, x => { x.name = v; }); },
+
+          hasGap: gap && !locked,
+          gapLabel: 'No ' + this.LEAD_WORD[g.kind] + ' named.',
+          gapAction: 'Name a ' + this.LEAD_WORD[g.kind],
+          onFillGap: () => this.set({ adding: g.id, draftName: '', draftRole: lead[0], edit: null, editPerson: null }),
+
+          facts: facts,
+          servesNote: g.serves.length
+            ? g.serves.length + (g.serves.length === 1 ? ' person \u00b7 ' : ' people \u00b7 ') + 'primary contact first \u00b7 change a role, a name, or remove anyone on the row'
+            : 'nobody named yet',
+          noneServing: g.serves.length === 0,
+          serves: g.serves.map((p, i) => ({
+            name: p.name, role: p.role, roleLabel: p.role,
+            removeTitle: 'Remove ' + p.name + ' from ' + g.name + '. The person record stays.',
+            editTitle: 'Change the name of ' + p.name,
+            isPrimary: i === 0 && !locked,
+            isLead: i !== 0 && lead.indexOf(p.role) >= 0 && !locked,
+            leadTag: 'Leading role',
+            editing: !locked && s.editPerson && s.editPerson.gid === g.id && s.editPerson.i === i,
+            atRest: !locked && !(s.editPerson && s.editPerson.gid === g.id && s.editPerson.i === i),
+            locked: locked,
+            onEdit: () => this.set({ editPerson: { gid: g.id, i: i }, edit: null, adding: null }),
+            onDone: () => this.set({ editPerson: null }),
+            onName: e => { const v = e.target.value; this.mutate(g.id, x => { x.serves[i].name = v; }); },
+            onRole: e => { const v = e.target.value; this.mutate(g.id, x => { x.serves[i].role = v; }); },
+            onRemove: () => { const nm = p.name; this.mutate(g.id, x => { x.serves.splice(i, 1); }); this.set({ editPerson: null }); this.say(nm + ' no longer serves in ' + g.name + '. The person record stays.'); }
+          })),
+
+          adding: s.adding === g.id,
+          canAdd: !locked && s.adding !== g.id,
+          onAddOpen: () => this.set({ adding: g.id, draftName: '', draftRole: gap ? lead[0] : 'Volunteer', edit: null, editPerson: null }),
+          onAddCancel: () => this.set({ adding: null, draftName: '' }),
+          onAddConfirm: () => {
+            const nm = s.draftName.trim(); if (!nm) { this.say('Type a name first.'); return; }
+            const role = s.draftRole;
+            const isNew = this.ROSTER.indexOf(nm) < 0;
+            this.mutate(g.id, x => { x.serves.push({ name: nm, role: role }); });
+            this.set({ adding: null, draftName: '' });
+            this.say(nm + ' \u00b7 ' + role.toLowerCase() + ' in ' + g.name + '.' + (isNew ? ' A person record was created at the same time.' : ''));
+          }
+        };
+      }),
+
+      kindOptions: ['class', 'group', 'team'].map(k => ({ value: k, label: this.KIND_LABEL[k] })),
+
+      onAddGroup: () => {
+        const slug2 = this.slug(), id = s.nextId;
+        const data = JSON.parse(JSON.stringify(s.data));
+        data[slug2].groups.push({ id: id, name: 'Untitled group', kind: 'class', meets: '', location: '', audience: '', archived: false, ended: '', serves: [] });
+        this.setState({ data: data, nextId: id + 1, slug: slug2, edit: { gid: id, field: 'name' }, editPerson: null, adding: null, gapsOnly: false, confirming: null });
+        this.say('A group was added to ' + m.name + ', with its name open. Set the kind, when and where it meets, and name someone.');
+      },
+
+      showPatternNotes: this.props.showPatternNotes !== false,
+      patternNotes: [
+        { n: '1', title: 'Who serves, never who attends.', body: 'Every field on this screen is a serving assignment with a role. There is no attendance field, no headcount and no roster, and the audience note is free text on purpose \u2014 \u201cGrades 7\u201312\u201d is a description of a group, not a list of children.' },
+        { n: '2', title: 'A gap is a state, not a blank.', body: 'A class with no teacher, a group with no host, a team with no coordinator: the gap is counted at the top, filterable, and labelled on the group with the role it is missing and one button that fills it. This is the Cadence ledger\u2019s Unclaimed treatment, in its own words.' },
+        { n: '3', title: 'Editing happens where the value is.', body: 'No modal, no edit mode, no Save bar. A value is a button; clicking it makes it a field; Done closes it. Adding someone creates the roster entry and the assignment in one motion, which is the pattern the People page and OwnerSelect already set.' },
+        { n: '4', title: 'Ended groups are kept.', body: 'A group that ran last spring is a fact about last spring. Archived groups sit behind a toggle, render on the panel ground with their ended date, and are read-only until someone reopens them. Nothing is deleted.' }
+      ],
+
+      hasToast: !!s.toast, toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>
