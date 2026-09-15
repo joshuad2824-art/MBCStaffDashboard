@@ -115,6 +115,9 @@ export interface GovernanceDocument {
   /** Markdown, as transcribed. */
   body: string
   position: number
+  /** Body slugs the document is addressed to (0014). The policy has already
+      applied it before a row arrives; the client only shows what it holds. */
+  audience: string[]
 }
 
 export interface Finding {
@@ -160,9 +163,6 @@ export interface MeetingsData {
   seats: Seat[]
   /** The year's obligations, as the bylaws create them. */
   obligations: Obligation[]
-  /** The reference and its docket. */
-  documents: GovernanceDocument[]
-  findings: Finding[]
 }
 
 export interface NewMotion {
