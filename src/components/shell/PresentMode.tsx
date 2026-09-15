@@ -14,7 +14,7 @@ import { formatDate, formatShort, startOfToday } from '../../lib/date'
 
 export function PresentMode() {
   const data = useData()
-  const { presentMode, setPresentMode } = useSession()
+  const { presentMode, setPresentMode, previewSeat } = useSession()
   const today = startOfToday()
 
   if (!presentMode) return null
@@ -139,7 +139,8 @@ export function PresentMode() {
         </div>
 
         <p style={{ font: '400 15px/1.6 var(--mbc-font-sans)', color: 'var(--text-muted)', margin: 0 }}>
-          Care pipelines and the discussion board are not shown here. Press escape to close.
+          Care pipelines and the discussion board are not shown here.
+          {previewSeat ? ` Viewing as — ${previewSeat.label}.` : ''} Press escape to close.
         </p>
       </div>
     </div>

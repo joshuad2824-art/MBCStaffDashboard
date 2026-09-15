@@ -26,6 +26,8 @@ export interface Person {
   email: string
   access: Access
   active: boolean
+  /** Offered the view-as control. Two people; gates nothing in the database. */
+  admin?: boolean
 }
 
 export function canSignIn(person: Person): boolean {

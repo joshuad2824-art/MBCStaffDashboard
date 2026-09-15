@@ -22,6 +22,10 @@ export interface Account {
   role: string
   email: string
   access: Access
+  /** Offered the view-as control (brief §C.2 rule 6). `person.admin` arrives
+      with migration 0016 and rides on `claim_account()` from then; until it
+      does, nobody is. It gates nothing in the database. */
+  admin: boolean
   /** The bodies this person sits in, and the role in each, from `my_seats()`. */
   seats: Seat[]
 }
@@ -47,7 +51,7 @@ export async function loadAccount(): Promise<AccountLookup> {
   }
 
   const row = (Array.isArray(data) ? data[0] : data) as
-    | { id?: string; name?: string; role?: string; email?: string; access?: Access }
+    | { id?: string; name?: string; role?: string; email?: string; access?: Access; admin?: boolean }
     | null
     | undefined
   if (!row || !row.email) return { state: 'not-on-roster' }
@@ -69,6 +73,7 @@ export async function loadAccount(): Promise<AccountLookup> {
       role: row.role ?? '',
       email: row.email.trim().toLowerCase(),
       access: row.access ?? 'none',
+      admin: row.admin === true,
       seats: readSeats(seats.data),
     },
   }
