@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-/* Turns the transcribed governance corpus into SQL for governance_document and
-   governance_finding (migrations 0009 and 0013).
+/* Turns the transcribed governance corpus into SQL for governance_document,
+   governance_section and governance_finding (migrations 0009, 0013, 0016).
 
      node supabase/governance/build-seed.mjs <corpus dir> > supabase/governance/seed.sql
      psql "$DATABASE_URL" -f supabase/governance/seed.sql     # or paste into the SQL editor
@@ -18,6 +18,11 @@
        staff compensation and anything under E006 never enter the system, in
        any form, behind any gate. The loader refuses them; it does not merely
        skip them quietly — it names each one on stderr.
+     - any file with no `sensitivity` key at all. A corpus where the absence
+       of a key is meaningful has a quiet failure mode in it, so an unmarked
+       file is a build error, named on stderr, and the run stops without
+       writing a line of SQL (CORPUS-PREP.md §2). Mark it `sensitivity:
+       normal` to load it.
      - the folder's own build artefacts: any file whose front matter says
        `generated: true` (the folder index, which links to every file including
        the restricted ones) or `type: verification-report`. They describe the
@@ -39,6 +44,24 @@
        document carries no audience (Joshua's decision, 15 September 2026).
        The loader says once on stderr if it saw any, so a corpus still
        carrying the key is not mistaken for one that is read.
+   Sections (0016, CORPUS-PREP.md §3): each document is split at its headings
+   into one row per heading — the deepest heading and the text under it, up
+   to the next heading of any level — carrying the headings above it, a
+   citation, a stable anchor and the markdown verbatim, the heading line
+   included. Concatenated in order the sections reconstruct the document's
+   body exactly, and the loader asserts that and stops when it does not hold.
+     - the citation reuses CITE and normaliseCite below, so there is one
+       dialect: a bylaw article is `Art.` + the front matter's `article:` (or
+       the ARTICLE heading) + the lettered heading + `§n` from a SECTION
+       heading; a policy is its `id:` + `§n` where its headings are numbered;
+       everything else — forms, the appendix, the quick reference — carries no
+       citation and is found by text alone. Paragraph numbers stay in the body.
+     - the anchor is the slug of the citation where there is one (`art-ii-b-3`,
+       `a009-4`), else of the heading path; derived from the text, never from a
+       position, so a re-load keeps every URL. Duplicates within a document are
+       numbered in order.
+     - sections are deleted and reinserted per document inside the transaction,
+       so a re-load leaves no orphans.
    The docket is split on its numbered `### N. Title` headings; the text below
    each, up to the next heading of any kind, is the finding's body (so the
    docket's closing sections are not glued onto the last finding), and every
@@ -96,6 +119,7 @@ const findings = []
 const refused = []
 const skipped = []
 const audienced = []
+const unmarked = []
 
 for (const path of files) {
   const rel = relative(root, path).split(sep).join('/')
@@ -105,6 +129,10 @@ for (const path of files) {
 
   if ((fields.sensitivity ?? '').toLowerCase() === 'restricted') {
     refused.push(rel)
+    continue
+  }
+  if (fields.sensitivity === undefined) {
+    unmarked.push(rel)
     continue
   }
   if ((fields.generated ?? '').toLowerCase() === 'true' || (fields.type ?? '').toLowerCase() === 'verification-report') {
@@ -148,7 +176,77 @@ for (const path of files) {
   const title = (fields.title || (titleMatch ? titleMatch[1] : name)).trim()
   const slug = rel.replace(/\.(md|markdown)$/i, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
   if (fields.audience !== undefined) audienced.push(rel)
-  documents.push({ slug, kind, code, title, body: text.trim(), rel, folder })
+  const article = (fields.article ?? '').trim()
+  const docBody = body.trim()
+  const sections = splitSections(docBody, { kind, code, article })
+  if (sections.map((s) => s.body).join('') !== docBody) {
+    console.error(`${rel}: the sections do not reconstruct the document; nothing written`)
+    process.exit(1)
+  }
+  documents.push({ slug, kind, code, title, body: docBody, rel, folder, sections })
+}
+
+/* One section per heading; bodies are exact slices, so joined in order they
+   are the document again. Text before the first heading is its own section
+   when it says something, else its whitespace is folded into the first. */
+function splitSections(body, doc) {
+  const lines = body.split(/(?<=\n)/)
+  const raw = []
+  const stack = []
+  let current = { path: [], lines: [] }
+  for (const line of lines) {
+    const heading = /^(#{1,6})[ \t]+(.*?)[ \t]*#*[ \t]*$/.exec(line.replace(/\r?\n$/, ''))
+    if (heading) {
+      raw.push(current)
+      const level = heading[1].length
+      while (stack.length && stack[stack.length - 1].level >= level) stack.pop()
+      stack.push({ level, text: heading[2].trim() })
+      current = { path: stack.map((s) => s.text), lines: [line] }
+    } else current.lines.push(line)
+  }
+  raw.push(current)
+  const sections = []
+  let carry = ''
+  for (const s of raw) {
+    const text = carry + s.lines.join('')
+    carry = ''
+    if (s.path.length === 0 && !text.trim() && raw.length > 1) { carry = text; continue }
+    if (s.path.length === 0 && !text) continue
+    sections.push({ path: s.path, body: text })
+  }
+  if (carry && sections.length) sections[sections.length - 1].body += carry
+  const seen = new Map()
+  return sections.map((s, index) => {
+    const citation = citationFor(doc, s.path)
+    let anchor = slugify(citation) || slugify(s.path.join(' ')) || 'top'
+    const n = (seen.get(anchor) ?? 0) + 1
+    seen.set(anchor, n)
+    if (n > 1) anchor += '-' + n
+    return { path: s.path, citation, anchor, body: s.body, position: index + 1 }
+  })
+}
+
+// A function declaration, not a const: the file's main loop runs above these
+// definitions and reaches them before a const would be initialised.
+function slugify(text) {
+  return text.toLowerCase().replace(/§/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+}
+
+/** The citation of a section, in the docket's dialect, or '' where nobody cites it. */
+function citationFor(doc, path) {
+  let candidate = ''
+  if (doc.kind === 'bylaws') {
+    const roman = doc.article || path.map((t) => /ARTICLE\s+([IVX]+)/i.exec(t)?.[1]).find(Boolean)
+    if (!roman) return ''
+    const letter = path.map((t) => /^([A-Z])\.\s/.exec(t)?.[1]).find(Boolean)
+    const section = path.map((t) => /^(?:SECTION|Section|§)\s*(\d+)/.exec(t)?.[1]).find(Boolean)
+    candidate = `Art. ${roman}${letter ? '.' + letter : ''}${section ? ' §' + section : ''}`
+  } else if (doc.kind === 'policy' && doc.code) {
+    const number = [...path].reverse().map((t) => /^(?:§\s*|Section\s+|SECTION\s+)?(\d{1,2})[.):]?(?:\s|$)/.exec(t)?.[1]).find(Boolean)
+    candidate = doc.code + (number ? ' §' + number : '')
+  } else return ''
+  const match = new RegExp(CITE.source).exec(candidate)
+  return match && match[0] === candidate ? normaliseCite(match) : ''
 }
 
 // The manual's own order: folder, then file name; the top-level derived files last.
@@ -166,6 +264,15 @@ documents.forEach((d, index) => {
     `insert into governance_document (slug, kind, code, title, body, position) values (${q(d.slug)}, ${q(d.kind)}, ${q(d.code)}, ${q(d.title)}, ${q(d.body)}, ${(index + 1) * 10})` +
       ` on conflict (slug) do update set kind = excluded.kind, code = excluded.code, title = excluded.title, body = excluded.body, position = excluded.position, updated_at = now();`,
   )
+  const owner = `(select id from governance_document where slug = ${q(d.slug)})`
+  out.push(`delete from governance_section where document_id = ${owner};`)
+  if (d.sections.length) {
+    out.push(
+      `insert into governance_section (document_id, heading_path, anchor, citation, body, position) values\n  ` +
+        d.sections.map((s) => `(${owner}, ${arr(s.path)}, ${q(s.anchor)}, ${q(s.citation)}, ${q(s.body)}, ${s.position})`).join(',\n  ') +
+        ';',
+    )
+  }
 })
 findings.sort((a, b) => a.number - b.number).forEach((f) => {
   out.push(
@@ -173,9 +280,14 @@ findings.sort((a, b) => a.number - b.number).forEach((f) => {
       ` on conflict (number) do update set title = excluded.title, body = excluded.body, cites = excluded.cites, status = excluded.status;`,
   )
 })
+if (unmarked.length) {
+  console.error('refused (no sensitivity key — mark each `sensitivity: normal` or `restricted`; nothing written):\n  ' + unmarked.join('\n  '))
+  process.exit(1)
+}
 out.push('commit;')
 process.stdout.write(out.join('\n') + '\n')
-console.error(`${documents.length} documents, ${findings.length} findings`)
+const sectionCount = documents.reduce((total, d) => total + d.sections.length, 0)
+console.error(`${documents.length} documents, ${sectionCount} sections, ${findings.length} findings`)
 if (audienced.length) console.error(`ignored an audience key on ${audienced.length} file(s): the manual is open to everyone who signs in (migration 0015)`)
 if (refused.length) console.error('refused (sensitivity: restricted):\n  ' + refused.join('\n  '))
 if (skipped.length) console.error('skipped (build artefacts, not part of the manual):\n  ' + skipped.join('\n  '))

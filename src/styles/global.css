@@ -64,6 +64,12 @@ button { margin: 0; }
   * { transition: none !important; }
 }
 
+/* The reference prints one section clean: the citation, the heading and the
+   text, on portrait letter. Not the rail, not the nav, not the search field. */
+@media print {
+  .print-only .print-section { page: portrait; }
+}
+
 /* ---------------------------------------------------------------- printing
 
    The communicator prints as two landscape letter sheets, double-sided, flip on
