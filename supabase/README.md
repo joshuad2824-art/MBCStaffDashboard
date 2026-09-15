@@ -1,6 +1,6 @@
 # Supabase
 
-Five migrations for a fresh project. Configured builds use them through
+Migrations for a fresh project. Configured builds use them through
 `SupabaseRepository` (the staff side) and `SupabaseMeetingRepository` (the
 deacon side); unconfigured local builds keep the seed-data repositories.
 
@@ -26,6 +26,10 @@ deacon side); unconfigured local builds keep the seed-data repositories.
 0010_care_pointers     care_assignment, care_request, care_request_link (staff-only),
                        deacon_week, deacon_visit — pointers only, no notes column anywhere,
                        the staff → deacon handoff composed and never forwarded; no deletes
+0011_chairman_membership_admin
+                       chairman-only roster and seat-management functions
+0012_preserve_confidential_membership
+                       keeps confidential committee membership inside that committee
 ```
 
 ## Loading the governance corpus
@@ -76,10 +80,13 @@ draft and in any version. Publishing inserts a `report_version`; versions have
 no update or delete policy, and neither table has a delete policy.
 
 **Seating the Board.** A meeting is visible only to seats on `deacon-board`.
-Insert the deacons' memberships (`role_in_body` `chair` for the chairman,
-`ex_officio` for the Senior Pastor), then grant each man `access = 'limited'`
-so he can sign in — in that order, so the People-page trigger has nothing to
-add. The chairman's seat is what makes `board_attendance_summary()` answer.
+The Board chairman can maintain Board and non-confidential committee seats in
+the People page. Save the membership first, then grant `access = 'limited'`
+there if the person should sign in. Those remain two deliberate actions, and
+neither sends an email. Family Assistance stays outside the general editor;
+its confidential roster changes by SQL unless the chairman is himself seated
+in that room. SQL setup uses `role_in_body = 'chair'` for the chairman and
+`'ex_officio'` for the Senior Pastor.
 
 ## Tested
 
@@ -167,11 +174,12 @@ is a user under Authentication → Users — and `auth_id` is filled in by
   pipelines and the Discussion board — and loses them as *no rows returned*,
   not as a hidden button. The header's "viewing as limited" toggle is a preview
   of that and never the thing itself.
-- **Seating is SQL, for now.** Nothing in the API can insert into `body` or
-  `membership`. To seat a deacon: insert his memberships, *then* set his
-  `access` to `limited` so he can sign in. Granting access first puts a person
-  with no seat into `staff`, which is what inviting a colleague from the People
-  page relies on.
+- **Seating is chairman-managed.** The Board chairman can maintain Board and
+  non-confidential committee memberships from the People page. Family
+  Assistance remains visible and manageable only inside its confidential
+  room. Seat a deacon first, then set his `access` to `limited` if he should
+  sign in. Granting access first puts a person with no seat into `staff`, which
+  is what inviting a colleague from the People page relies on.
 - **Schedule the retention job.** `purge_expired_threads()` nightly, via pg_cron:
 
   ```sql
