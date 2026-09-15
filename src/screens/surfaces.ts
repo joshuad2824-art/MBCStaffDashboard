@@ -98,10 +98,11 @@ export const SURFACES: Record<string, Surface> = {
     group: 2,
     bodies: ['staff', 'deacon-board', 'committee:finance', 'committee:personnel', 'committee:building-grounds', 'committee:family-assistance'],
     side: 'both',
+    nested: true,
     path: '/reference',
     eyebrow: 'The manual, as transcribed',
     title: 'Governance reference',
-    lead: 'The bylaws, policies and procedures, searchable. The deacon side also sees the discrepancy docket — the places where the manual disagrees with itself. This surface reads; nothing here edits the record.',
+    lead: 'The constitution, bylaws, policies and procedures, as transcribed — searchable down to the paragraph, and the same on both sides. This surface reads; nothing here edits the record.',
   },
   boardCare: {
     nav: 'Care',
