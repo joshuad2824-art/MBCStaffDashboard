@@ -1,13 +1,17 @@
 import { useMemo, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { Card, Eyebrow } from '../components/ui'
-import { useMeetings } from '../data/meetings/store'
+import { useReference } from '../data/reference/store'
+import { useSession } from '../session/session'
 import type { Finding, GovernanceDocument } from '../data/meetings/types'
 
 /* The governance reference (brief §3.3): the transcribed bylaws and policies,
-   searchable, with the discrepancy docket attached. It reads; nothing here
-   writes. What the Board can read is a policy on the tables, not an accident
-   of where the files are hosted. */
+   searchable, with the discrepancy docket attached for the deacon side. It
+   reads; nothing here writes. What a person can read is a policy on the
+   tables — each document's audience, since 0014 — not an accident of where
+   the files are hosted. A staff member gets the documents the corpus marked
+   for the staff and zero findings, and this screen must not look broken to
+   him: the docket is drawn only when there is one to draw. */
 
 const KINDS: { kind: GovernanceDocument['kind']; label: string }[] = [
   { kind: 'constitution', label: 'Constitution' },
@@ -18,13 +22,15 @@ const KINDS: { kind: GovernanceDocument['kind']; label: string }[] = [
 ]
 
 export function Reference() {
-  const { data, error } = useMeetings()
+  const { data, error } = useReference()
+  const { bodies } = useSession()
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<string>('') // a document slug, or 'docket'
 
   const documents = data?.documents ?? []
   const findings = data?.findings ?? []
-  const current = selected || documents[0]?.slug || 'docket'
+  const onDeaconSide = bodies.some((slug) => slug !== 'staff')
+  const current = selected || documents[0]?.slug || (findings.length ? 'docket' : '')
   const needle = query.trim().toLowerCase()
 
   const hits = useMemo(() => {
@@ -55,7 +61,11 @@ export function Reference() {
           style={{ width: '100%', minHeight: 44, background: 'var(--surface-field)', border: '1px solid var(--mbc-border-panel)', borderRadius: 'var(--mbc-radius-input)', padding: '12px 14px', font: '400 15px/1.3 var(--mbc-font-sans)', color: 'var(--text-heading)' }}
         />
         {documents.length === 0 ? (
-          <p style={{ ...meta, margin: 0 }}>The corpus has not been loaded yet. The administrator loads it with the script in supabase/governance.</p>
+          <p style={{ ...meta, margin: 0 }}>
+            {onDeaconSide
+              ? 'The corpus has not been loaded yet. The administrator loads it with the script in supabase/governance.'
+              : 'No part of the manual has been addressed to the staff yet. Which documents reach this screen is decided in the corpus, file by file, when it is loaded.'}
+          </p>
         ) : null}
         {KINDS.map(({ kind, label }) => {
           const docs = documents.filter((d) => d.kind === kind && (!hits || hits.has(d.slug)))
@@ -69,7 +79,7 @@ export function Reference() {
             </div>
           )
         })}
-        {!hits || hits.has('docket') ? (
+        {findings.length > 0 && (!hits || hits.has('docket')) ? (
           <div style={{ display: 'grid', gap: 2 }}>
             <Eyebrow size="sm" style={{ marginBottom: 8 }}>Where the manual disagrees with itself</Eyebrow>
             <NavRow active={current === 'docket'} onClick={() => setSelected('docket')} code={String(findings.length)} title="Discrepancy docket" count={hits?.get('docket')} />
@@ -79,7 +89,7 @@ export function Reference() {
       </Card>
 
       <Card radius="card" pad={28} style={{ flex: '3 1 520px', minWidth: 0, display: 'grid', gap: 18 }}>
-        {current === 'docket' ? (
+        {current === 'docket' && findings.length > 0 ? (
           <div style={{ display: 'grid', gap: 18, maxWidth: '78ch' }}>
             <div style={{ display: 'grid', gap: 8 }}>
               <Eyebrow size="sm">Discrepancy docket</Eyebrow>
@@ -88,7 +98,6 @@ export function Reference() {
                 Each finding names the passages it concerns. Findings 8 and 9 are the reason a motion that amends the bylaws quotes the text before and after: a record that cites a paragraph number drifts; one that quotes the sentence does not.
               </p>
             </div>
-            {findings.length === 0 ? <p style={{ ...meta, margin: 0 }}>No findings loaded.</p> : null}
             {findings.filter((f) => !needle || countMatches(f.title + '\n' + f.body + '\n' + f.cites.join(' '), needle) > 0).map((f) => (
               <article key={f.id} style={{ display: 'grid', gap: 8, paddingTop: 16, borderTop: '1px solid var(--border-hairline)' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 12 }}>

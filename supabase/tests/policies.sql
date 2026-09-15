@@ -1039,10 +1039,15 @@ select test.assert((select count(*) from thread) = 0,       'signed out: still n
 select test.refused($q$ select purge_expired_announcements() $q$, '42501', 'signed out: cannot call the purge');
 reset role;
 
--- ------------------------------------------------- 10. the year and the reference (0009)
+-- ------------------------------------------------- 10. the year and the reference (0009, 0014)
 --
 -- Governance content: readable across the deacon side, written by nobody
 -- through the API. The obligations are seeded by the migration itself.
+--
+-- 0014 gives each document an audience. Four documents below take the
+-- default — the deacon side and nobody else — and one is marked for the staff
+-- in the way the loader marks a file whose front matter says so. The docket
+-- has no audience: it stays the deacon side's.
 
 reset role;
 
@@ -1051,13 +1056,33 @@ insert into governance_document (slug, kind, code, title, body, position) values
   ('a009',       'policy', 'A009',    'A009 — Building & Property Use Income', 'Transcribed text.', 2),
   ('constitution', 'constitution', 'Constitution', 'Constitution', 'Transcribed text.', 0),
   ('quick-reference', 'reference', '', 'Quick reference', 'Derived.', 3);
+insert into governance_document (slug, kind, code, title, body, position, audience) values
+  ('a001', 'policy', 'A001', 'A001 — A policy marked for the staff', 'Transcribed text.', 4, '{staff,deacon-board}');
 insert into governance_finding (number, title, body, cites) values
   (8, 'An amendment cites a paragraph that no longer resolves', 'The record captured a location, not the language.', '{"Art. II.B §3 ¶12"}');
+
+-- 10a. The audience is never empty, names bodies, and defaults to the deacon side.
+
+select test.assert(
+  (select audience from governance_document where slug = 'a009')
+    = '{deacon-board,deacon-body,committee:finance,committee:personnel,committee:building-grounds,committee:family-assistance}',
+  'reference: a document with no audience is addressed to the deacon side — every body but staff — and not to the staff');
+select test.refused(
+  $q$ insert into governance_document (slug, kind, code, title, audience) values ('nobody', 'policy', 'X000', 'Nobody', '{}') $q$,
+  '23514', 'reference: an empty audience is refused');
+select test.refused(
+  $q$ insert into governance_document (slug, kind, code, title, audience) values ('nowhere', 'policy', 'X000', 'Nowhere', '{deacon}') $q$,
+  'P0001', 'reference: an audience naming no body — there is no body called deacon — is refused');
+select test.assert(
+  (select count(*) from pg_policies where tablename in ('governance_document', 'governance_finding') and cmd <> 'SELECT') = 0,
+  'reference: neither table has an insert, update or delete policy');
+
+-- 10b. The deacon side reads the manual and the docket, as before.
 
 select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
 set role authenticated;
 select test.assert((select count(*) from obligation) = 15,          'deacon A: reads the year''s obligations, as 0013 seeds them from the manual');
-select test.assert((select count(*) from governance_document) = 4, 'deacon A: reads the reference — constitution, bylaws, policy and derived material alike');
+select test.assert((select count(*) from governance_document) = 5, 'deacon A: reads the reference — constitution, bylaws, policy and derived material alike, and the document marked for the staff and the Board');
 select test.assert((select count(*) from governance_finding) = 1,  'deacon A: reads the docket');
 select test.refused(
   $q$ insert into obligation (slug, title, rule_source, cadence, anchor, owner_body_slug) values ('made-up', 'Made up', 'Nowhere', 'annual', '01-01', 'deacon-board') $q$,
@@ -1072,19 +1097,57 @@ select test.assert((select count(*) from governance_finding where number = 8) = 
 select test.sign_in('a0000000-0000-0000-0000-000000000011', 'grounds@memorial.test');
 set role authenticated;
 select test.assert((select count(*) from obligation) = 15,          'grounds chair: on the deacon side, reads the year');
-select test.assert((select count(*) from governance_document) = 4, 'grounds chair: reads the reference');
+select test.assert((select count(*) from governance_document) = 4, 'grounds chair: reads the reference — a committee seat is on the deacon side');
+select test.assert((select count(*) from governance_document where slug = 'a001') = 0,
+  'grounds chair: reads ZERO rows of a document addressed to the staff and the Board — an audience is bodies, not a side');
 reset role;
+
+-- 10c. The staff: only what the corpus marked for them, and never the docket.
 
 select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
 set role authenticated;
 select test.assert((select count(*) from obligation) = 0,           'staff: reads ZERO obligations — the year is the Board''s');
-select test.assert((select count(*) from governance_document) = 0, 'staff: reads zero reference documents');
-select test.assert((select count(*) from governance_finding) = 0,  'staff: reads zero findings');
+select test.assert((select count(*) from governance_document where slug <> 'a001') = 0, 'staff: reads ZERO rows of a document addressed to the deacon side');
+select test.assert((select count(*) from governance_document) = 1, 'staff: reads exactly the document the corpus marked for the staff');
+select test.assert((select count(*) from governance_finding) = 0,  'staff: reads ZERO findings — the docket stays the deacon side''s');
+select test.refused(
+  $q$ insert into governance_document (slug, kind, code, title, audience) values ('mine', 'policy', 'X000', 'Mine', '{staff}') $q$,
+  '42501', 'staff: cannot add a document to the manual');
+update governance_document set audience = '{staff,deacon-board}' where slug = 'a009';
 reset role;
+select test.assert((select 'staff' = any(audience) from governance_document where slug = 'a009') = false,
+  'staff: an update aimed at widening a document''s audience changed nothing');
 
+-- A limited account sits in the staff body, so in_audience() reads `staff`
+-- as the roster, exactly as it does for the calendar and announcements. Whether
+-- a limited account should read the manual at all is an open question the
+-- kickoff leaves to Joshua; this is what the policy does today, and the line
+-- to change if the answer is no.
 select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
 set role authenticated;
 select test.assert((select count(*) from obligation) = 0, 'limited: reads zero obligations');
+select test.assert((select count(*) from governance_document where slug <> 'a001') = 0, 'limited: reads ZERO rows of a document addressed to the deacon side');
+select test.assert((select count(*) from governance_document) = 1, 'limited: reads the document marked for the staff body — staff here is the roster, as on the calendar');
+select test.assert((select count(*) from governance_finding) = 0,  'limited: reads zero findings');
+reset role;
+
+-- 10d. A re-load applies the corpus session's decisions: the loader's upsert
+-- sets audience = excluded.audience, so marking a file reaches the staff on
+-- the next load and unmarking it takes the document back.
+
+insert into governance_document (slug, kind, code, title, body, position, audience)
+  values ('a009', 'policy', 'A009', 'A009 — Building & Property Use Income', 'Transcribed text.', 2, '{staff,deacon-board}')
+  on conflict (slug) do update set audience = excluded.audience, updated_at = now();
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from governance_document) = 2, 'staff: reads a document once the corpus marks it for the staff and it is re-loaded');
+reset role;
+insert into governance_document (slug, kind, code, title, body, position)
+  values ('a009', 'policy', 'A009', 'A009 — Building & Property Use Income', 'Transcribed text.', 2)
+  on conflict (slug) do update set audience = excluded.audience, updated_at = now();
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from governance_document) = 1, 'staff: and loses it again when the mark is removed and the corpus re-loaded');
 reset role;
 
 select test.sign_out();

@@ -26,9 +26,12 @@ export const seedObligations: Obligation[] = [
   { id: 'o-15', slug: 'october-roster-filing', title: 'Committee roster reported to the church', ruleSource: 'Art. II.B §3', requirement: 'Each committee’s term of service is one year beginning in October. The membership of all committees except the Family Assistance Committee is reported to the church in the regular October business meeting.', cadence: 'annual', anchor: 'meeting:10', noticeDays: 21, ownerBodySlug: 'deacon-board', active: true, position: 150 },
 ]
 
+/** The deacon side as 0014 defaults a document's audience: every body but staff. */
+export const DEACON_SIDE: string[] = ['deacon-board', 'deacon-body', 'committee:finance', 'committee:personnel', 'committee:building-grounds', 'committee:family-assistance']
+
 export const seedDocuments: GovernanceDocument[] = [
   {
-    id: 'g-1', slug: '02-bylaws-art-02-church-leadership', kind: 'bylaws', code: 'Art. II', title: 'Bylaws, Article II. CHURCH LEADERSHIP', position: 10,
+    id: 'g-1', slug: '02-bylaws-art-02-church-leadership', kind: 'bylaws', code: 'Art. II', title: 'Bylaws, Article II. CHURCH LEADERSHIP', position: 10, audience: DEACON_SIDE,
     body: `> *Sample for a local checkout: verbatim excerpts of Article II, B §3 and C, from the 2-11-2025 manual as transcribed. The Board's copy is the whole corpus, loaded into the database.*
 
 ## ARTICLE II. CHURCH LEADERSHIP
@@ -74,7 +77,7 @@ E. Church Clerk
 The Church Clerk shall keep a suitable record of all the actions of the church, except as otherwise herein provided.`,
   },
   {
-    id: 'g-2', slug: '06-policies-a009-building-property-use-income', kind: 'policy', code: 'A009', title: 'Policy A009 — Building & Property Use Income', position: 20,
+    id: 'g-2', slug: '06-policies-a009-building-property-use-income', kind: 'policy', code: 'A009', title: 'Policy A009 — Building & Property Use Income', position: 20, audience: DEACON_SIDE,
     body: `> *Sample for a local checkout: the budget portion of A009, verbatim, from the 2-11-2025 manual as transcribed.*
 
 Memorial Baptist Church will utilize a budget for day-to-day operations. The General Fund bank account will be used for budgeted receipts and disbursements.
