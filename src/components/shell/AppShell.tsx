@@ -5,6 +5,7 @@ import { HistoryDrawer } from './HistoryDrawer'
 import { PresentMode } from './PresentMode'
 import { Sidebar } from './Sidebar'
 import { ContextBar } from './ContextBar'
+import { ViewAsBar } from './ViewAsBar'
 import { Toast } from './Toast'
 import { useData } from '../../data/store'
 import { useSession } from '../../session/session'
@@ -15,7 +16,7 @@ import { NARROW, useMediaQuery } from '../../lib/media'
 
 export function AppShell({ surface, children }: { surface: Surface; children: ReactNode }) {
   const data = useData()
-  const { member, viewAs, context } = useSession()
+  const { member, viewAs, context, previewSeat } = useSession()
   const [historyOpen, setHistoryOpen] = useState(false)
   const narrow = useMediaQuery(NARROW)
 
@@ -46,6 +47,7 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
       <Sidebar unread={viewAs === 'limited' ? { staff: 0, deacon: unread.deacon } : unread} />
 
       <div style={{ minWidth: 0 }}>
+        <ViewAsBar />
         <ContextBar />
         <Header
           eyebrow={surface.eyebrow}
@@ -55,6 +57,10 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
         />
 
         <main
+          /* Read-only while a seat is worn: the composers are gone, not
+             disabled (global.css hides every field under this attribute), and
+             the stores refuse underneath in case one was missed. */
+          data-view-as={previewSeat ? '' : undefined}
           style={{
             padding: 'clamp(24px,3vw,40px) clamp(20px,3vw,40px) 90px',
             maxWidth: contentMax,

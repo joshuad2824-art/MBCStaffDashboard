@@ -30,6 +30,14 @@ textarea { font-family: inherit; color: inherit; }
 
 button { margin: 0; }
 
+/* View as is read-only, and the composers are gone rather than disabled: every
+   field under the marked main is not drawn. A control that only reads — a
+   search field — opts out with data-reads. The stores refuse underneath. */
+[data-view-as] form,
+[data-view-as] input:not([data-reads]),
+[data-view-as] textarea:not([data-reads]),
+[data-view-as] select:not([data-reads]) { display: none !important; }
+
 /* Dates, counts and gaps all line up in columns. */
 .tabular { font-variant-numeric: tabular-nums; }
 
