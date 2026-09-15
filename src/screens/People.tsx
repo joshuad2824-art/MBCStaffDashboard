@@ -5,6 +5,7 @@ import { useSession } from '../session/session'
 import { nextId } from '../lib/derive'
 import type { Access, Person } from '../data/types'
 import { canSignIn } from '../data/types'
+import { SeatManager } from '../components/SeatManager'
 
 /* The roster.
 
@@ -22,14 +23,14 @@ import { canSignIn } from '../data/types'
 
 const ACCESS_LABEL: Record<Access, string> = {
   staff: 'Staff · everything',
-  limited: 'Limited · no care, no board',
+  limited: 'Limited · assigned rooms only',
   none: 'No account',
 }
 
 export function People() {
   const data = useData()
   const { mutate } = useStore()
-  const { viewAs, member } = useSession()
+  const { viewAs, member, isChairOf } = useSession()
   const [showing, setShowing] = useState<'all' | 'accounts' | 'roster'>('all')
   const [adding, setAdding] = useState(false)
   const [draft, setDraft] = useState({ name: '', role: '', email: '' })
@@ -144,6 +145,8 @@ export function People() {
           </div>
         </Card>
       ) : null}
+
+      {isChairOf('deacon-board') ? <SeatManager currentPersonId={String(member?.id ?? '')} /> : null}
 
       <Card radius="card" pad={0} style={{ overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
