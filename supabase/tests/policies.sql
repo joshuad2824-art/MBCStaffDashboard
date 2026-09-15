@@ -524,6 +524,15 @@ update membership set role_in_body = 'chair'
 select test.sign_in('a0000000-0000-0000-0000-000000000010', 'deacon-b@memorial.test');
 set role authenticated;
 
+select test.refused(
+  $q$ select * from chairman_roster() $q$,
+  '42501', 'board member: cannot open the chairman''s seat editor');
+select test.refused(
+  $q$ select set_managed_membership(
+        'b0000000-0000-0000-0000-000000000010', 'deacon-board', 'chair', current_date, null, true
+      ) $q$,
+  '42501', 'board member: cannot promote himself through the chairman''s seat editor');
+
 select test.assert(
   (select array_agg(slug || ':' || role_in_body order by slug) from my_seats()) = array['committee:family-assistance:chair', 'deacon-board:member'],
   'deacon B: my_seats() names both seats and the role in each');
@@ -579,6 +588,47 @@ reset role;
 select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
 set role authenticated;
 select test.assert(is_chair_of('deacon-board'), 'chairman: is the chairman');
+select test.assert(
+  (select count(*) from chairman_roster()) = (select count(*) from person where active),
+  'chairman: the seat editor lists the active roster, including people without a seat');
+select test.assert(
+  (select count(*) from chairman_roster() r, jsonb_array_elements(r.seats) seat
+    where seat->>'slug' = 'committee:family-assistance') = 0,
+  'chairman: the confidential Family Assistance roster stays hidden from a non-member');
+select test.refused(
+  $q$ select set_managed_membership(
+        'b0000000-0000-0000-0000-000000000001', 'committee:family-assistance', 'member', current_date, null, true
+      ) $q$,
+  '22023', 'chairman: cannot manage the confidential Family Assistance roster as a non-member');
+select set_managed_membership(
+  (select id from person where name = 'A Volunteer'),
+  'committee:personnel',
+  'member',
+  current_date + 30,
+  current_date + 395,
+  true
+);
+select test.assert(
+  (select count(*) from chairman_roster() r, jsonb_array_elements(r.seats) seat
+    where r.person_name = 'A Volunteer' and seat->>'slug' = 'committee:personnel') = 1,
+  'chairman: can add a future committee seat from the editor');
+select set_managed_membership(
+  (select id from person where name = 'A Volunteer'),
+  'committee:personnel',
+  'member',
+  current_date + 30,
+  current_date + 395,
+  false
+);
+select test.assert(
+  (select count(*) from membership m join person p on p.id = m.person_id join body b on b.id = m.body_id
+    where p.name = 'A Volunteer' and b.slug = 'committee:personnel' and m.active) = 0,
+  'chairman: can withdraw a future seat without creating an end-before-start term');
+select test.refused(
+  $q$ select set_managed_membership(
+        'b0000000-0000-0000-0000-000000000009', 'deacon-board', 'member', current_date, null, true
+      ) $q$,
+  '42501', 'chairman: cannot demote his own active chair seat');
 select test.assert(
   (select access from person where id = 'b0000000-0000-0000-0000-000000000009') = 'limited'
   and (select active from membership where person_id = 'b0000000-0000-0000-0000-000000000009' and body_id = (select id from body where slug = 'deacon-board')),
