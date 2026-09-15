@@ -39,6 +39,10 @@ deacon side); unconfigured local builds keep the seed-data repositories.
                        signs in; the docket stays the deacon side's; still no write policy
 0016_governance_search governance_section (one row per heading, weighted tsvector,
                        trigram indexes), its inherited read policy, and search_manual()
+0017_ministries        ministry, serving_role, serving_group, serving_assignment (who
+                       serves, never who attends); person.admin and claim_account() with it
+0018_ministry_reference
+                       cadence_item, event, notice_entry and goal reference ministry.name
 ```
 
 ## Loading the governance corpus

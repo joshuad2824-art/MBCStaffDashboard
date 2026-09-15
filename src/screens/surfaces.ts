@@ -284,6 +284,17 @@ export const SURFACES: Record<string, Surface> = {
     title: 'Goals',
     lead: 'Entered once, reviewed four times. Deliberately lightweight — a sentence per quarter, not a metric. The point is remembering what we said in January.',
   },
+  ministries: {
+    nav: 'Ministries',
+    group: 2,
+    bodies: ['staff'],
+    side: 'staff',
+    nested: true,
+    path: '/ministries',
+    eyebrow: 'Who serves, never who attends',
+    title: 'Ministries',
+    lead: 'The ministries of the church, the classes, community groups and teams inside them, and who serves in each one — in what role, since when. A class with nobody in its leading role is the church’s version of an unclaimed commitment, and this is where it shows. Nothing here records who attends.',
+  },
   people: {
     nav: 'People',
     group: 2,

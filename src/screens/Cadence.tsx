@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Button, Card, Chip } from '../components/ui'
 import { OwnerNote, OwnerSelect } from '../components/OwnerSelect'
 import { useData, useStore } from '../data/store'
-import { MINISTRIES } from '../data/seed'
+import { ministryNames } from '../lib/serving'
 import { deriveCadence, isUnclaimed, personName } from '../lib/derive'
 import { formatDate, startOfToday, todayIso } from '../lib/date'
 import type { CadenceItem, Ministry } from '../data/types'
@@ -89,7 +89,7 @@ export function Cadence() {
           <Chip active={ministry === 'All ministries'} onClick={() => setMinistry('All ministries')}>
             All ministries
           </Chip>
-          {MINISTRIES.filter((name) => name !== 'All').map((name) => (
+          {ministryNames(data).filter((name) => name !== 'All').map((name) => (
             <Chip key={name} active={ministry === name} onClick={() => setMinistry(name)}>
               {name}
             </Chip>

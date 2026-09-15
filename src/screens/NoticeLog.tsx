@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Button, Card, Chip, Input, Rule } from '../components/ui'
-import { MINISTRIES, NOTICE_CATEGORIES } from '../data/seed'
+import { NOTICE_CATEGORIES } from '../data/seed'
+import { ministryNames } from '../lib/serving'
 import { useData, useStore } from '../data/store'
 import { describeVerdict, nextId, noticeGap, noticeVerdict } from '../lib/derive'
 import { medianGapByMonth } from '../lib/rollups'
@@ -217,7 +218,7 @@ export function NoticeLog() {
         <Chip active={ministry === 'All ministries'} onClick={() => setMinistry('All ministries')}>
           All ministries
         </Chip>
-        {MINISTRIES.filter((name) => name !== 'All').map((name) => (
+        {ministryNames(data).filter((name) => name !== 'All').map((name) => (
           <Chip key={name} active={ministry === name} onClick={() => setMinistry(name)}>
             {name}
           </Chip>
@@ -261,7 +262,7 @@ export function NoticeLog() {
                 onChange={(event) => setDraft({ ...draft, ministry: event.target.value as Ministry })}
                 style={selectStyle}
               >
-                {MINISTRIES.map((name) => (
+                {ministryNames(data).map((name) => (
                   <option key={name} value={name}>
                     {name}
                   </option>

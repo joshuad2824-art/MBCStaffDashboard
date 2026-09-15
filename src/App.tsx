@@ -18,6 +18,7 @@ import { CommitteeRoom } from './screens/CommitteeRoom'
 import { Communicator } from './screens/Communicator'
 import { Goals } from './screens/Goals'
 import { People } from './screens/People'
+import { Ministries } from './screens/Ministries'
 import { NoticeLog } from './screens/NoticeLog'
 import { WhichSide } from './screens/WhichSide'
 import { Meeting } from './screens/Meeting'
@@ -48,6 +49,7 @@ const SCREENS: Record<string, ReactNode> = {
   committeeGrounds: <CommitteeRoom slug="committee:building-grounds" />,
   committeeFamily: <CommitteeRoom slug="committee:family-assistance" />,
   goals: <Goals />,
+  ministries: <Ministries />,
   people: <People />,
 }
 

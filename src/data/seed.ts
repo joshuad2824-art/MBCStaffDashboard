@@ -1,9 +1,37 @@
-import type { CareType, DashboardData, Ministry, NoticeCategory } from './types'
+import type { CareType, DashboardData, MinistryRecord, NoticeCategory, ServingRole } from './types'
 
 /* Seed records carried over from the design handoff. They stand in for the
    Postgres tables until Supabase is wired up; the shapes are the same either way. */
 
-export const MINISTRIES: Ministry[] = ['All', 'Children', 'Students', 'Men', 'Women', 'Music', 'All groups']
+/* The ministries as migration 0017 seeds them: the strings the ledger already
+   used (so 0018's foreign key holds and no data moves) and the five the
+   directory was designed around. A configured build reads the table; this is
+   the stub's copy. `All` and `All groups` are church-wide values, not
+   ministries, and stay off the directory. */
+export const SEED_MINISTRIES: MinistryRecord[] = [
+  { id: 1, slug: 'all', name: 'All', description: 'Church-wide. Not a ministry: the value a commitment, an event or a notice carries when it belongs to everyone.', position: 0, active: true, directory: false },
+  { id: 2, slug: 'all-groups', name: 'All groups', description: 'Every group at once. Not a ministry: the value a commitment carries when it applies across them.', position: 1, active: true, directory: false },
+  { id: 3, slug: 'adults', name: 'Adults', description: 'The Sunday classes, and the community groups that meet in homes and set their own year.', position: 10, active: true, directory: true },
+  { id: 4, slug: 'students', name: 'Students', description: 'Seventh through twelfth grade.', position: 20, active: true, directory: true },
+  { id: 5, slug: 'children', name: 'Children', description: 'First through sixth grade.', position: 30, active: true, directory: true },
+  { id: 6, slug: 'preschool', name: 'Preschool', description: 'Birth through four.', position: 40, active: true, directory: true },
+  { id: 7, slug: 'music', name: 'Music', description: 'The worship team and the choirs.', position: 50, active: true, directory: true },
+  { id: 8, slug: 'men', name: 'Men', description: '', position: 60, active: true, directory: true },
+  { id: 9, slug: 'women', name: 'Women', description: '', position: 70, active: true, directory: true },
+]
+
+/** The enumerated roles, as 0017 seeds them. Free text would become eleven
+    spellings of "volunteer" inside a year. */
+export const SERVING_ROLES: ServingRole[] = [
+  { slug: 'teacher', name: 'Teacher', position: 10, leads: true },
+  { slug: 'co-teacher', name: 'Co-teacher', position: 20, leads: true },
+  { slug: 'apprentice', name: 'Apprentice', position: 30, leads: false },
+  { slug: 'leader', name: 'Leader', position: 40, leads: true },
+  { slug: 'co-leader', name: 'Co-leader', position: 50, leads: true },
+  { slug: 'host', name: 'Host', position: 60, leads: true },
+  { slug: 'volunteer', name: 'Volunteer', position: 70, leads: false },
+  { slug: 'coordinator', name: 'Coordinator', position: 80, leads: true },
+]
 
 export const NOTICE_CATEGORIES: NoticeCategory[] = [
   { name: 'Family evening', std: 7 },
@@ -197,6 +225,28 @@ export const seed: DashboardData = {
         { label: 'Missions', value: '$41,739.68' },
       ],
     },
+  ],
+
+  /* Sample groups for a checkout without Supabase, so the directory has one
+     of each state to draw: a full class, a group with nobody in its leading
+     role, a group that has ended. Invented names; the real directory is kept
+     in Postgres by the staff. */
+  ministries: SEED_MINISTRIES,
+  servingRoles: SERVING_ROLES,
+  groups: [
+    { id: 1, ministryId: 5, kind: 'class', name: 'Sunday Morning · Grades 1–6', meets: 'Sundays 9:15 AM', location: 'Hall A, Room 118', audienceNote: 'Grades 1–6', notes: '', startedOn: '2025-09-07', endedOn: null },
+    { id: 2, ministryId: 4, kind: 'community-group', name: 'Wednesday Night · The Loft', meets: 'Wednesdays 6:00 PM', location: 'Student building, upstairs', audienceNote: 'Grades 7–12', notes: '', startedOn: '2025-09-03', endedOn: null },
+    { id: 3, ministryId: 3, kind: 'community-group', name: 'Thursday Morning · Women', meets: 'Thursdays 9:30 AM', location: 'The parlor', audienceNote: 'Women, all ages', notes: '', startedOn: '2026-01-08', endedOn: null },
+    { id: 4, ministryId: 7, kind: 'team', name: 'Worship team', meets: 'Wednesdays 6:30 PM rehearsal', location: 'Sanctuary', audienceNote: 'Anyone who can carry a part', notes: '', startedOn: null, endedOn: null },
+    { id: 5, ministryId: 3, kind: 'class', name: 'Spring 2026 · Financial Peace', meets: 'Sundays 5:00 PM, nine weeks', location: 'Room 212', audienceNote: 'Adults, any age', notes: '', startedOn: '2026-01-11', endedOn: '2026-05-17' },
+  ],
+  assignments: [
+    { id: 1, groupId: 1, personId: 4, roleSlug: 'teacher', startedOn: '2025-09-07', endedOn: null, isPrimary: true },
+    { id: 2, groupId: 1, personId: 5, roleSlug: 'co-teacher', startedOn: '2025-09-07', endedOn: null, isPrimary: false },
+    { id: 3, groupId: 2, personId: 6, roleSlug: 'leader', startedOn: '2025-09-03', endedOn: null, isPrimary: true },
+    { id: 4, groupId: 3, personId: 7, roleSlug: 'volunteer', startedOn: '2026-01-08', endedOn: null, isPrimary: true },
+    { id: 5, groupId: 4, personId: 3, roleSlug: 'coordinator', startedOn: '2025-09-03', endedOn: null, isPrimary: true },
+    { id: 6, groupId: 5, personId: 2, roleSlug: 'teacher', startedOn: '2026-01-11', endedOn: '2026-05-17', isPrimary: true },
   ],
 
   settings: {

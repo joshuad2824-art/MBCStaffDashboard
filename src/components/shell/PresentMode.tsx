@@ -4,6 +4,7 @@ import { useSession } from '../../session/session'
 import { deriveCadence, isUnclaimed, personName } from '../../lib/derive'
 import { dueWithin } from '../../lib/rollups'
 import { formatDate, formatShort, startOfToday } from '../../lib/date'
+import { gapsIn, liveGroups } from '../../lib/serving'
 
 /* The Monday meeting on a screen. Wins, tensions, what is due inside thirty
    days, and the ledger — at projection type sizes.
@@ -23,6 +24,9 @@ export function PresentMode() {
   const tensions = data.huddle.filter((post) => post.col === 'tension' && post.resolvedAt === null)
   const due = dueWithin(data, today, 30, false)
   const unclaimed = data.cadence.filter(isUnclaimed).length
+  // Logistics, not pastoral care: safe on a wall.
+  const gaps = gapsIn(data).length
+  const groups = liveGroups(data).length
 
   return (
     <div
@@ -137,6 +141,10 @@ export function PresentMode() {
             })}
           </div>
         </div>
+
+        <p style={{ font: '400 19px/1.6 var(--mbc-font-sans)', color: 'var(--text-meta)', margin: 0 }} className="tabular">
+          Ministries — {gaps} {gaps === 1 ? 'group' : 'groups'} without a leader named, of {groups}.
+        </p>
 
         <p style={{ font: '400 15px/1.6 var(--mbc-font-sans)', color: 'var(--text-muted)', margin: 0 }}>
           Care pipelines and the discussion board are not shown here.

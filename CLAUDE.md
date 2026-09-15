@@ -23,6 +23,15 @@ deacon side. The staff→deacon care push *composes a request* — household, ki
 it never forwards a record. This is the single rule most likely to be broken by a well-meant
 convenience.
 
+**Groups hold who serves, never who attends.** `ministry`, `serving_group`, `serving_role` and
+`serving_assignment` record that a class meets here at this hour and these adults lead it. No table
+in the directory has an attendee, roster, enrolment, member or headcount column, there is no table
+for one, and the policy test checks the catalogue. The audience note is free text on purpose:
+"Grades 7–12" describes a group, it does not list children. The moment a group record names who sits
+in the chairs, this becomes a system holding minors' names, which is a different project with a
+different conversation in front of it. A screening or background-check field is out too (expansion
+brief §B.5): if one is asked for, that is a new brief, not a column.
+
 **Absence, not greyed-out.** A surface a person has no membership for is not rendered, not
 disabled and not dimmed. Three layers: navigation omits it, the route refuses it, RLS returns no
 rows. Only the third is a security control; the other two exist so the interface tells the truth.
@@ -67,7 +76,7 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0017_…` |
+| Migrations | Continue the sequence: next is `supabase/migrations/0019_…` |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -92,6 +101,13 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   copy of the loader's splitter and must only agree with it; the loader decides what production holds.
   `screens/Reference.tsx` is the three states of the expansion brief §A.4, identical on both sides;
   the discrepancy docket is not on it, at Joshua's ask, and no screen reads `governance_finding` today.
+- **`src/lib/serving.ts`** and **`src/screens/Ministries.tsx`** — the directory. Everything derived is
+  derived here and stored nowhere: whether a group has a gap (nobody in a leading role, which the
+  group's kind decides — a class a teacher, a community group a host, a team a coordinator), the open
+  count, who is primary. `Ministry` is `string` since 0018 and every filter and select reads
+  `ministryNames(data)` from the table; `'All'` and `'All groups'` are rows the foreign key needs and
+  the directory does not draw. The screen edits in place, one undoable mutation per change, creates a
+  roster entry and an assignment in one motion, and ends things with a date; it deletes nothing.
 - **`src/screens/surfaces.ts`** — every surface names its `bodies`; `surfacesFor(bodies, viewAs)`
   is what the sidebar and the router are assembled from. `staffOnly` survives inside the staff
   body: it is the staff role versus a limited account, as before.
@@ -181,6 +197,13 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   client renders as the match mark and never as HTML. The loader emits the sections, refuses a file with
   no `sensitivity` key (CORPUS-PREP.md §2), and stops if a document's sections do not reconstruct its
   body exactly.
+- **`supabase/migrations/0017_ministries.sql`** and **`0018_ministry_reference.sql`** — the directory.
+  `ministry`, `serving_role` (enumerated, changed by migration only), `serving_group` and
+  `serving_assignment`; the whole staff body reads, the staff role inserts and updates, nobody deletes.
+  `person.admin` rides along: a trigger refuses any change to it through the API, and `claim_account()`
+  returns it. 0018 is its own migration on purpose: foreign keys from the four `ministry text` columns
+  onto `ministry.name`, `on update cascade`, seeded with every string already in use so no data moved.
+  If it fights the ledger it can be reverted alone.
 - **`supabase/migrations/0011_chairman_membership_admin.sql`** and **`0012_…`** — the chairman's seat
   editor: `chairman_roster()` and `set_managed_membership()`, both security definer and both refusing
   anyone but the Board chairman. They reach the Board and its committees, and a confidential
