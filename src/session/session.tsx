@@ -236,7 +236,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setChecking(false)
         return
       }
-      void resolve(session?.user?.email)
+      // Supabase holds its auth lock while this callback runs. `resolve()`
+      // calls RPCs on the same client, so starting it here can deadlock the
+      // client and leave the sign-in screen waiting forever. Let the callback
+      // finish before asking Postgres for the roster row and seats.
+      window.setTimeout(() => void resolve(session?.user?.email), 0)
     })
 
     // A link that came back with an error produces no session and therefore no
