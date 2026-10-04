@@ -108,6 +108,24 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   `ministryNames(data)` from the table; `'All'` and `'All groups'` are rows the foreign key needs and
   the directory does not draw. The screen edits in place, one undoable mutation per change, creates a
   roster entry and an assignment in one motion, and ends things with a date; it deletes nothing.
+- **`src/lib/displayScale.tsx`** and **`src/components/shell/`** — one app on a phone, a desk monitor and a
+  wall. *Narrow* is a width of 900 or less **after** the display scale, asked as `useNarrow()` and never as a
+  media query, because CSS `zoom` (how Display size works: Auto, Normal, Large, Wall, remembered in this
+  browser) does not move media queries. Under zoom `100vh` and `100vw` are multiplied, so "the height of the
+  screen" is `var(--ui-vh)` and "the width" `var(--ui-vw)`; a bare `100vh` is a bug at any scale but 1. Narrow
+  swaps the sidebar for a slim sticky bar and a menu built from the same `surfacesFor()`, and the page title
+  scrolls away. The view-as bar, the context bar and (on wide screens) the header are one sticky stack in
+  `AppShell`, so none slides under another. `@media (pointer: coarse)` in `global.css` is the 44px floor for
+  every control. Display size is a view setting like the context toggle: it decides nothing about what anyone
+  may read, and printing resets it to 1.
+- **`src/screens/filing/FilingGuide.tsx`** — *Who files what*, at the top of Reports. It decides nothing: a
+  committee's chair writes that committee's report and any Board member writes the minutes
+  (`can_write_report`, 0007), and a start button appears only for the person who may press it, never under a
+  previewed seat. The chair's name comes from `data.seats`, already filtered by the roster policy, so a body
+  the reader does not sit in is described, never named, and the confidential committee is not listed to anyone
+  outside it. The minutes open from the call to order (`in_session`), not only once the meeting is `held`.
+  There is no secretary seat in the database; "secretary" is the roster title, and the policy is deliberately
+  any Board member. Narrowing it to one seat would be a decision for the Board, not a convenience.
 - **`src/screens/surfaces.ts`** — every surface names its `bodies`; `surfacesFor(bodies, viewAs)`
   is what the sidebar and the router are assembled from. `staffOnly` survives inside the staff
   body: it is the staff role versus a limited account, as before.
