@@ -7,11 +7,13 @@ import { MeetingsProvider } from './data/meetings/store'
 import { ReferenceProvider } from './data/reference/store'
 import { CareProvider } from './data/care/store'
 import { SessionProvider } from './session/session'
+import { DisplayScaleProvider } from './lib/displayScale'
 import './styles/tokens.css'
 import './styles/global.css'
 
 createRoot(document.getElementById('root') as HTMLElement).render(
   <StrictMode>
+    <DisplayScaleProvider>
     <BrowserRouter>
       <DataProvider>
         <SessionProvider>
@@ -25,5 +27,6 @@ createRoot(document.getElementById('root') as HTMLElement).render(
         </SessionProvider>
       </DataProvider>
     </BrowserRouter>
+    </DisplayScaleProvider>
   </StrictMode>,
 )

@@ -164,7 +164,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   if (!value) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--surface-page)' }}>
+      <div style={{ minHeight: 'var(--ui-vh)', display: 'grid', placeItems: 'center', background: 'var(--surface-page)' }}>
         <p style={{ font: '400 15px/1.6 var(--mbc-font-sans)', color: 'var(--text-meta)', maxWidth: 520 }}>
           {loadError ?? 'Opening the board…'}
         </p>

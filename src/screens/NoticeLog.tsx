@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { HScroll } from '../components/HScroll'
 import { Button, Card, Chip, Input, Rule } from '../components/ui'
 import { NOTICE_CATEGORIES } from '../data/seed'
 import { ministryNames } from '../lib/serving'
@@ -305,8 +306,7 @@ export function NoticeLog() {
       ) : null}
 
       <Card radius="card" pad={0} style={{ overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <div style={{ minWidth: 1080 }}>
+        <HScroll minWidth={1080} label="Notice log">
             <div
               style={{
                 display: 'grid',
@@ -389,8 +389,7 @@ export function NoticeLog() {
                 )
               })
             )}
-          </div>
-        </div>
+          </HScroll>
       </Card>
 
       <p style={{ font: '400 13px/1.7 var(--mbc-font-sans)', color: 'var(--text-muted)', margin: 0, maxWidth: '66ch' }}>

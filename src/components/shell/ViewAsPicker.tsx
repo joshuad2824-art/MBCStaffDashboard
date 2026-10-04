@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useData } from '../../data/store'
 import { useMeetings } from '../../data/meetings/store'
 import { useSession } from '../../session/session'
+import { useNarrow } from '../../lib/displayScale'
 import { SEATS, seatOf } from '../../session/viewAs'
 import type { PreviewSeat } from '../../session/viewAs'
 
@@ -15,6 +16,7 @@ export function ViewAsPicker() {
   const meetings = useMeetings()
   const { setPreviewSeat } = useSession()
   const navigate = useNavigate()
+  const narrow = useNarrow()
 
   const shortcuts = useMemo<PreviewSeat[]>(() => {
     const byPerson = new Map<string, { name: string; seats: { slug: string; role: string }[] }>()
@@ -39,14 +41,17 @@ export function ViewAsPicker() {
   }
 
   return (
-    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+    <label style={{ display: narrow ? 'flex' : 'inline-flex', alignItems: 'center', gap: 8, width: narrow ? '100%' : undefined, minWidth: 0 }}>
       <span className="sr-only">View as a seat</span>
       <select
         data-reads=""
         value=""
         onChange={(event) => choose(event.target.value)}
         style={{
-          minHeight: 40,
+          minHeight: 44,
+          width: narrow ? '100%' : undefined,
+          maxWidth: narrow ? undefined : 300,
+          minWidth: 0,
           background: 'var(--surface-card)',
           border: '1px solid var(--mbc-border-panel)',
           borderRadius: 'var(--mbc-radius-pill)',

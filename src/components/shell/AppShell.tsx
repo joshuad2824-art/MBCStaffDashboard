@@ -12,13 +12,13 @@ import { useSession } from '../../session/session'
 import { useUnreadThreadIds } from '../../lib/unread'
 import { reaches } from '../../lib/audience'
 import type { Surface } from '../../screens/surfaces'
-import { NARROW, useMediaQuery } from '../../lib/media'
+import { useNarrow } from '../../lib/displayScale'
 
 export function AppShell({ surface, children }: { surface: Surface; children: ReactNode }) {
   const data = useData()
   const { member, viewAs, context, previewSeat } = useSession()
   const [historyOpen, setHistoryOpen] = useState(false)
-  const narrow = useMediaQuery(NARROW)
+  const narrow = useNarrow()
 
   /* One count per room. A thread addressed to both rooms counts in each; it is
      the same thread, unread in both places until it is opened in one. */
@@ -38,7 +38,7 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
   return (
     <div
       style={{
-        minHeight: '100vh',
+        minHeight: 'var(--ui-vh)',
         display: 'grid',
         // The deacon side's nav labels are 15px, so its column is 258px.
         gridTemplateColumns: narrow ? 'minmax(0,1fr)' : `minmax(0,${context === 'deacon' ? 258 : 244}px) minmax(0,1fr)`,
@@ -47,14 +47,21 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
       <Sidebar unread={viewAs === 'limited' ? { staff: 0, deacon: unread.deacon } : unread} />
 
       <div style={{ minWidth: 0 }}>
-        <ViewAsBar />
-        <ContextBar />
-        <Header
-          eyebrow={surface.eyebrow}
-          title={surface.title}
-          maxWidth={contentMax}
-          onOpenHistory={() => setHistoryOpen(true)}
-        />
+        {/* The bars that must never scroll away — whose room this is, and what
+            seat is being worn — and, on a wide screen, the page title with
+            them, in one sticky stack so none can slide under another. On a
+            narrow screen the stack sits under the slim top bar and the title
+            scrolls away: it is context, and a phone has no height to spare. */}
+        <div style={{ position: 'sticky', top: narrow ? 'var(--mobile-bar-h)' : 0, zIndex: 6 }}>
+          <ViewAsBar />
+          <ContextBar />
+          {narrow ? null : (
+            <Header eyebrow={surface.eyebrow} title={surface.title} maxWidth={contentMax} onOpenHistory={() => setHistoryOpen(true)} />
+          )}
+        </div>
+        {narrow ? (
+          <Header eyebrow={surface.eyebrow} title={surface.title} maxWidth={contentMax} onOpenHistory={() => setHistoryOpen(true)} />
+        ) : null}
 
         <main
           /* Read-only while a seat is worn: the composers are gone, not

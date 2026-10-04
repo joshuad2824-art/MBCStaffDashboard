@@ -79,7 +79,7 @@ export function SignIn() {
   )
 
   return (
-    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '40px 24px' }}>
+    <div style={{ minHeight: 'var(--ui-vh)', display: 'grid', placeItems: 'center', padding: '40px 24px' }}>
       <div style={{ width: '100%', maxWidth: 430 }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, marginBottom: 30 }}>
           <img src="/assets/mbc-mark.png" alt="" width={44} height={44} style={{ objectFit: 'contain' }} />
