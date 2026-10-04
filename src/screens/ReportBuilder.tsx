@@ -36,6 +36,7 @@ import {
 import { renderContextFor } from '../data/meetings/render'
 import type { MeetingsData } from '../data/meetings/types'
 import { formatShort, parseDate, startOfToday } from '../lib/date'
+import { useNarrow } from '../lib/displayScale'
 import { useSession } from '../session/session'
 import { PrintedReport, footerFor } from './ReportPrint'
 
@@ -62,6 +63,11 @@ function Builder({ data, report }: { data: MeetingsData; report: Report }) {
   const [meetingId, setMeetingId] = useState<string | null>(report.meetingId)
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [savedAt, setSavedAt] = useState<Date | null>(null)
+  const narrow = useNarrow()
+  /* Counts every edit, so a save that finishes while someone is still typing
+     does not mark their newest words as saved. */
+  const edits = useRef(0)
   const [file, setFile] = useState(report.file)
   const [fileLink, setFileLink] = useState<string | null>(null)
   const picker = useRef<HTMLInputElement>(null)
@@ -96,9 +102,60 @@ function Builder({ data, report }: { data: MeetingsData; report: Report }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data, report, payload, meetingId, file],
   )
+  const touch = () => {
+    edits.current += 1
+    setDirty(true)
+  }
   const set = (next: ReportPayload) => {
     setPayload(next)
-    setDirty(true)
+    touch()
+  }
+
+  /* A draft is its chair's own and costs nothing to keep, so it saves itself
+     a moment after the last keystroke. A submitted or published report never
+     does: publishing writes a version, and that is a decision, not a side
+     effect of typing. */
+  const autosaves = canWrite && report.status === 'draft'
+  useEffect(() => {
+    if (!autosaves || !dirty || busy) return
+    const mark = edits.current
+    const timer = window.setTimeout(() => {
+      void saveReport(report.id, { payload, meetingId, file }).then(() => {
+        if (edits.current === mark) setDirty(false)
+        setSavedAt(new Date())
+      })
+    }, 1800)
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autosaves, dirty, busy, payload, meetingId, file])
+
+  /* Leaving mid-sentence — another surface, the back button — files the draft
+     rather than dropping the last two seconds of it. */
+  const latest = useRef({ payload, meetingId, file, dirty, autosaves })
+  latest.current = { payload, meetingId, file, dirty, autosaves }
+  useEffect(
+    () => () => {
+      const last = latest.current
+      if (last.autosaves && last.dirty) void saveReport(report.id, { payload: last.payload, meetingId: last.meetingId, file: last.file })
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
+
+  // Closing the tab or reloading with something unsaved asks first.
+  useEffect(() => {
+    if (!dirty) return
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty])
+
+  const leave = () => {
+    if (dirty && !autosaves && !window.confirm('You have changes that are not saved. Leave without saving them?')) return
+    navigate('/reports')
   }
 
   const save = async () => {
@@ -106,6 +163,7 @@ function Builder({ data, report }: { data: MeetingsData; report: Report }) {
     await saveReport(report.id, { payload, meetingId, file })
     setBusy(false)
     setDirty(false)
+    setSavedAt(new Date())
     say('Draft saved.')
   }
   const submit = async () => {
@@ -141,7 +199,7 @@ function Builder({ data, report }: { data: MeetingsData; report: Report }) {
     setBusy(false)
     if (stored) {
       setFile(stored)
-      setDirty(true)
+      touch()
       say(`${chosen.name} attached. It becomes the report when you file it.`)
     }
   }
@@ -155,6 +213,12 @@ function Builder({ data, report }: { data: MeetingsData; report: Report }) {
 
   const chair = (report.submittedBy && data.names[report.submittedBy]) || (report.createdBy && data.names[report.createdBy]) || '—'
   const lastRevision = versions[0]
+  const actionNote =
+    report.status === 'draft'
+      ? 'Submitting files it against the meeting and puts it on the agenda. Your draft saves itself, and you can come back.'
+      : report.status === 'submitted'
+        ? 'Publishing makes it official: on the Reports page, in the packet, and printable. It writes version one.'
+        : `Published${lastRevision ? ` · version ${lastRevision.versionNo}, ${formatShort(parseDate(lastRevision.publishedAt.slice(0, 10)))} by ${(lastRevision.createdBy && data.names[lastRevision.createdBy]) || '—'}` : ''}. An edit here becomes a new version; the prior stays readable.`
 
   return (
     <div style={{ display: 'grid', gap: 20 }}>
@@ -165,7 +229,7 @@ function Builder({ data, report }: { data: MeetingsData; report: Report }) {
           </Eyebrow>
           <p style={{ font: '600 26px/1.2 var(--mbc-font-serif)', color: 'var(--text-heading)', margin: '8px 0 0' }}>{reportTitle(report)}</p>
         </div>
-        <button type="button" onClick={() => navigate('/reports')} style={linkButton}>
+        <button type="button" onClick={leave} style={linkButton}>
           All reports
         </button>
       </div>
@@ -173,12 +237,12 @@ function Builder({ data, report }: { data: MeetingsData; report: Report }) {
       <LifecycleStrip status={report.status} />
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20 }}>
-        <div style={{ flex: '3 1 560px', display: 'grid', gap: 20, minWidth: 0 }}>
+        <div style={{ flex: '3 1 640px', display: 'grid', gap: 20, minWidth: 0 }}>
           <Card radius="card" pad="22px 24px" style={{ display: 'grid', gap: 14 }}>
             <SectionHead label="Filed against" meta={meetingId ? 'on that meeting’s agenda once submitted' : 'not yet chosen'} />
             <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
               <Field label="The meeting">
-                <select value={meetingId ?? ''} disabled={!canWrite || report.kind === 'minutes'} onChange={(e) => { setMeetingId(e.target.value || null); setDirty(true) }} style={fieldStyle}>
+                <select value={meetingId ?? ''} disabled={!canWrite || report.kind === 'minutes'} onChange={(e) => { setMeetingId(e.target.value || null); touch() }} style={fieldStyle}>
                   <option value="">—</option>
                   {meetings.map((m) => (
                     <option key={m.id} value={m.id}>{formatShort(parseDate(m.meetsOn))} · {m.status === 'held' ? 'held' : m.status === 'in_session' ? 'in session' : 'planned'}</option>
@@ -213,7 +277,7 @@ function Builder({ data, report }: { data: MeetingsData; report: Report }) {
                     {file ? 'Attach a newer file' : 'Attach a file'}
                   </Button>
                   {file ? (
-                    <button type="button" style={linkButton} onClick={() => { setFile(null); setDirty(true) }}>
+                    <button type="button" style={linkButton} onClick={() => { setFile(null); touch() }}>
                       Use the form instead
                     </button>
                   ) : null}
@@ -237,29 +301,42 @@ function Builder({ data, report }: { data: MeetingsData; report: Report }) {
           )}
 
           {canWrite ? (
-            <Card radius="card" pad="22px 24px" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-              <p style={{ ...metaText, margin: 0, maxWidth: '56ch' }}>
-                {report.status === 'draft'
-                  ? 'Submitting files it against the meeting and puts it on the agenda. Saving a draft costs nothing and you can come back.'
-                  : report.status === 'submitted'
-                    ? 'Publishing makes it official: on the Reports page, in the packet, and printable. It writes version one.'
-                    : `Published${lastRevision ? ` · version ${lastRevision.versionNo}, ${formatShort(parseDate(lastRevision.publishedAt.slice(0, 10)))} by ${(lastRevision.createdBy && data.names[lastRevision.createdBy]) || '—'}` : ''}. An edit here becomes a new version; the prior stays readable.`}
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                <Button variant="outline" size="md" disabled={busy || !dirty} onClick={() => void save()}>
-                  Save the draft
-                </Button>
-                <Button variant="primary" size="md" disabled={busy} onClick={() => void primary.act()}>
-                  {primary.label}
-                </Button>
-              </div>
-            </Card>
+            <>
+              {narrow ? <p style={{ ...metaText, margin: 0 }}>{actionNote}</p> : null}
+              <Card
+                radius="card"
+                pad={narrow ? '12px 14px calc(12px + env(safe-area-inset-bottom))' : '22px 24px'}
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: narrow ? 10 : 16,
+                  // On a phone the form is four thousand pixels long. The way to
+                  // file it stays under the thumb.
+                  ...(narrow ? { position: 'sticky', bottom: 0, zIndex: 10, borderRadius: 18 } : null),
+                }}
+              >
+                {narrow ? null : <p style={{ ...metaText, margin: 0, maxWidth: '56ch' }}>{actionNote}</p>}
+                <span role="status" className="tabular" style={{ ...metaText, flex: narrow ? '1 1 100%' : undefined }}>
+                  {busy ? 'Working…' : dirty ? (autosaves ? 'Saving…' : 'Unsaved changes') : savedAt ? `Saved ${savedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}` : report.status === 'draft' ? 'Saves itself as you write' : ''}
+                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, flex: narrow ? '1 1 100%' : undefined, justifyContent: narrow ? 'space-between' : undefined }}>
+                  <Button variant="outline" size={narrow ? 'sm' : 'md'} disabled={busy || !dirty} onClick={() => void save()}>
+                    Save the draft
+                  </Button>
+                  <Button variant="primary" size={narrow ? 'sm' : 'md'} disabled={busy} onClick={() => void primary.act()}>
+                    {primary.label}
+                  </Button>
+                </div>
+              </Card>
+            </>
           ) : (
             <p style={{ ...metaText, margin: 0 }}>You can read this report. Only {report.kind === 'minutes' ? 'a Board member' : 'its chair, or whoever filed it'} writes it.</p>
           )}
         </div>
 
-        <div style={{ flex: '2 1 360px', display: 'grid', gap: 20, alignContent: 'start', minWidth: 0 }}>
+        <div style={{ flex: '2 1 380px', display: 'grid', gap: 20, alignContent: 'start', minWidth: 0 }}>
           <div>
             <Eyebrow size="sm" style={{ marginBottom: 10 }}>As it will be filed and printed</Eyebrow>
             <PrintedReport page={preview} footer={footerFor({ ...report, payload, file }, lastRevision ?? null)} />
@@ -353,6 +430,7 @@ function FinanceForm({ payload, onChange, readOnly, asOf }: { payload: FinancePa
 }
 
 function GroundsForm({ payload, report, onChange, readOnly }: { payload: GroundsPayload; report: Report; onChange(p: GroundsPayload): void; readOnly: boolean }) {
+  const narrow = useNarrow()
   const up = (patch: Partial<GroundsPayload>) => onChange({ ...payload, ...patch })
   const cents = (n: number | null) => (n === null ? '—' : '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
   const setAccount = (index: number, account: LedgerAccount) => up({ accounts: replaceAt(payload.accounts, index, account) })
@@ -367,18 +445,36 @@ function GroundsForm({ payload, report, onChange, readOnly }: { payload: Grounds
                 <Field label="Account number"><input value={account.number} readOnly={readOnly} onChange={(e) => setAccount(index, { ...account, number: e.target.value })} style={fieldStyle} /></Field>
                 {!readOnly && payload.accounts.length > 1 ? <button type="button" style={linkButton} onClick={() => up({ accounts: payload.accounts.filter((_, i) => i !== index) })}>Remove this account</button> : <span />}
               </div>
-              <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'minmax(90px, 1fr) minmax(200px, 3fr) minmax(110px, 1fr) minmax(110px, 1fr) auto', ...labelText, color: 'var(--text-meta)' }}>
-                <span>Date</span><span>Description</span><span>Debit</span><span>Credit</span><span />
-              </div>
-              {account.lines.map((line, li) => (
-                <div key={li} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'minmax(90px, 1fr) minmax(200px, 3fr) minmax(110px, 1fr) minmax(110px, 1fr) auto', alignItems: 'center' }}>
-                  <input value={line.date} readOnly={readOnly} placeholder="8/22/2026" onChange={(e) => setAccount(index, { ...account, lines: replaceAt(account.lines, li, { ...line, date: e.target.value }) })} style={fieldStyle} />
-                  <input value={line.description} readOnly={readOnly} placeholder="Lowes" onChange={(e) => setAccount(index, { ...account, lines: replaceAt(account.lines, li, { ...line, description: e.target.value }) })} style={fieldStyle} />
-                  <input className="tabular" inputMode="decimal" value={line.debit ?? ''} readOnly={readOnly} placeholder="$" onChange={(e) => setAccount(index, { ...account, lines: replaceAt(account.lines, li, { ...line, debit: toNumber(e.target.value) }) })} style={fieldStyle} />
-                  <input className="tabular" inputMode="decimal" value={line.credit ?? ''} readOnly={readOnly} placeholder="$" onChange={(e) => setAccount(index, { ...account, lines: replaceAt(account.lines, li, { ...line, credit: toNumber(e.target.value) }) })} style={fieldStyle} />
-                  {!readOnly ? <button type="button" style={linkButton} onClick={() => setAccount(index, { ...account, lines: account.lines.filter((_, i) => i !== li) })}>Remove</button> : <span />}
+              {narrow || account.lines.length === 0 ? null : (
+                <div style={{ display: 'grid', gap: 10, gridTemplateColumns: LEDGER_COLUMNS, ...labelText, color: 'var(--text-meta)' }}>
+                  <span>Date</span><span>Description</span><span>Debit</span><span>Credit</span><span />
                 </div>
-              ))}
+              )}
+              {account.lines.map((line, li) => {
+                const setLine = (patch: Partial<typeof line>) => setAccount(index, { ...account, lines: replaceAt(account.lines, li, { ...line, ...patch }) })
+                const remove = !readOnly ? <button type="button" style={linkButton} onClick={() => setAccount(index, { ...account, lines: account.lines.filter((_, i) => i !== li) })}>Remove</button> : <span />
+                const date = <input aria-label="Date" value={line.date} readOnly={readOnly} placeholder="8/22/2026" onChange={(e) => setLine({ date: e.target.value })} style={fieldStyle} />
+                const description = <input aria-label="Description" value={line.description} readOnly={readOnly} placeholder="Lowes" onChange={(e) => setLine({ description: e.target.value })} style={fieldStyle} />
+                const debit = <input aria-label="Debit" className="tabular" inputMode="decimal" value={line.debit ?? ''} readOnly={readOnly} placeholder="$" onChange={(e) => setLine({ debit: toNumber(e.target.value) })} style={fieldStyle} />
+                const credit = <input aria-label="Credit" className="tabular" inputMode="decimal" value={line.credit ?? ''} readOnly={readOnly} placeholder="$" onChange={(e) => setLine({ credit: toNumber(e.target.value) })} style={fieldStyle} />
+                // A phone has no room for five columns, so a line becomes a small
+                // labelled card: what, when, and the two figures side by side.
+                return narrow ? (
+                  <div key={li} style={{ background: 'var(--surface-panel)', borderRadius: 14, padding: '14px 14px 6px', display: 'grid', gap: 10 }}>
+                    <Field label="Description">{description}</Field>
+                    <Field label="Date">{date}</Field>
+                    <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+                      <Field label="Debit">{debit}</Field>
+                      <Field label="Credit">{credit}</Field>
+                    </div>
+                    {remove}
+                  </div>
+                ) : (
+                  <div key={li} style={{ display: 'grid', gap: 10, gridTemplateColumns: LEDGER_COLUMNS, alignItems: 'center' }}>
+                    {date}{description}{debit}{credit}{remove}
+                  </div>
+                )
+              })}
               {!readOnly ? <AddPill onClick={() => setAccount(index, { ...account, lines: [...account.lines, { date: '', description: '', debit: null, credit: null }] })}>Add a line</AddPill> : null}
               <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', paddingTop: 10, borderTop: '1px solid var(--border-hairline)' }}>
                 <MoneyField label="Budget · annual" value={account.budgetAnnual} readOnly={readOnly} onChange={(v) => setAccount(index, { ...account, budgetAnnual: v })} />
@@ -633,15 +729,24 @@ function TitledLines({ items, readOnly, onChange }: { items: TitledItem[]; readO
 }
 
 function MoneyLines({ lines, readOnly, onChange, addLabel }: { lines: MoneyLine[]; readOnly: boolean; onChange(lines: MoneyLine[]): void; addLabel: string }) {
+  const narrow = useNarrow()
   return (
     <div style={{ display: 'grid', gap: 10 }}>
-      {lines.map((line, index) => (
-        <div key={index} style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 3fr) minmax(140px, 1fr) auto', gap: 10, alignItems: 'center' }}>
-          <input value={line.line} readOnly={readOnly} placeholder="Line" onChange={(e) => onChange(replaceAt(lines, index, { ...line, line: e.target.value }))} style={fieldStyle} />
-          <input className="tabular" inputMode="decimal" value={line.amount ?? ''} readOnly={readOnly} placeholder="$" onChange={(e) => onChange(replaceAt(lines, index, { ...line, amount: toNumber(e.target.value) }))} style={fieldStyle} />
-          {!readOnly ? <button type="button" style={linkButton} onClick={() => onChange(lines.filter((_, i) => i !== index))}>Remove</button> : <span />}
-        </div>
-      ))}
+      {lines.map((line, index) => {
+        const name = <input aria-label="Line" value={line.line} readOnly={readOnly} placeholder="Line" onChange={(e) => onChange(replaceAt(lines, index, { ...line, line: e.target.value }))} style={fieldStyle} />
+        const amount = <input aria-label="Amount" className="tabular" inputMode="decimal" value={line.amount ?? ''} readOnly={readOnly} placeholder="$" onChange={(e) => onChange(replaceAt(lines, index, { ...line, amount: toNumber(e.target.value) }))} style={fieldStyle} />
+        const remove = !readOnly ? <button type="button" style={linkButton} onClick={() => onChange(lines.filter((_, i) => i !== index))}>Remove</button> : <span />
+        return narrow ? (
+          <div key={index} style={{ background: 'var(--surface-panel)', borderRadius: 14, padding: '12px 14px', display: 'grid', gap: 8 }}>
+            {name}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 10, alignItems: 'center' }}>{amount}{remove}</div>
+          </div>
+        ) : (
+          <div key={index} style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 3fr) minmax(110px, 1fr) auto', gap: 10, alignItems: 'center' }}>
+            {name}{amount}{remove}
+          </div>
+        )
+      })}
       {!readOnly ? <AddPill onClick={() => onChange([...lines, { line: '', amount: null }])}>{addLabel}</AddPill> : lines.length === 0 ? <p style={{ ...metaText, margin: 0 }}>None.</p> : null}
     </div>
   )
@@ -684,9 +789,13 @@ function TogglePill({ selected, disabled, onClick, children }: { selected: boole
   )
 }
 
-const fieldStyle: CSSProperties = { width: '100%', minHeight: 48, background: 'var(--surface-field)', border: '1px solid var(--mbc-border-input)', borderRadius: 10, padding: '0 14px', font: '400 16px/1.4 var(--mbc-font-sans)', color: 'var(--text-heading)' }
+/** Five columns that fit the narrowest layout that still shows them (the form is
+    never narrower than about 640px beside the preview). */
+const LEDGER_COLUMNS = 'minmax(116px, 1fr) minmax(130px, 3fr) minmax(96px, 1fr) minmax(96px, 1fr) auto'
+
+const fieldStyle: CSSProperties = { width: '100%', minWidth: 0, minHeight: 48, background: 'var(--surface-field)', border: '1px solid var(--mbc-border-input)', borderRadius: 10, padding: '0 14px', font: '400 16px/1.4 var(--mbc-font-sans)', color: 'var(--text-heading)' }
 const textareaStyle: CSSProperties = { ...fieldStyle, minHeight: 0, padding: '13px 14px', resize: 'vertical', font: '400 16px/1.65 var(--mbc-font-sans)' }
 const labelText: CSSProperties = { font: '700 13px/1.3 var(--mbc-font-sans)', letterSpacing: '.04em', color: 'var(--text-heading)' }
 const metaText: CSSProperties = { font: '400 14px/1.5 var(--mbc-font-sans)', color: 'var(--text-meta)' }
 const bodyText: CSSProperties = { font: '400 15px/1.65 var(--mbc-font-sans)', color: 'var(--text-body)' }
-const linkButton: CSSProperties = { background: 'none', border: 'none', padding: '4px 0', font: '400 14px/1.4 var(--mbc-font-sans)', color: 'var(--text-link)', cursor: 'pointer', textAlign: 'left' }
+const linkButton: CSSProperties = { background: 'none', border: 'none', padding: '0 6px 0 0', minHeight: 44, display: 'inline-flex', alignItems: 'center', font: '400 14px/1.4 var(--mbc-font-sans)', color: 'var(--text-link)', cursor: 'pointer', textAlign: 'left' }
