@@ -81,7 +81,7 @@ export const seed: DashboardData = {
     // Sample deacons. Invented names, as in the design handoff; the real Board
     // is seated in Postgres by the administrator, never from here.
     { id: 9, name: 'Curtis Nolen', role: 'Deacon', email: 'curtis@memorialbaptist.com', access: 'limited', active: true },
-    { id: 10, name: 'Arthur Simms', role: 'Deacon', email: 'arthur@memorialbaptist.com', access: 'limited', active: true },
+    { id: 10, name: 'Arthur Simms', role: 'Deacon · Secretary', email: 'arthur@memorialbaptist.com', access: 'limited', active: true },
     { id: 11, name: 'Lowell Bracken', role: 'Deacon', email: 'lowell@memorialbaptist.com', access: 'limited', active: true },
     { id: 12, name: 'Marvin Hollis', role: 'Deacon', email: 'marvin@memorialbaptist.com', access: 'limited', active: true },
     { id: 13, name: 'Dale Whitcomb', role: 'Deacon', email: 'dale@memorialbaptist.com', access: 'limited', active: true },
@@ -298,6 +298,6 @@ export const SEED_SEATS: Record<number, SeedSeat[]> = {
   9: [{ slug: 'deacon-board', role: 'member' }, { slug: 'committee:finance', role: 'chair' }],
   10: [{ slug: 'deacon-board', role: 'member' }],
   11: [{ slug: 'deacon-board', role: 'member' }, { slug: 'committee:finance', role: 'member' }],
-  12: [{ slug: 'deacon-board', role: 'member' }],
-  13: [{ slug: 'deacon-board', role: 'member' }],
+  12: [{ slug: 'deacon-board', role: 'member' }, { slug: 'committee:building-grounds', role: 'chair' }],
+  13: [{ slug: 'deacon-board', role: 'member' }, { slug: 'committee:personnel', role: 'chair' }],
 }
