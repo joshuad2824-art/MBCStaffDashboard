@@ -76,7 +76,7 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0019_…` |
+| Migrations | Continue the sequence: next is `supabase/migrations/0020_…` |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -96,9 +96,10 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   for the staff role.
 - **`src/data/reference/repository.ts`** — the reference's seam, split from the Board's room in 0014
   because the manual is not the Board's alone: documents and sections in, one search out, no writes.
-  `search()` is `search_manual()` in a configured build and a substring pass over the seeded sections
-  otherwise, in the same shape — the screen does not know which answered. `sections.ts` is the stub's
-  copy of the loader's splitter and must only agree with it; the loader decides what production holds.
+  `search()` is `search_manual()` in a configured build and `matching.ts` over the seeded sections
+  otherwise — the same tiers, in the same shape, so the screen does not know which answered. Where the two
+  differ (the stub's stemmer is a stand-in) Postgres is right. `sections.ts` is the stub's copy of the
+  loader's splitter and must only agree with it; the loader decides what production holds.
   `screens/Reference.tsx` is the three states of the expansion brief §A.4, identical on both sides;
   the discrepancy docket is not on it, at Joshua's ask, and no screen reads `governance_finding` today.
 - **`src/lib/serving.ts`** and **`src/screens/Ministries.tsx`** — the directory. Everything derived is
@@ -217,6 +218,22 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   client renders as the match mark and never as HTML. The loader emits the sections, refuses a file with
   no `sensitivity` key (CORPUS-PREP.md §2), and stops if a document's sections do not reconstruct its
   body exactly.
+- **`supabase/migrations/0019_search_forgiving.sql`** — the same search, for somebody who types two
+  letters. `search_manual()` answers in tiers and says which one each row came from (`match_kind`):
+  citation (punctuation ignored, `a9` is A009), title, heading, exact (0016's reading, with quoted phrases
+  and a minus), prefix (`treas` finds treasurer, through the stems and through the words as written). A
+  citation that found something silences title, heading and prefix, and a query with a quote or a minus
+  loosens nothing. Only when nothing stronger answered does it loosen, once: `corrected` (a word that
+  begins no word in the manual becomes the nearest word that does, same first letter, one or two edits,
+  and `matched_as` says what was really searched) and then `some` (more than one word, no section has them
+  all). **The vocabulary scan is gated on there being no strong hit** — it is 55ms on a manual of this
+  size and nothing at all on the ordinary path — **and stays security invoker**: `ts_stat` reads as its
+  caller, so a role the policies do not admit gets zero words, and `policies.sql` has a probe role that
+  fails the day somebody makes the function security definer. The section table gains one stored column
+  (`words`, the unstemmed vocabulary, never searched for display) and two indexes, and no policy. The
+  function's result gained two columns, so it is dropped and recreated, not altered; the client reads a
+  0016 answer (no `match_kind`) without error. `screens/Reference.tsx` says in words which kind of match
+  it is showing and opens the first hit on Enter when it is a citation, title or heading.
 - **`supabase/migrations/0017_ministries.sql`** and **`0018_ministry_reference.sql`** — the directory.
   `ministry`, `serving_role` (enumerated, changed by migration only), `serving_group` and
   `serving_assignment`; the whole staff body reads, the staff role inserts and updates, nobody deletes.

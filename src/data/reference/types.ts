@@ -17,6 +17,9 @@ export interface GovernanceSection {
   position: number
 }
 
+/** How a hit was found, strongest first (0019). The screen words its summary from this. */
+export type MatchKind = 'citation' | 'title' | 'heading' | 'exact' | 'prefix' | 'corrected' | 'some'
+
 /** One row of search_manual(): a section, with its document named. */
 export interface SearchHit {
   sectionId: string
@@ -33,4 +36,7 @@ export interface SearchHit {
   byCitation: boolean
   /** Text with `<mark>` around the matched words. Rendered as the match mark, never as HTML. */
   snippet: string
+  matchKind: MatchKind
+  /** For `corrected`: the words actually searched ("kitchen" for "kithcen"). Otherwise ''. */
+  matchedAs: string
 }

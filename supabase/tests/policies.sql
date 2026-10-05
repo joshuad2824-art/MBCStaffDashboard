@@ -1153,6 +1153,113 @@ select test.assert((select count(*) from governance_finding) = 0,  'signed out: 
 select test.refused($q$ select * from search_manual('fee') $q$, '42501', 'signed out: cannot call search_manual() at all');
 reset role;
 
+-- ------------------------------------------------- 10d. the search forgives (0019)
+--
+-- A prefix, a citation without its punctuation, a misspelling. None of it
+-- changes who may read what: search_manual() is still security invoker, so the
+-- policies decide, and these assertions run as each kind of account.
+
+reset role;
+
+insert into governance_document (slug, kind, code, title, body, position) values
+  ('f003',     'policy',    'F003', 'F003 — Kitchen Use',            'Transcribed text.', 4),
+  ('absentee', 'procedure', '',     'Absentee Balloting Procedure',  'Transcribed text.', 5);
+insert into governance_section (document_id, heading_path, anchor, citation, body, position)
+select id, '{"Policy F003","1. Kitchen use"}', 'f003-1', 'F003 §1', '## 1. Kitchen use  The church kitchen may be used by members with a reservation. The kitchen is left clean.', 1 from governance_document where slug = 'f003';
+insert into governance_section (document_id, heading_path, anchor, citation, body, position)
+select id, '{"Absentee Balloting Procedure"}', 'absentee', '', '# Absentee Balloting Procedure  A member who cannot attend a business meeting may request an absentee ballot from the Church Clerk.', 1 from governance_document where slug = 'absentee';
+insert into governance_section (document_id, heading_path, anchor, citation, body, position)
+select id, '{"Policy A009","5. Budget calendar"}', 'a009-5', 'A009 §5', '## 5. Budget calendar  The Finance Committee presents the proposed budget to the Board in October and to the church in November.', 3 from governance_document where slug = 'a009';
+insert into governance_section (document_id, heading_path, anchor, citation, body, position)
+select id, '{"ARTICLE II. CHURCH LEADERSHIP","C. Treasurer"}', 'art-ii-c', 'Art. II.C', '## C. Treasurer  The Treasurer presents an itemized report of receipts and disbursements for the preceding month.', 2 from governance_document where slug = 'article-ii';
+
+select test.assert(manual_norm('Art. II.B §3') = 'artiib3' and manual_norm(null) = '', 'search: a citation is compared with its punctuation taken out');
+
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+-- A word's start finds the word. The heading says it best, so that comes first.
+select test.assert((select citation = 'A009 §5' and match_kind = 'heading' from search_manual('bud') limit 1), 'deacon A: "bud" finds the Budget calendar — a prefix is enough, and a heading outranks a mention');
+select test.assert((select match_kind = 'heading' and citation = 'Art. II.C' from search_manual('treas') limit 1), 'deacon A: "treas" finds the Treasurer');
+select test.assert((select count(*) from search_manual('kitch') where citation = 'F003 §1' and match_kind = 'title') = 1, 'deacon A: "kitch" lands on the Kitchen Use policy by its title');
+-- The stemmer files "itemized" as "item", so a prefix longer than the stem is
+-- found through the words as written.
+select test.assert((select count(*) from search_manual('itemiz') where citation = 'Art. II.C' and match_kind = 'prefix') = 1, 'deacon A: "itemiz" finds "itemized" though the stemmer files it shorter');
+-- A citation, however it is typed.
+select test.assert((select array_agg(citation order by section_position) from search_manual('a9')) = array['A009 §1', 'A009 §4', 'A009 §5'], 'deacon A: "a9" is A009 — policy codes are a letter and three digits');
+select test.assert((select array_agg(citation order by section_position) from search_manual('A 009')) = array['A009 §1', 'A009 §4', 'A009 §5'], 'deacon A: "A 009" is A009');
+select test.assert((select count(*) = 1 and bool_and(by_citation) and bool_and(match_kind = 'citation') and min(citation) = 'Art. II.B §3' from search_manual('art ii b')), 'deacon A: "art ii b" is Art. II.B, and only that paragraph');
+-- Someone who typed a whole citation wants that paragraph: nothing else is drawn.
+select test.assert((select count(*) from search_manual('A009 §4')) = 1, 'deacon A: a full citation returns that paragraph and nothing beside it');
+-- A misspelling is corrected, and says so.
+select test.assert((select match_kind = 'corrected' and matched_as = 'kitchen' and citation = 'F003 §1' from search_manual('kithcen')), 'deacon A: "kithcen" finds the kitchen policy and says it searched for "kitchen"');
+select test.assert((select match_kind = 'corrected' and matched_as = 'treasurer' from search_manual('treasuer') limit 1), 'deacon A: "treasuer" is corrected to "treasurer"');
+select test.assert((select match_kind = 'corrected' and matched_as = 'absentee ballot' and document_slug = 'absentee' from search_manual('absentee balot') limit 1), 'deacon A: one wrong word of two is corrected and the rest kept');
+-- Looser only when nothing stronger answered.
+select test.assert((select count(*) from search_manual('kitchen') where match_kind = 'corrected') = 0, 'deacon A: a word that is in the manual is never "corrected"');
+select test.assert((select count(*) from search_manual('bud') where match_kind in ('corrected', 'some')) = 0, 'deacon A: nothing loose is shown beside a strong hit');
+select test.assert((select match_kind = 'some' and citation = 'A009 §4' and matched_as is null from search_manual('fee zebra')), 'deacon A: no section has every word, so the sections with some of them are shown, flagged as that');
+select test.assert((select count(*) from search_manual('zzzzqx')) = 0, 'deacon A: a word nothing resembles finds nothing');
+-- An operator keeps its meaning, and nothing loosens a query that carries one.
+select test.assert((select count(*) from search_manual('budget -october')) = 1 and (select count(*) from search_manual('budget -october') where citation = 'A009 §5') = 0, 'deacon A: "budget -october" leaves out the section that says October');
+select test.assert((select count(*) from search_manual('"fee schedule"') where citation = 'A009 §4' and match_kind = 'exact') = 1, 'deacon A: a quoted phrase is read as a phrase');
+select test.assert((select count(*) from search_manual('"fee zebra"')) = 0, 'deacon A: a quoted phrase that is not there finds nothing — it is not loosened');
+-- Input is data. It does not reach the database as anything else.
+select test.assert((select count(*) from search_manual('fee; drop table governance_section;--')) >= 0, 'deacon A: punctuation and SQL in the query are only words');
+select test.assert((select count(*) from search_manual('%%')) = 0 and (select count(*) from search_manual('   ')) = 0 and (select count(*) from search_manual('o''clock "')) = 0, 'deacon A: wildcards, blanks and stray quotes find nothing and raise nothing');
+select test.assert((select count(*) from search_manual('the of and')) = 0, 'deacon A: a query of only stop words finds nothing');
+select test.assert((select count(*) from search_manual(repeat('chair ', 400))) >= 0, 'deacon A: a pasted paragraph is read for its first words and does not fail');
+reset role;
+select test.assert((select count(*) from governance_section) = 7, 'search: no query changed the manual');
+
+-- The same answers for the staff and a limited account: a signed-in door, no more.
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from search_manual('kitch') where citation = 'F003 §1') = 1, 'staff: a prefix finds the section');
+select test.assert((select matched_as = 'kitchen' from search_manual('kithcen')), 'staff: a misspelling is corrected for the staff too');
+reset role;
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+select test.assert((select array_agg(citation order by section_position) from search_manual('a9')) = array['A009 §1', 'A009 §4', 'A009 §5'], 'limited: a citation without its punctuation is found');
+select test.assert((select count(*) from search_manual('budget -october') where citation = 'A009 §5') = 0, 'limited: an operator keeps its meaning');
+reset role;
+
+-- Signed out: the door is the same door. And the shape of it.
+select test.sign_out();
+
+-- A role that may run the function but that the policies do not admit gets
+-- nothing — not from a strong match, and not through a misspelling, which is
+-- the path that reads the whole manual's vocabulary. That is true only because
+-- the function is security invoker and ts_stat reads as its caller; a
+-- security definer "optimisation" would make this fail, and it should.
+-- Roles belong to the cluster, not the database run.sh recreates, so a run that
+-- died halfway must not leave this one in the way of the next.
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'search_probe') then
+    drop owned by search_probe;
+    drop role search_probe;
+  end if;
+end $$;
+create role search_probe nologin;
+grant usage on schema public, test to search_probe;
+grant execute on function search_manual(text) to search_probe;
+grant select on governance_document, governance_section to search_probe;
+set role search_probe;
+select test.assert((select count(*) from search_manual('kitchen')) = 0, 'a role the policies do not admit: finds nothing, however strong the match');
+select test.assert((select count(*) from search_manual('kithcen')) = 0, 'a role the policies do not admit: finds nothing through a misspelling either — the vocabulary is read as the caller');
+select test.assert((select count(*) from ts_stat('select words from governance_section')) = 0, 'a role the policies do not admit: the vocabulary scan reads zero words');
+reset role;
+drop owned by search_probe;
+drop role search_probe;
+
+set role anon;
+select test.refused($q$ select * from search_manual('bud') $q$, '42501', 'signed out: cannot search by prefix');
+select test.refused($q$ select * from search_manual('kithcen') $q$, '42501', 'signed out: cannot reach the vocabulary through a misspelling');
+select test.assert((select count(*) from (select words from governance_section) w) = 0, 'signed out: the new vocabulary column reads zero rows — it is behind the same policy as the table');
+reset role;
+select test.assert(not has_function_privilege('anon', 'search_manual(text)', 'execute') and has_function_privilege('authenticated', 'search_manual(text)', 'execute'), 'search_manual(): signed-in accounts only, as 0016 left it');
+select test.assert(not (select prosecdef from pg_proc where proname = 'search_manual'), 'search_manual(): security invoker — the policies still decide what it reads');
+select test.assert((select count(*) from pg_policies where tablename in ('governance_document', 'governance_section', 'governance_finding') and cmd <> 'SELECT') = 0, 'reference: still no insert, update or delete policy after 0019');
+
 -- ------------------------------------------------- 11. care: pointers, not content (0010)
 --
 -- The one place something crosses the sensitivity boundary. The staff
