@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { HScroll } from '../components/HScroll'
 import { Button, Card, Chip } from '../components/ui'
 import { OwnerNote, OwnerSelect } from '../components/OwnerSelect'
 import { useData, useStore } from '../data/store'
@@ -98,8 +99,7 @@ export function Cadence() {
       </Card>
 
       <Card radius="card" pad={0} style={{ overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <div style={{ minWidth: 1180 }}>
+        <HScroll minWidth={1180} label="Cadence ledger">
             <div
               style={{
                 display: 'grid',
@@ -258,8 +258,7 @@ export function Cadence() {
                 )
               })
             )}
-          </div>
-        </div>
+          </HScroll>
       </Card>
 
       <p style={{ font: '400 13px/1.7 var(--mbc-font-sans)', color: 'var(--text-muted)', margin: 0, maxWidth: '66ch' }}>

@@ -1,4 +1,5 @@
 import { Button, Eyebrow } from '../ui'
+import { DisplaySizeControl } from './DisplaySizeControl'
 import { useData } from '../../data/store'
 import { useSession } from '../../session/session'
 import { deriveCadence, isUnclaimed, personName } from '../../lib/derive'
@@ -40,7 +41,7 @@ export function PresentMode() {
       }}
     >
       <div style={{ maxWidth: 1560, margin: '0 auto', display: 'grid', gap: 34 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20 }}>
           <div>
             <Eyebrow>Monday · 9:00 AM</Eyebrow>
             <h1
@@ -54,9 +55,13 @@ export function PresentMode() {
               {formatDate(today)}
             </h1>
           </div>
-          <Button variant="outline" onClick={() => setPresentMode(false)}>
-            Close present mode
-          </Button>
+          <div style={{ display: 'grid', gap: 10, justifyItems: 'end' }}>
+            <Button variant="outline" onClick={() => setPresentMode(false)}>
+              Close present mode
+            </Button>
+            {/* Whoever is at the keyboard knows how far the back row is. */}
+            <DisplaySizeControl variant="segmented" />
+          </div>
         </div>
 
         <div style={{ display: 'grid', gap: 26, gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))' }}>

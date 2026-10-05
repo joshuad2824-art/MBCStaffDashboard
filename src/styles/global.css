@@ -6,6 +6,16 @@
      this come out at roughly seventy characters each, which is the measure the
      brand guide asks for. */
   --mbc-measure-max: 2200px;
+
+  /* Display size (lib/displayScale.tsx) zooms the whole page. 100vh and 100vw
+     are multiplied by that zoom, so "the height of the screen" is written
+     var(--ui-vh) and "the width of the screen" var(--ui-vw). At scale 1 they
+     are exactly 100vh and 100vw. */
+  --ui-zoom: 1;
+  --ui-vh: calc(100vh / var(--ui-zoom));
+  --ui-vw: calc(100vw / var(--ui-zoom));
+  /* The slim bar that replaces the sidebar on a phone or tablet held upright. */
+  --mobile-bar-h: 60px;
 }
 
 *,
@@ -60,6 +70,25 @@ button { margin: 0; }
   border: 0;
 }
 
+/* A thumb is not a cursor. Wherever the pointer is coarse — a phone, a tablet —
+   every control keeps the design system's 44px minimum, including the bespoke
+   ones (filter chips, table-sort headings, text links like Delete) that were
+   drawn for a mouse. Desktop layouts are untouched. */
+@media (pointer: coarse) {
+  /* !important because several of these set their own inline minHeight, and a
+     floor for thumbs is the one place that should beat an inline style. */
+  main button,
+  main select,
+  header button,
+  header select,
+  main input:not([type='checkbox']):not([type='radio']):not([type='hidden']):not([type='file']) {
+    min-height: 44px !important;
+  }
+  main button { min-width: 44px !important; }
+  main input[type='checkbox'],
+  main input[type='radio'] { width: 24px; height: 24px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
@@ -68,6 +97,8 @@ button { margin: 0; }
    text, on portrait letter. Not the rail, not the nav, not the search field. */
 @media print {
   .print-only .print-section { page: portrait; }
+  /* Paper is not scaled by the display size. */
+  html { zoom: 1 !important; }
 }
 
 /* ---------------------------------------------------------------- printing

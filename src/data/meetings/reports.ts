@@ -175,6 +175,25 @@ export interface FiledPointer {
   publishedAt: string | null
 }
 
+/** What the minutes template holds, in the Board's own order, and who supplies
+    each part. A summary for the Reports page — `renderReport` is the template
+    itself and this must only agree with it. `record` assembles itself from the
+    roll, the motions and the filed reports; `secretary` is written. */
+export const MINUTES_TEMPLATE: { title: string; from: 'record' | 'secretary' | 'both' }[] = [
+  { title: 'Attendance — who was present and who was not, and the times', from: 'record' },
+  { title: 'I · Opening prayer', from: 'secretary' },
+  { title: 'II · Chairman remarks', from: 'secretary' },
+  { title: 'III · Member update & prayer requests', from: 'secretary' },
+  { title: 'IV · Old business', from: 'both' },
+  { title: 'V · New business', from: 'both' },
+  { title: 'Motions recorded in session', from: 'record' },
+  { title: 'VI · Review of previous minutes', from: 'both' },
+  { title: 'VII · Deacon committee reports, Appendices A–D', from: 'record' },
+  { title: 'VIII · Pastoral report', from: 'secretary' },
+  { title: 'IX · Key dates', from: 'both' },
+  { title: 'X · Closing prayer', from: 'secretary' },
+]
+
 /** The bodies whose chairs file a committee report, in agenda order. */
 export const COMMITTEES = ['committee:finance', 'committee:building-grounds', 'committee:personnel', 'committee:family-assistance'] as const
 

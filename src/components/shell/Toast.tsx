@@ -25,7 +25,7 @@ export function Toast() {
         borderRadius: 'var(--mbc-radius-pill)',
         padding: '14px 18px 14px 24px',
         boxShadow: 'var(--mbc-shadow-print)',
-        maxWidth: 'min(560px, calc(100vw - 40px))',
+        maxWidth: 'min(560px, calc(var(--ui-vw) - 40px))',
       }}
     >
       <span style={{ font: '400 14px/1.4 var(--mbc-font-sans)' }}>{toast.message}</span>

@@ -7,6 +7,7 @@ import { COMMITTEES, COMMITTEE_SHORT, emptyPayload, reportTitle, type Report } f
 import type { MeetingsData } from '../data/meetings/types'
 import { formatShort, parseDate, startOfToday, toIso, todayIso } from '../lib/date'
 import { useSession } from '../session/session'
+import { FilingGuide } from './filing/FilingGuide'
 import { ReportBuilder } from './ReportBuilder'
 import { ReportPrint } from './ReportPrint'
 
@@ -60,15 +61,6 @@ function ReportsIndex({ data }: { data: MeetingsData }) {
     if (created) navigate(`/reports/${created.id}`)
   }
 
-  const starters: { label: string; onStart(): void }[] = []
-  for (const slug of COMMITTEES) {
-    if (!isChairOf(slug)) continue
-    const open = mine.find((r) => r.kind === 'committee' && r.bodySlug === slug)
-    if (!open) starters.push({ label: `Start the ${COMMITTEE_SHORT[slug]} report`, onStart: () => void start('committee', slug) })
-  }
-  if (isChairOf('committee:finance') && !mine.some((r) => r.kind === 'treasurer')) {
-    starters.push({ label: 'Start the Treasurer’s itemised report', onStart: () => void start('treasurer', 'committee:finance') })
-  }
   /* A report filed their traditional way: pick the committee, pick the file.
      The chair or any Board member may do this; the file stands in for the
      form and moves through the same lifecycle. */
@@ -81,12 +73,10 @@ function ReportsIndex({ data }: { data: MeetingsData }) {
   }
   const canUploadFor = COMMITTEES.filter((slug) => onBoard || isChairOf(slug))
 
-  const heldWithoutMinutes = onBoard
-    ? sortedByDate(data.meetings).filter((m) => m.status === 'held' && !data.reports.some((r) => r.kind === 'minutes' && r.meetingId === m.id))
-    : []
-
   return (
     <div style={{ display: 'grid', gap: 20 }}>
+      <FilingGuide data={data} onStart={(kind, slug) => void start(kind, slug)} />
+
       {canUploadFor.length > 0 ? (
         <Card tone="panel" radius="card" pad="22px 24px" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'end', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ display: 'grid', gap: 6, maxWidth: '56ch' }}>
@@ -112,24 +102,10 @@ function ReportsIndex({ data }: { data: MeetingsData }) {
         </Card>
       ) : null}
 
-      {(mine.length > 0 || starters.length > 0 || heldWithoutMinutes.length > 0) ? (
+      {mine.length > 0 ? (
         <Card radius="card" pad="26px clamp(22px,2vw,30px)" style={{ display: 'grid', gap: 14 }}>
-          <Eyebrow size="sm">Yours to write</Eyebrow>
+          <Eyebrow size="sm">In progress</Eyebrow>
           <ReportRows data={data} reports={mine} empty="Nothing in progress." />
-          {starters.length > 0 || heldWithoutMinutes.length > 0 ? (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, paddingTop: 8 }}>
-              {starters.map((starter) => (
-                <Button key={starter.label} variant="outline" size="md" onClick={starter.onStart}>
-                  {starter.label}
-                </Button>
-              ))}
-              {heldWithoutMinutes.map((m) => (
-                <Button key={m.id} variant="outline" size="md" onClick={() => navigate(`/meeting/${m.id}/minutes`)}>
-                  Write the minutes of {formatShort(parseDate(m.meetsOn))}
-                </Button>
-              ))}
-            </div>
-          ) : null}
         </Card>
       ) : null}
 

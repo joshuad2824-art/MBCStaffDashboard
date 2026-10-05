@@ -99,7 +99,7 @@ export function App() {
 function NoSurfaces() {
   const { member, signOut } = useSession()
   return (
-    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--surface-page)' }}>
+    <div style={{ minHeight: 'var(--ui-vh)', display: 'grid', placeItems: 'center', background: 'var(--surface-page)' }}>
       <div style={{ maxWidth: 520, padding: '0 24px', textAlign: 'center' }}>
         <p style={{ font: '600 22px/1.3 var(--mbc-font-serif)', color: 'var(--text-heading)', margin: '0 0 12px' }}>
           Nothing here for you yet, {member?.name.split(' ')[0]}.
@@ -122,7 +122,7 @@ function NoSurfaces() {
 
 function Waiting() {
   return (
-    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--surface-page)' }}>
+    <div style={{ minHeight: 'var(--ui-vh)', display: 'grid', placeItems: 'center', background: 'var(--surface-page)' }}>
       <p style={{ font: '400 15px/1.6 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>Signing you in…</p>
     </div>
   )

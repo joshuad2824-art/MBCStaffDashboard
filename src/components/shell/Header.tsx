@@ -2,6 +2,7 @@ import { Button, Eyebrow } from '../ui'
 import { useStore } from '../../data/store'
 import { useSession } from '../../session/session'
 import { formatLong, startOfToday } from '../../lib/date'
+import { useNarrow } from '../../lib/displayScale'
 import { ViewAsPicker } from './ViewAsPicker'
 
 export function Header({
@@ -18,17 +19,15 @@ export function Header({
 }) {
   const { history, undo } = useStore()
   const { admin, previewSeat, setPresentMode, context } = useSession()
+  const narrow = useNarrow()
 
   return (
     <header
       style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 5,
         background: 'var(--mbc-header-bg)',
         backdropFilter: 'var(--mbc-blur-chrome)',
         borderBottom: '1px solid var(--border-section)',
-        padding: '20px 0',
+        padding: narrow ? '16px 0' : '20px 0',
       }}
     >
       <div
@@ -58,10 +57,13 @@ export function Header({
         </h1>
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
-        <span className="tabular" style={{ font: '400 13px/1 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
-          {formatLong(startOfToday())}
-        </span>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, width: narrow ? '100%' : undefined, minWidth: 0 }}>
+        {/* A phone knows what day it is. */}
+        {narrow ? null : (
+          <span className="tabular" style={{ font: '400 13px/1 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
+            {formatLong(startOfToday())}
+          </span>
+        )}
         {/* View as is offered to an administrator, on either side, and only
             while no seat is worn: the bar above carries the exit. */}
         {admin && !previewSeat ? <ViewAsPicker /> : null}
@@ -78,9 +80,12 @@ export function Header({
             <Button variant="outline" size="sm" onClick={onOpenHistory}>
               Recent changes
             </Button>
-            <Button variant="dark" size="sm" onClick={() => setPresentMode(true)}>
-              Present mode
-            </Button>
+            {/* Present mode is for a screen in a room; a phone has no room. */}
+            {narrow ? null : (
+              <Button variant="dark" size="sm" onClick={() => setPresentMode(true)}>
+                Present mode
+              </Button>
+            )}
           </>
         ) : null}
       </div>

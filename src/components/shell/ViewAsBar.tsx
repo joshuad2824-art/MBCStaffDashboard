@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '../../session/session'
+import { useNarrow } from '../../lib/displayScale'
 
 /* Loud, persistent, and honest: the dark band the design system already uses
    for the context toggle. `Viewing as — <seat> · Read only · Exit`. It does
@@ -8,6 +9,7 @@ import { useSession } from '../../session/session'
 export function ViewAsBar() {
   const { previewSeat, setPreviewSeat } = useSession()
   const navigate = useNavigate()
+  const narrow = useNarrow()
   if (!previewSeat) return null
 
   const exit = () => {
@@ -19,11 +21,8 @@ export function ViewAsBar() {
     <div
       role="status"
       style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 7,
         background: 'var(--surface-dark)',
-        padding: '14px clamp(20px,3vw,40px)',
+        padding: narrow ? '10px 16px' : '12px clamp(20px,3vw,40px)',
         display: 'flex',
         flexWrap: 'wrap',
         gap: '12px 24px',
@@ -32,7 +31,7 @@ export function ViewAsBar() {
       }}
     >
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '4px 16px', minWidth: 0 }}>
-        <span style={{ font: '700 20px/1.2 var(--mbc-font-serif)', letterSpacing: '-.01em', color: 'var(--text-on-dark-strong)' }}>
+        <span style={{ font: `700 ${narrow ? 17 : 20}px/1.2 var(--mbc-font-serif)`, letterSpacing: '-.01em', color: 'var(--text-on-dark-strong)' }}>
           Viewing as — {previewSeat.label}
         </span>
         <span style={{ font: '400 14px/1.4 var(--mbc-font-sans)', color: 'var(--text-on-dark-label)' }}>
@@ -46,14 +45,15 @@ export function ViewAsBar() {
           background: 'none',
           border: '1px solid var(--mbc-dark-border)',
           borderRadius: 'var(--mbc-radius-pill)',
-          padding: '0 20px',
+          padding: '0 18px',
           minHeight: 44,
+          flex: 'none',
           font: '700 14px/1 var(--mbc-font-sans)',
           color: 'var(--text-on-dark)',
           cursor: 'pointer',
         }}
       >
-        Exit view-as
+        {narrow ? 'Exit' : 'Exit view-as'}
       </button>
     </div>
   )

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '../../session/session'
 import { homeOf } from '../../screens/surfaces'
+import { useNarrow } from '../../lib/displayScale'
 
 /* The current side, for the two people who hold both. Rule 2 of §2.4: it is
    the loudest thing on the screen, and it does not fade, collapse or move —
@@ -10,6 +11,7 @@ import { homeOf } from '../../screens/surfaces'
 export function ContextBar() {
   const { sides, context, setContext } = useSession()
   const navigate = useNavigate()
+  const narrow = useNarrow()
   if (sides.length < 2) return null
 
   const other = context === 'deacon' ? 'staff' : 'deacon'
@@ -21,11 +23,8 @@ export function ContextBar() {
   return (
     <div
       style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 6,
         background: 'var(--surface-dark)',
-        padding: '14px clamp(20px,3vw,40px)',
+        padding: narrow ? '10px 16px' : '12px clamp(20px,3vw,40px)',
         display: 'flex',
         flexWrap: 'wrap',
         gap: '12px 24px',
@@ -34,13 +33,17 @@ export function ContextBar() {
       }}
     >
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '4px 16px', minWidth: 0 }}>
-        <span style={{ font: '700 20px/1.2 var(--mbc-font-serif)', letterSpacing: '-.01em', color: 'var(--text-on-dark-strong)' }}>
+        <span style={{ font: `700 ${narrow ? 18 : 20}px/1.2 var(--mbc-font-serif)`, letterSpacing: '-.01em', color: 'var(--text-on-dark-strong)' }}>
           {context === 'deacon' ? 'Deacon view' : 'Staff view'}
         </span>
-        <span style={{ font: '400 14px/1.4 var(--mbc-font-sans)', color: 'var(--text-on-dark-label)' }}>
-          {context === 'deacon'
-            ? 'Anything you write here goes to the Board unless you widen it.'
-            : 'Anything you write here goes to staff unless you widen it.'}
+        <span style={{ font: `400 ${narrow ? 13 : 14}px/1.4 var(--mbc-font-sans)`, color: 'var(--text-on-dark-label)' }}>
+          {narrow
+            ? context === 'deacon'
+              ? 'Writes go to the Board.'
+              : 'Writes go to staff.'
+            : context === 'deacon'
+              ? 'Anything you write here goes to the Board unless you widen it.'
+              : 'Anything you write here goes to staff unless you widen it.'}
         </span>
       </div>
       <button
@@ -50,14 +53,15 @@ export function ContextBar() {
           background: 'none',
           border: '1px solid var(--mbc-dark-border)',
           borderRadius: 'var(--mbc-radius-pill)',
-          padding: '0 20px',
+          padding: '0 18px',
           minHeight: 44,
+          flex: 'none',
           font: '700 14px/1 var(--mbc-font-sans)',
           color: 'var(--text-on-dark)',
           cursor: 'pointer',
         }}
       >
-        {other === 'deacon' ? 'Switch to deacon view' : 'Switch to staff view'}
+        {narrow ? (other === 'deacon' ? 'Deacon view' : 'Staff view') : other === 'deacon' ? 'Switch to deacon view' : 'Switch to staff view'}
       </button>
     </div>
   )

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { HScroll } from '../components/HScroll'
 import { Button, Card, Chip, Input, Rule } from '../components/ui'
 import { useData, useStore } from '../data/store'
 import { useSession } from '../session/session'
@@ -149,8 +150,7 @@ export function People() {
       {isChairOf('deacon-board') ? <SeatManager currentPersonId={String(member?.id ?? '')} /> : null}
 
       <Card radius="card" pad={0} style={{ overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <div style={{ minWidth: 880 }}>
+        <HScroll minWidth={880} label="People">
             <div
               style={{
                 display: 'grid',
@@ -276,8 +276,7 @@ export function People() {
                 </div>
               )
             })}
-          </div>
-        </div>
+          </HScroll>
       </Card>
 
       <p style={{ font: '400 13px/1.7 var(--mbc-font-sans)', color: 'var(--text-muted)', margin: 0, maxWidth: '66ch' }}>

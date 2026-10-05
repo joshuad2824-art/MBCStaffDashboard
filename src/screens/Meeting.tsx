@@ -738,12 +738,14 @@ function MinutesPhase({ data, meeting }: { data: MeetingsData; meeting: MeetingR
               ? `Minutes ${minutes.status}${meeting.minutesStatus === 'approved' ? ' · approved by the Board' : ''}.`
               : meeting.status === 'held'
                 ? 'Nothing written yet.'
-                : 'The minutes are written after the meeting is adjourned.'}
+                : meeting.status === 'in_session'
+                  ? 'The meeting is in session. The secretary can start the minutes now and keep writing as it goes.'
+                  : 'The minutes open once the meeting is called to order.'}
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-            {meeting.status === 'held' || minutes ? (
+            {meeting.status === 'held' || meeting.status === 'in_session' || minutes ? (
               <Button variant={minutes ? 'outline' : 'primary'} size="md" onClick={() => void openMinutes()}>
-                {minutes ? 'Open the minutes' : 'Write the minutes'}
+                {minutes ? 'Open the minutes' : meeting.status === 'in_session' ? 'Take the minutes' : 'Write the minutes'}
               </Button>
             ) : null}
             {minutes && minutes.status !== 'draft' && meeting.minutesStatus !== 'approved' ? (
