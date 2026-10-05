@@ -57,6 +57,20 @@ const Measured = forwardRef<HTMLDivElement, { children: React.ReactNode; pad: st
   },
 )
 
+/** A line with nothing to print is not printed: a new issue starts with its songs
+    unnamed, and an empty row on the sheet is worse than a missing one. The
+    sermon line takes its words from the cover until it has its own, so the
+    sermon is typed once. */
+function printableOrder(week: CommunicatorWeek) {
+  return week.order
+    .map((item) =>
+      item.kind === 'sermon'
+        ? { ...item, title: item.title.trim() || week.sermonTitle.trim().toUpperCase(), detail: item.detail.trim() || week.scripture.trim() }
+        : item,
+    )
+    .filter((item) => item.title.trim() !== '')
+}
+
 export function WorshipPanel({
   week,
   measureRef,
@@ -73,7 +87,7 @@ export function WorshipPanel({
         <p style={{ ...panelTitle, margin: '12px 0 16px' }}>Order of worship</p>
 
         <div style={{ display: 'grid' }}>
-          {week.order.map((item) => (
+          {printableOrder(week).map((item) => (
             <div key={item.id} style={{ borderBottom: '1px solid var(--mbc-rule-hair)', padding: '7px 0' }}>
               {item.kind === 'song' ? (
                 <p style={{ font: '400 italic 17px/1.4 var(--mbc-font-serif)', color: 'var(--text-scripture)', margin: 0 }}>
@@ -441,7 +455,7 @@ export function EventsPanel({
         <p style={{ ...panelTitle, margin: '12px 0 18px' }}>Coming up</p>
 
         <div style={{ display: 'grid' }}>
-          {week.bulletinEvents.map((line) => (
+          {week.bulletinEvents.filter((line) => line.title.trim() !== '').map((line) => (
             <div
               key={line.id}
               style={{
@@ -516,9 +530,9 @@ export function EventsPanel({
           >
             <div>
               <p style={{ ...eyebrow, margin: '0 0 10px' }}>Ways to give</p>
-              {week.give.map((line) => (
+              {week.give.filter((line) => line.trim() !== '').map((line, index) => (
                 <p
-                  key={line}
+                  key={index}
                   className="tabular"
                   style={{ font: '400 14px/1.5 var(--mbc-font-sans)', color: 'var(--text-body)', margin: '0 0 4px' }}
                 >
@@ -558,9 +572,9 @@ export function EventsPanel({
               Stewardship · {year}
             </p>
             <div style={{ display: 'grid', gap: 7 }}>
-              {week.stewardship.map((line) => (
+              {week.stewardship.filter((line) => line.value.trim() !== '').map((line, index) => (
                 <div
-                  key={line.label}
+                  key={index}
                   style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}
                 >
                   <span style={{ font: '400 14px/1.4 var(--mbc-font-sans)', color: 'var(--text-body)' }}>

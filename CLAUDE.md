@@ -129,6 +129,23 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   any Board member. Joshua confirmed on 5 October 2026 that the minutes stay open to any Board member with no
   secretary seat, and that the six existing report forms are the set. Narrowing the minutes, or adding a
   report kind, is a new decision with its own migration and policy-test case, not a convenience.
+- **`src/lib/communicator.ts`** and **`src/screens/Communicator.tsx`** — the bulletin. An issue is a form the
+  office fills in and four panels that assemble from it; print is the brief's, unchanged (landscape, double-sided,
+  100%, with the overflow guard). `newIssue()` is what a fresh site starts from, and it is not blank: the church's
+  usual order of worship (`STANDARD_ORDER`, songs left for the office to name), the standing ways to give, the series
+  the last issue was in, and the next three weeks of the calendar under Coming up — by the same rule the "Pull from
+  the calendar" buttons use (audience includes `staff`, working drafts too), so the lines are marked and removable
+  and the screen says to remove any not ready to announce. `nextOpenSunday()` exists because `service_date` is
+  unique in the database: a copy, a start and a typed date all go to a Sunday no issue holds. `issueChecks()` is
+  *Before you print*, advice and not a lock — printing with a blank asks first. The panels never print an empty
+  row (a new issue is mostly blank), and the sermon line takes its words from the cover until it has its own.
+  **The page must never be a dead end:** with no issues it offers to start one (it once said "Start one" and had
+  no button, which on a database with no issues was the whole page).
+- **`src/data/store.tsx`** — every save goes through `persist()`, which reports a failure in a lasting toast. It
+  used to be `void repository.persist(next)`, so a save that failed was silent: the work stayed on screen and was
+  not in the database. Do not go back to `void`. The data layer only advances its "last saved" snapshot on success,
+  so what failed is retried with the next change; do not add a throw to `persistSnapshot` that would stop the
+  steps after it (the deletions) for a site that merely lacks a row.
 - **`src/screens/surfaces.ts`** — every surface names its `bodies`; `surfacesFor(bodies, viewAs)`
   is what the sidebar and the router are assembled from. `staffOnly` survives inside the staff
   body: it is the staff role versus a limited account, as before.
