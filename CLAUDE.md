@@ -125,7 +125,9 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   the reader does not sit in is described, never named, and the confidential committee is not listed to anyone
   outside it. The minutes open from the call to order (`in_session`), not only once the meeting is `held`.
   There is no secretary seat in the database; "secretary" is the roster title, and the policy is deliberately
-  any Board member. Narrowing it to one seat would be a decision for the Board, not a convenience.
+  any Board member. Joshua confirmed on 5 October 2026 that the minutes stay open to any Board member with no
+  secretary seat, and that the six existing report forms are the set. Narrowing the minutes, or adding a
+  report kind, is a new decision with its own migration and policy-test case, not a convenience.
 - **`src/screens/surfaces.ts`** — every surface names its `bodies`; `surfacesFor(bodies, viewAs)`
   is what the sidebar and the router are assembled from. `staffOnly` survives inside the staff
   body: it is the staff role versus a limited account, as before.
