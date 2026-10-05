@@ -9,15 +9,20 @@ import {
   bulletinDate,
   currentWeek,
   eventAsBulletinLine,
+  issueChecks,
+  newIssue,
+  nextOpenSunday,
   noticesForPublish,
   noticesForUnpublish,
   sortedWeeks,
 } from '../lib/communicator'
-import { addDays, formatDate, parseDate, startOfToday, toIso, todayIso } from '../lib/date'
+import type { IssueCheck } from '../lib/communicator'
+import { addDays, formatDate, parseDate, startOfToday, todayIso } from '../lib/date'
 import { prepareCoverImage } from '../lib/coverImage'
 import { CoverPanel, EventsPanel, PANELS, WelcomePanel, WorshipPanel } from './communicator/Sheet'
 import type { PanelKey } from './communicator/Sheet'
 import { useFitGuard } from './communicator/useFitGuard'
+import { BeforePrint, PastIssueNotice, StartIssue } from './communicator/Start'
 import type { CommunicatorWeek, OrderKind } from '../data/types'
 
 export function Communicator() {
@@ -38,15 +43,32 @@ export function Communicator() {
 
   const { refs, fits, anyOver } = useFitGuard([week, settings])
 
-  if (!week || !member) {
+  if (!member) {
     return (
       <Card tone="panel" pad={30}>
-        <p style={{ font: '400 15px/1.7 var(--mbc-font-sans)', color: 'var(--text-body)', margin: 0 }}>
-          No issue yet. Start one and the four panels format themselves.
-        </p>
+        <p style={{ font: '400 15px/1.7 var(--mbc-font-sans)', color: 'var(--text-body)', margin: 0 }}>Signing you in…</p>
       </Card>
     )
   }
+
+  /* Starting an issue. It is for the next Sunday no issue holds (the database
+     keeps one issue per Sunday), and it is not blank: the church's usual order
+     of worship, the standing ways to give, and the next three weeks of the
+     calendar are already in it. */
+  const nextDate = nextOpenSunday(data.weeks, today)
+  const calendarCount = newIssue(data, today, member.id).bulletinEvents.length
+  const startIssue = () => {
+    const issue = newIssue(data, today, member.id)
+    setOpenWeekId(issue.id)
+    const lines = issue.bulletinEvents.length
+    mutate(
+      'Started the issue for ' + formatDate(parseDate(issue.serviceDate)) + '.' +
+        (lines > 0 ? ' Coming up has ' + lines + (lines === 1 ? ' event' : ' events') + ' from the calendar — remove any that are not ready to announce.' : ''),
+      (current) => ({ ...current, weeks: [...current.weeks, issue] }),
+    )
+  }
+
+  if (!week) return <StartIssue serviceDate={nextDate} calendarCount={calendarCount} onStart={startIssue} />
 
   const published = week.status === 'published'
 
@@ -142,7 +164,8 @@ export function Communicator() {
 
   const duplicate = () => {
     const id = nextId(data.weeks)
-    const nextSunday = toIso(addDays(parseDate(week.serviceDate) ?? today, 7))
+    // One issue per Sunday is the database's rule, so a copy goes to the next free one.
+    const nextSunday = nextOpenSunday(data.weeks, addDays(parseDate(week.serviceDate) ?? today, 1))
     setOpenWeekId(id)
     mutate('Duplicated last week’s issue. Change what changed.', (current) => ({
       ...current,
@@ -168,6 +191,16 @@ export function Communicator() {
     patch('Pulled ' + line.title + ' from the calendar.', { bulletinEvents: [...week.bulletinEvents, line] })
   }
 
+  const checks = issueChecks(week, settings)
+  const todo = checks.filter((check) => !check.ok)
+  const goTo = (section: IssueCheck['section']) => {
+    const target = document.getElementById('comm-' + section)
+    if (!target) return
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    target.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' })
+    target.querySelector<HTMLElement>('input, textarea, select, button')?.focus({ preventScroll: true })
+  }
+
   const alreadyPulled = new Set(week.bulletinEvents.map((line) => line.eventId).filter(Boolean))
   const pullable = data.events.filter((event) => event.audience.includes('staff') && !alreadyPulled.has(event.id))
 
@@ -187,6 +220,10 @@ export function Communicator() {
         <EventsPanel week={week} measure measureRef={refs.events} />
         <WorshipPanel week={week} measure measureRef={refs.worship} />
       </div>
+
+      {week.serviceDate < todayIso() && !data.weeks.some((candidate) => candidate.serviceDate > week.serviceDate) ? (
+        <PastIssueNotice serviceDate={week.serviceDate} nextDate={nextDate} onStart={startIssue} />
+      ) : null}
 
       <Card tone="panel" radius="card" pad="20px 24px" style={{ display: 'grid', gap: 16 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', gap: 16 }}>
@@ -238,13 +275,21 @@ export function Communicator() {
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
         <div style={{ flex: '1 1 440px', minWidth: 0, display: 'grid', gap: 20 }}>
-          <Section title="Week details">
+          <Section title="Week details" id="week" where="the cover · page 1">
             <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
               <Input
                 label="Service date"
                 type="date"
                 value={week.serviceDate}
-                onChange={(event) => update({ serviceDate: event.target.value })}
+                onChange={(event) => {
+                  const next = event.target.value
+                  if (!next) return
+                  if (data.weeks.some((candidate) => candidate.id !== week.id && candidate.serviceDate === next)) {
+                    say('There is already an issue for that Sunday.')
+                    return
+                  }
+                  update({ serviceDate: next })
+                }}
               />
               <Input label="Series" value={week.series} onChange={(event) => update({ series: event.target.value })} />
               <Input
@@ -265,7 +310,7 @@ export function Communicator() {
             </div>
           </Section>
 
-          <Section title="Cover image">
+          <Section title="Cover image" id="cover" where="the cover · page 1">
             <div
               onDragEnter={(event) => {
                 event.preventDefault()
@@ -350,7 +395,7 @@ export function Communicator() {
             </div>
           </Section>
 
-          <Section title="Order of worship">
+          <Section title="Order of worship" id="order" where="page 4">
             <div style={{ display: 'grid', gap: 8 }}>
               {week.order.map((item, index) => (
                 <div
@@ -433,7 +478,7 @@ export function Communicator() {
             </Button>
           </Section>
 
-          <Section title="Coming up">
+          <Section title="Coming up" id="events" where="page 3">
             <div style={{ display: 'grid', gap: 10 }}>
               {week.bulletinEvents.map((line) => (
                 <div
@@ -533,7 +578,7 @@ export function Communicator() {
             </div>
           </Section>
 
-          <Section title="Giving and stewardship">
+          <Section title="Giving and stewardship" id="give" where="page 3">
             <div style={{ display: 'grid', gap: 8 }}>
               {week.give.map((line, index) => (
                 <input
@@ -582,6 +627,8 @@ export function Communicator() {
 
           <Section
             title="Standing content"
+            id="standing"
+            where="page 2"
             action={
               <button type="button" onClick={() => setSettingsOpen(!settingsOpen)} style={linkButton}>
                 {settingsOpen ? 'Close' : 'Edit standing content'}
@@ -688,6 +735,10 @@ export function Communicator() {
 
             <Rule tone="hair" />
 
+            <BeforePrint checks={checks} onGo={goTo} />
+
+            <Rule tone="hair" />
+
             <p style={{ font: '400 14px/1.6 var(--mbc-font-sans)', color: 'var(--text-body)', margin: 0 }}>
               {anyOver
                 ? 'A panel is over its 8.5 inches. Fix it above and the print button comes back — the guard is what makes this safe to hand to anyone.'
@@ -701,6 +752,7 @@ export function Communicator() {
               style={{ justifySelf: 'start' }}
               onClick={() => {
                 if (anyOver) return
+                if (todo.length > 0 && !window.confirm('Still to do:\n\n' + todo.map((check) => '• ' + check.todo).join('\n') + '\n\nPrint it anyway?')) return
                 say('Landscape, double-sided, flip on short edge, 100% scale.')
                 window.print()
               }}
@@ -788,24 +840,34 @@ const linkButton: React.CSSProperties = {
 
 function Section({
   title,
+  where,
+  id,
   action,
   children,
 }: {
   title: string
+  /** Where on the printed sheet this section lands. */
+  where?: string
+  id?: IssueCheck['section']
   action?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
-    <Card radius="card" pad={22} style={{ display: 'grid', gap: 14 }}>
-      <div style={{ display: 'grid', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
-          <span style={sectionLabel}>{title}</span>
-          {action}
+    <div id={id ? 'comm-' + id : undefined} style={{ scrollMarginTop: 190 }}>
+      <Card radius="card" pad={22} style={{ display: 'grid', gap: 14 }}>
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', gap: '4px 12px' }}>
+            <span style={sectionLabel}>{title}</span>
+            <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '2px 14px' }}>
+              {where ? <span style={{ font: '400 13px/1.4 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>Prints on {where}</span> : null}
+              {action}
+            </span>
+          </div>
+          <Rule tone="hair" />
         </div>
-        <Rule tone="hair" />
-      </div>
-      {children}
-    </Card>
+        {children}
+      </Card>
+    </div>
   )
 }
 
