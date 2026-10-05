@@ -203,7 +203,11 @@ enabled already; on a fresh project enable it under Database → Extensions (or
 `create extension citext;`) before the first push. The test stub does the same.
 
 Then seed `notice_category`, `care_type` and `church_settings` from
-`src/data/seed.ts`, and insert one row per person in `person`. There is no
+`src/data/seed.ts`, and insert one row per person in `person`. `church_settings`
+is a single row, and it has to exist: the Communicator shows the sample welcome
+text, families note and address without it, but an edit to Standing content
+updates a row that is not there and is not saved (the policy lets staff update
+that row and never create it). There is no
 self-registration: **a row in `person` is half the invitation** — the other half
 is a user under Authentication → Users — and `auth_id` is filled in by
 `claim_account()` the first time that person signs in.
