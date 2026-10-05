@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Button, Eyebrow } from '../components/ui'
 import { useReference } from '../data/reference/store'
+import { suggestDocuments } from '../data/reference/matching'
 import { useSession } from '../session/session'
 import type { GovernanceDocument, GovernanceSection, SearchHit } from '../data/reference/types'
 import { Markdown, Snippet, body as bodyStyle, meta, plainHeading } from './reference/Markdown'
@@ -100,6 +101,8 @@ export function Reference() {
   const atResults = !atDoc && query.length >= 2
 
   // Two characters fire the search; a keystroke waits a beat for the next one.
+  // The last answer stays on the page until the next arrives, so the list does
+  // not blink to "Searching…" under someone's hands with every letter.
   const searchId = useRef(0)
   useEffect(() => {
     if (query.length < 2) {
@@ -123,9 +126,11 @@ export function Reference() {
             setSearching(false)
           }
         })
-    }, 220)
+    }, 180)
     return () => window.clearTimeout(timer)
   }, [query, search])
+
+  const nearest = useMemo(() => (hits && hits.length === 0 && !searching ? suggestDocuments(documents, query) : []), [hits, searching, documents, query])
 
   const openSection = (target: GovernanceDocument, sectionAnchor: string) => {
     const next = [{ slug: target.slug, anchor: sectionAnchor, at: new Date().toISOString() }, ...recent.filter((r) => !(r.slug === target.slug && r.anchor === sectionAnchor))].slice(0, RECENT_MAX)
@@ -150,16 +155,37 @@ export function Reference() {
 
   const resultSections = hits?.length ?? 0
   const resultDocs = new Set((hits ?? []).map((h) => h.documentId)).size
+  const corrected = hits && hits.length > 0 && hits.every((h) => h.matchKind === 'corrected') ? hits[0].matchedAs : ''
+  const partial = hits !== null && hits.length > 0 && hits.every((h) => h.matchKind === 'some')
+  // A citation, a title or a heading is somewhere to go, not a list to read.
+  const first = hits && hits.length > 0 && !searching && ['citation', 'title', 'heading'].includes(hits[0].matchKind) ? hits[0] : null
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
   const countLine =
     documents.length === 0
       ? 'The corpus has not been loaded yet. The administrator loads it with the script in supabase/governance.'
       : query.length < 2
         ? `${documents.length} documents. Search finds any sentence in any of them; the categories below are for when you would rather look than ask.`
-        : searching || hits === null
+        : hits === null
           ? `Searching for “${query}”…`
-          : resultSections === 0
-            ? `No matches for “${query}”.`
-            : `${resultSections} ${resultSections === 1 ? 'section' : 'sections'} in ${resultDocs} ${resultDocs === 1 ? 'document' : 'documents'} match “${query}”. Matched words are bold and underlined.`
+          : searching
+            ? `Searching for “${query}”…`
+            : resultSections === 0
+              ? `No matches for “${query}”.`
+              : corrected
+                ? `Nothing matched “${query}”, so ${resultSections === 1 ? 'this section is the result' : `these ${resultSections} sections are the results`} for “${corrected}”. Matched words are bold and underlined.`
+                : partial
+                  ? `No section has every word of “${query}”. ${resultSections === 1 ? 'This section has' : `These ${resultSections} sections have`} some of them. Matched words are bold and underlined.`
+                  : `${plural(resultSections, 'section', 'sections')} in ${plural(resultDocs, 'document', 'documents')} match “${query}”. Matched words are bold and underlined.${first ? ' Press Enter to open the first.' : ''}`
+
+  const openFirst = () => {
+    if (!first) return
+    const target = documents.find((d) => d.id === first.documentId)
+    if (target) openSection(target, first.anchor)
+  }
+  const tryThis = (text: string) => {
+    setQ(text)
+    if (slug) navigate('/reference')
+  }
 
   return (
     <div style={{ display: 'grid', gap: 22 }}>
@@ -175,15 +201,28 @@ export function Reference() {
               if (slug) navigate('/reference')
             }}
             placeholder="A word, a phrase or a citation — chairman, kitchen, flowers, A009"
+            autoComplete="off"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint="search"
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') openFirst()
+            }}
             style={{ width: '100%', background: 'var(--surface-field)', border: '1px solid var(--mbc-border-input)', borderRadius: 12, padding: '0 18px', minHeight: 56, font: '400 18px/1 var(--mbc-font-sans)', color: 'var(--text-heading)' }}
           />
         </label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 20px', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 16 }}>
-          <p className="tabular" style={{ ...meta, font: '400 17px/1.6 var(--mbc-font-sans)', margin: 0, maxWidth: '70ch', textWrap: 'pretty' } as CSSProperties}>{countLine}</p>
+          <p role="status" className="tabular" style={{ ...meta, font: '400 17px/1.6 var(--mbc-font-sans)', margin: 0, maxWidth: '70ch', textWrap: 'pretty' } as CSSProperties}>{countLine}</p>
           {q ? (
-            <button type="button" onClick={goHome} style={link}>Clear the search</button>
+            <button type="button" onClick={goHome} style={{ ...link, minHeight: 44 }}>Clear the search</button>
           ) : null}
         </div>
+        {!q && !atDoc ? (
+          <div style={{ marginTop: 14 }}>
+            <Tries onTry={tryThis} />
+          </div>
+        ) : null}
       </section>
 
       {atDoc && doc ? (
@@ -196,7 +235,7 @@ export function Reference() {
           onSection={(a) => navigate(`/reference/${encodeURIComponent(doc.slug)}#${a}`, { replace: true })}
         />
       ) : atResults ? (
-        <Results hits={searching ? null : hits} query={query} documents={documents} onOpen={openSection} onClear={goHome} />
+        <Results hits={hits} busy={searching} query={query} documents={documents} nearest={nearest} onOpen={openSection} onOpenDocument={openDocument} onTry={tryThis} onClear={goHome} />
       ) : browse.at === 'category' ? (
         <CategoryList
           kind={browse.kind}
@@ -347,11 +386,15 @@ function CategoryList({ kind, documents, sectionsOf, openLetter, onLetter, onBac
 
 /* ------------------------------------------------------------ 2 · results */
 
-function Results({ hits, query, documents, onOpen, onClear }: {
+function Results({ hits, busy, query, documents, nearest, onOpen, onOpenDocument, onTry, onClear }: {
   hits: SearchHit[] | null
+  busy: boolean
   query: string
   documents: GovernanceDocument[]
+  nearest: GovernanceDocument[]
   onOpen(doc: GovernanceDocument, anchor: string): void
+  onOpenDocument(doc: GovernanceDocument): void
+  onTry(q: string): void
   onClear(): void
 }) {
   if (hits === null) return <p style={{ ...meta, font: '400 17px/1.6 var(--mbc-font-sans)', margin: 0 }}>Searching…</p>
@@ -360,8 +403,21 @@ function Results({ hits, query, documents, onOpen, onClear }: {
       <div style={{ background: 'var(--surface-panel)', border: '1px solid var(--border-section)', borderRadius: 'var(--mbc-radius-panel)', padding: 'clamp(30px, 3vw, 44px)', maxWidth: 720, display: 'grid', gap: 14 }}>
         <p style={{ font: '600 30px/1.2 var(--mbc-font-serif)', letterSpacing: '-.015em', color: 'var(--text-heading)', margin: 0 }}>Nothing in the manual says that.</p>
         <p style={{ font: '400 17px/1.7 var(--mbc-font-sans)', color: 'var(--text-body)', margin: 0, maxWidth: '60ch', textWrap: 'pretty' } as CSSProperties}>
-          That is an answer, not a failure — it is often the answer somebody needs in a meeting. Try a word the manual would use: kitchen, memorial, designated, vehicle, quorum. A citation works too: A009, Art. II.B.
+          That is an answer, not a failure — it is often the answer somebody needs in a meeting. Two or three letters of a word are enough, and a citation works too: A009, Art. II.B.
         </p>
+        {nearest.length > 0 ? (
+          <div style={{ display: 'grid', gap: 10 }}>
+            <span style={{ font: '700 17px/1.4 var(--mbc-font-sans)', color: 'var(--text-heading)' }}>Closest documents</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {nearest.map((d) => (
+                <button key={d.id} type="button" onClick={() => onOpenDocument(d)} style={chip}>
+                  {d.code ? `${d.code} — ` : ''}{shortTitle(d)}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        <Tries onTry={onTry} />
         <div style={{ marginTop: 6 }}>
           <Button variant="outline" size="md" onClick={onClear}>Browse the categories instead</Button>
         </div>
@@ -378,7 +434,7 @@ function Results({ hits, query, documents, onOpen, onClear }: {
     group.hits.push(hit)
   }
   return (
-    <section style={{ display: 'grid', gap: 20 }} aria-label={`Results for ${query}`}>
+    <section style={{ display: 'grid', gap: 20 }} aria-label={`Results for ${query}`} aria-busy={busy}>
       {groups.map((group) => (
         <div key={group.key} style={{ ...card, padding: '24px clamp(22px, 2vw, 30px)' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 20px', alignItems: 'baseline', justifyContent: 'space-between', paddingBottom: 16, borderBottom: '1px solid var(--border-hairline)' }}>
@@ -609,10 +665,27 @@ function plainSnippet(text: string): string {
   return text.replace(/^#{1,6}[ \t]+.*$/m, '').replace(/\s+/g, ' ').trim()
 }
 
+/** Searches that work, one press away — for the person staring at an empty field. */
+const TRY = ['kitchen', 'vehicles', 'bereavement flowers', 'quorum', 'A009', 'Art. II.B']
+
+function Tries({ onTry }: { onTry(q: string): void }) {
+  return (
+    <div role="group" aria-label="Searches to try" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+      <span style={{ ...meta, font: '400 17px/1.4 var(--mbc-font-sans)' }}>Try:</span>
+      {TRY.map((text) => (
+        <button key={text} type="button" onClick={() => onTry(text)} style={chip}>
+          {text}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function Note({ children }: { children: ReactNode }) {
   return <p style={{ ...bodyStyle, margin: 0 }}>{children}</p>
 }
 
 const card: CSSProperties = { background: 'var(--surface-card)', border: '1px solid var(--border-card)', borderRadius: 'var(--mbc-radius-panel)', padding: 'clamp(24px, 2.4vw, 34px)' }
 const link: CSSProperties = { background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: '400 17px/1.5 var(--mbc-font-sans)', color: 'var(--text-link)' }
+const chip: CSSProperties = { minHeight: 44, padding: '0 18px', borderRadius: 'var(--mbc-radius-pill)', background: 'transparent', border: '1px solid var(--border-control)', font: '400 17px/1.2 var(--mbc-font-sans)', color: 'var(--text-heading)', cursor: 'pointer', textAlign: 'left' }
 const crumb: CSSProperties = { font: '400 17px/1.5 var(--mbc-font-sans)' }

@@ -1,7 +1,8 @@
 import { supabase, supabaseConfigured } from '../../lib/supabase'
 import { seedDocuments } from '../meetings/governance'
 import { splitSections } from './sections'
-import type { GovernanceDocument, GovernanceSection, SearchHit } from './types'
+import type { GovernanceDocument, GovernanceSection, MatchKind, SearchHit } from './types'
+import { searchSections } from './matching'
 
 /* The reference's persistence seam.
    ---------------------------------
@@ -11,11 +12,12 @@ import type { GovernanceDocument, GovernanceSection, SearchHit } from './types'
    no write policy on either table — the corpus and its sections are loaded
    by supabase/governance/build-seed.mjs, by SQL.
 
-   The search is search_manual() in Postgres (0016): a citation typed as a
-   string lands on the paragraph, above the ranked text hits, and the snippet
-   marks the matched words. The stub does a plain substring pass over the
-   seeded sections and answers in the same shape, so the screen never knows
-   which one answered. */
+   The search is search_manual() in Postgres (0016, made forgiving in 0019): a
+   citation typed as a string lands on the paragraph, above a title, a heading
+   and the text, a word's start is enough, and a misspelling is corrected and
+   says so. The stub runs the same tiers over the seeded sections in
+   matching.ts and answers in the same shape, so the screen never knows which
+   one answered. */
 
 export interface ReferenceData {
   documents: GovernanceDocument[]
@@ -44,11 +46,16 @@ function readSection(row: Row): GovernanceSection {
   }
 }
 
+const MATCH_KINDS: MatchKind[] = ['citation', 'title', 'heading', 'exact', 'prefix', 'corrected', 'some']
+
 function readHit(row: Row): SearchHit {
+  const byCitation = row.by_citation === true
+  const kind = text(row.match_kind) as MatchKind
   return {
     sectionId: text(row.section_id), documentId: text(row.document_id), documentSlug: text(row.document_slug), documentKind: kindOf(row.document_kind),
     documentCode: text(row.document_code), documentTitle: text(row.document_title), anchor: text(row.anchor), citation: text(row.citation),
-    headingPath: strings(row.heading_path), position: Number(row.section_position ?? 0) || 0, byCitation: row.by_citation === true, snippet: text(row.snippet),
+    headingPath: strings(row.heading_path), position: Number(row.section_position ?? 0) || 0, byCitation, snippet: text(row.snippet),
+    matchKind: MATCH_KINDS.includes(kind) ? kind : byCitation ? 'citation' : 'exact', matchedAs: text(row.matched_as),
   }
 }
 
@@ -79,9 +86,9 @@ export class SupabaseReferenceRepository implements ReferenceRepository {
 }
 
 /** The stub: the seeded documents, split the way the loader splits them, and
-    a substring search over the result in search_manual()'s shape — citation
-    prefix matches first, then every section that contains every word, with a
-    window around the first match and the words marked. No ranking. */
+    the same tiers as search_manual() — citation, title, heading, whole words,
+    prefixes, then a correction or "some of the words" only when nothing
+    stronger answered — in the same shape (matching.ts). */
 export class LocalReferenceRepository implements ReferenceRepository {
   private data: ReferenceData | null = null
 
@@ -92,44 +99,8 @@ export class LocalReferenceRepository implements ReferenceRepository {
 
   async search(q: string): Promise<SearchHit[]> {
     const { documents, sections } = await this.load()
-    const raw = q.trim().replace(/\s+/g, ' ').toLowerCase()
-    if (!raw) return []
-    const byId = new Map(documents.map((d) => [d.id, d]))
-    const terms = raw.replace(/["“”]/g, '').split(' ').filter((t) => t.length > 1 && !t.startsWith('-'))
-    const hit = (s: GovernanceSection, byCitation: boolean): SearchHit => {
-      const doc = byId.get(s.documentId)
-      return {
-        sectionId: s.id, documentId: s.documentId, documentSlug: doc?.slug ?? '', documentKind: doc?.kind ?? 'reference', documentCode: doc?.code ?? '',
-        documentTitle: doc?.title ?? '', anchor: s.anchor, citation: s.citation, headingPath: s.headingPath, position: s.position, byCitation,
-        snippet: byCitation ? s.body.slice(0, 240) : snippetOf(s.body, terms),
-      }
-    }
-    const cited = sections
-      .filter((s) => s.citation && s.citation.toLowerCase().startsWith(raw))
-      .sort((a, b) => Number(b.citation.toLowerCase() === raw) - Number(a.citation.toLowerCase() === raw) || a.position - b.position)
-    const citedIds = new Set(cited.map((s) => s.id))
-    const texts = terms.length
-      ? sections.filter((s) => !citedIds.has(s.id) && terms.every((t) => (s.citation + ' ' + s.headingPath.join(' ') + ' ' + s.body).toLowerCase().includes(t)))
-      : []
-    return [...cited.map((s) => hit(s, true)), ...texts.map((s) => hit(s, false))].slice(0, 80)
+    return searchSections(documents, sections, q)
   }
-}
-
-/** A window of the body around the first matched word, with every matched word marked. */
-function snippetOf(body: string, terms: string[]): string {
-  const plain = body.replace(/^#{1,6}[ \t]+.*$/m, '').replace(/\s+/g, ' ').trim()
-  const lower = plain.toLowerCase()
-  const first = Math.min(...terms.map((t) => lower.indexOf(t)).filter((i) => i >= 0), plain.length)
-  let start = Math.max(0, first - 100)
-  if (start > 0) start = plain.indexOf(' ', start) + 1 || start
-  let end = Math.min(plain.length, start + 230)
-  if (end < plain.length) end = plain.lastIndexOf(' ', end) > start ? plain.lastIndexOf(' ', end) : end
-  let window = plain.slice(start, end)
-  for (const term of terms) {
-    const pattern = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig')
-    window = window.replace(pattern, (m) => `<mark>${m}</mark>`)
-  }
-  return (start > 0 ? '…' : '') + window + (end < plain.length ? '…' : '')
 }
 
 export const referenceRepository: ReferenceRepository = supabaseConfigured ? new SupabaseReferenceRepository() : new LocalReferenceRepository()
