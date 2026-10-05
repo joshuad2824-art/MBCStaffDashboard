@@ -22,6 +22,9 @@ export interface HistoryEntry {
 interface Toast {
   message: string
   undoable: boolean
+  /** A failure: stays until it is closed or for a long while, because somebody
+      is about to walk away believing their work was saved. */
+  lasting?: boolean
 }
 
 interface Store {
@@ -83,16 +86,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => () => window.clearTimeout(toastTimer.current), [])
 
-  const showToast = useCallback((message: string, undoable: boolean) => {
+  const showToast = useCallback((message: string, undoable: boolean, lasting = false) => {
     window.clearTimeout(toastTimer.current)
-    setToast({ message, undoable })
-    toastTimer.current = window.setTimeout(() => setToast(null), 3000)
+    setToast({ message, undoable, lasting })
+    toastTimer.current = window.setTimeout(() => setToast(null), lasting ? 20000 : 3000)
   }, [])
 
-  const write = useCallback((next: DashboardData) => {
-    setData(next)
-    void repository.persist(next)
-  }, [])
+  /* Saving happens after the screen has already changed, so a save that fails
+     was silent: the work stayed on screen and was not in the database. Say so.
+     The data layer only advances its "last saved" snapshot on success, so the
+     change that failed goes again with the next one. */
+  const persist = useCallback(
+    (next: DashboardData) => {
+      repository.persist(next).catch((error: unknown) => {
+        console.error(error)
+        showToast('That did not save. ' + (error instanceof Error ? error.message : 'The database could not be reached.') + ' Your next change will try it again.', false, true)
+      })
+    },
+    [showToast],
+  )
+
+  const write = useCallback(
+    (next: DashboardData) => {
+      setData(next)
+      persist(next)
+    },
+    [persist],
+  )
 
   const mutate = useCallback<Store['mutate']>(
     (label, change) => {
@@ -108,23 +128,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setHistory((entries) =>
           [{ id: historyId.current++, label, at: new Date(), snapshot: current }, ...entries].slice(0, HISTORY_CAP),
         )
-        void repository.persist(next)
+        persist(next)
         return next
       })
       showToast(label, true)
     },
-    [showToast],
+    [showToast, persist],
   )
 
-  const update = useCallback<Store['update']>((change) => {
-    if (isPreviewLocked()) return
-    setData((current) => {
-      if (!current) return current
-      const next = change(current)
-      void repository.persist(next)
-      return next
-    })
-  }, [])
+  const update = useCallback<Store['update']>(
+    (change) => {
+      if (isPreviewLocked()) return
+      setData((current) => {
+        if (!current) return current
+        const next = change(current)
+        persist(next)
+        return next
+      })
+    },
+    [persist],
+  )
 
   const undo = useCallback(() => {
     setHistory((entries) => {

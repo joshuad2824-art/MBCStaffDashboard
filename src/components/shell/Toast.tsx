@@ -9,8 +9,8 @@ export function Toast() {
 
   return (
     <div
-      role="status"
-      aria-live="polite"
+      role={toast.lasting ? 'alert' : 'status'}
+      aria-live={toast.lasting ? 'assertive' : 'polite'}
       style={{
         position: 'fixed',
         left: '50%',
@@ -29,6 +29,11 @@ export function Toast() {
       }}
     >
       <span style={{ font: '400 14px/1.4 var(--mbc-font-sans)' }}>{toast.message}</span>
+      {toast.lasting ? (
+        <Button variant="ghostDark" size="sm" style={{ minHeight: 34, padding: '9px 16px' }} onClick={dismissToast}>
+          CLOSE
+        </Button>
+      ) : null}
       {toast.undoable ? (
         <Button
           variant="ghostDark"
