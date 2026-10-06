@@ -48,8 +48,16 @@ approval is checked again when a session is restored.
 
 Local build, eight automated activation/storage checks, and browser tests of
 invalid code, password setup, reload, new-tab restoration, and cross-tab sign-out
-have passed using synthetic accounts. Production email delivery is pending.
-The Brevo sender is verified. SMTP connection still needs the user's sending key.
+have passed using synthetic accounts. GitHub CI build and all Postgres policy
+checks passed on commit `9f385f9`. Draft PR #41 contains the reviewed release.
+Migration 0020 and edge function version 1 are deployed; live denial probes
+confirmed visitors cannot read or consume activation counters.
+Production frontend publication and email delivery are pending.
+The Brevo sender is verified. SMTP connection still needs the user to paste the
+dedicated sending key into the prepared settings and save the form.
+The church domain has not yet been authenticated in this Brevo account; Brevo
+temporarily rewrites the sender domain to `brevosend.com` until that is done.
+See [Brevo's domain troubleshooting guidance](https://help.brevo.com/hc/en-us/articles/16045394674066-Troubleshooting-issues-with-domain-authentication-Brevo-code-DKIM-DMARC).
 
 1. Run `npm ci`, `npm run build`, and `npm run test:auth`.
 2. Open a PR and require CI **build** and **policies** to pass. The latter applies
