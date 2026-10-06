@@ -74,17 +74,19 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
             marginInline: 'auto',
           }}
         >
-          <p
-            style={{
-              // Raised for the deacon side: monthly users, some in their seventies.
-              font: context === 'deacon' ? '400 17px/1.7 var(--mbc-font-sans)' : '400 16px/1.7 var(--mbc-font-sans)',
-              color: 'var(--text-meta)',
-              maxWidth: context === 'deacon' ? '64ch' : '66ch',
-              margin: context === 'deacon' ? '0 0 30px' : '0 0 28px',
-            }}
-          >
-            {surface.lead}
-          </p>
+          {surface.noLeadOn === context ? null : (
+            <p
+              style={{
+                // Raised for the deacon side: monthly users, some in their seventies.
+                font: context === 'deacon' ? '400 17px/1.7 var(--mbc-font-sans)' : '400 16px/1.7 var(--mbc-font-sans)',
+                color: 'var(--text-meta)',
+                maxWidth: context === 'deacon' ? '64ch' : '66ch',
+                margin: context === 'deacon' ? '0 0 30px' : '0 0 28px',
+              }}
+            >
+              {surface.lead}
+            </p>
+          )}
 
           {children}
         </main>
