@@ -1,4 +1,6 @@
 -- 13. Activation counters never become a public directory or a bypass of approval.
+-- The disposable test helpers initially grant usage to anon/authenticated only.
+grant usage on schema test to service_role;
 select test.sign_out();
 set role anon;
 select test.refused('select * from activation_request_limit', '42501', 'activation: signed-out cannot read counters');
