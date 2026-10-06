@@ -2,8 +2,10 @@ import { splitSections } from '../reference/sections'
 import { searchSections } from '../reference/matching'
 import type { GovernanceDocument, GovernanceSection, SearchHit } from '../reference/types'
 
-/* Robert's Rules of Order — the deacon side's parliamentary quick reference.
+/* Robert's Rules of Order — the 1915 text, behind the plain-language guide.
    --------------------------------------------------------------------------
+   The guide (guide.ts) is what the surface opens on and searches; this is
+   Robert's own words, which the guide's section citations open (/rules/1915).
    The text is General Henry M. Robert's *Robert's Rules of Order Revised*
    (1915), the last edition in the public domain, as the Constitution Society
    put it online in 1996 and as the PDF of that page set was supplied to us.
@@ -21,8 +23,8 @@ import type { GovernanceDocument, GovernanceSection, SearchHit } from '../refere
    Unlike the church's manual, this lives in the bundle and not in the
    database. It is a published book, it is nobody's record, and there is no
    question of who may read it; a table and a policy would be a gate with
-   nothing behind it. It is a separate chunk, fetched the first time someone
-   opens the surface, so nobody else downloads it.
+   nothing behind it. Each file is a separate chunk, fetched the first time
+   someone opens this layer.
 
    The search is the manual's own stub (matching.ts) over these sections — the
    same tiers, so it forgives two letters and a misspelling the same way —
@@ -98,6 +100,18 @@ export function loadRulesBook(): Promise<RulesBook> {
     loading = null
   })
   return loading
+}
+
+/** Which article file holds a numbered section, without loading the book —
+    so a guide article can link "§28" straight to /rules/1915/art-05#s28. */
+const ARTICLE_SPANS: [string, number, number][] = [
+  ['art-01', 1, 10], ['art-02', 11, 15], ['art-03', 16, 20], ['art-04', 21, 27], ['art-05', 28, 34], ['art-06', 35, 41], ['art-07', 42, 45],
+  ['art-08', 46, 48], ['art-09', 49, 57], ['art-10', 58, 62], ['art-11', 63, 68], ['art-12', 69, 71], ['art-13', 72, 75],
+]
+
+export function sectionPath(n: number): string | null {
+  const span = ARTICLE_SPANS.find(([, lo, hi]) => n >= lo && n <= hi)
+  return span ? `/rules/1915/${span[0]}#s${n}` : null
 }
 
 /** The section a citation names, by number: "29", "§29", "sec. 29", "s29". */

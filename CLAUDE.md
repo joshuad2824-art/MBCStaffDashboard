@@ -102,19 +102,25 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   loader's splitter and must only agree with it; the loader decides what production holds.
   `screens/Reference.tsx` is the three states of the expansion brief §A.4, identical on both sides;
   the discrepancy docket is not on it, at Joshua's ask, and no screen reads `governance_finding` today.
-- **`src/data/parliamentary/`** and **`src/screens/RobertsRules.tsx`** — Robert's Rules, at the foot of the deacon
-  side's menu (group 4) for everyone on that side, committee members included. The text is the 1915 *Robert's Rules
-  of Order Revised* (public domain), from the Constitution Society's online edition, whose notice permits non-profit
-  copying with attribution and its links kept — the landing page and every printout carry both, and they stay. It is
-  markdown in `robert-1915/`, one file per article plus the preface, the introduction and the two tables of motions
-  written out in words; the Lesson Outlines and the page index are left out. It is bundled, in its own lazily loaded
-  chunks, and not in the database: a published book is nobody's record, so there is no policy to write and no
-  migration. Do not move the church's manual this way — that one is in Postgres so that who may read it is a policy.
-  `book.ts` splits it with the manual's splitter, cites each numbered heading as `§N`, and searches it with the
-  manual's stub (`matching.ts`) plus one rule: a number or an article on its own (`29`, `§29`, `art v`) is a citation.
-  The order-of-precedence table on the landing is typed out in the screen; where it and the text disagree (§30 says
-  limit-debate motions may be amended, the reformatted list leaves the column blank) the section's words win and the
-  file says so.
+- **`src/data/parliamentary/`** and **`src/screens/rules/`** — Robert's Rules, at the foot of the menu on **both
+  sides** (group 4), for everyone who signs in. Two layers. `/rules` is the **plain-language guide**: 46 articles
+  written for MBC (`guide/articles/*.md`, front matter per `guide/README.md`, which also holds the voice rules and
+  the MBC overrides). It opens on `i-want-to.md`; the cheat sheet, the precedence ladder and the glossary are a tap
+  away from every article; "At MBC" is set apart because that is where the bylaws override Robert's. **Don't reword
+  the articles** — the voice is deliberate and every claim was checked against the 1915 text and the corpus.
+  `/rules/1915` is **Robert's own words**: the 1915 *Robert's Rules of Order Revised* (public domain), from the
+  Constitution Society's online edition, one markdown file per article in `robert-1915/`; a guide article's `§N`
+  citations open it there. Both carry the Society's credit and link, as its notice requires; keep them.
+  Joshua decided on 6 October 2026, departing from `guide/HANDOFF.md`: the guide ships **in the bundle**, not in
+  `governance_document` (it explains a public-domain book and is nobody's record, so there is no policy to write and
+  no migration), every article is `status: approved`, and the surface is on both sides. Do not move the church's
+  manual this way — that one is in Postgres so that who may read it is a policy. Both layers search with the
+  manual's stub (`matching.ts`). In the guide, the title, short title and `search_terms` are what the title tier
+  reads, so a phrase people say ("table it") lands on its article first; a section number on its own (`28`, `§28`)
+  lists the articles resting on it and links to the 1915 text. `GuideMarkdown.tsx` renders what the articles use and
+  the manual's renderer doesn't: links between articles, tables, the facts strip as chips, nested lists. In the 1915
+  layer, where its order-of-precedence table and the text disagree (§30 says limit-debate motions may be amended),
+  the section's words win and the file says so.
 - **`src/lib/serving.ts`** and **`src/screens/Ministries.tsx`** — the directory. Everything derived is
   derived here and stored nowhere: whether a group has a gap (nobody in a leading role, which the
   group's kind decides — a class a teacher, a community group a host, a team a coordinator), the open
