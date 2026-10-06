@@ -11,6 +11,7 @@ import { Discussion } from './screens/Discussion'
 import { Calendar } from './screens/Calendar'
 import { Year } from './screens/Year'
 import { Reference } from './screens/Reference'
+import { RobertsRules } from './screens/RobertsRules'
 import { Care } from './screens/Care'
 import { CareList } from './screens/CareList'
 import { DeaconWeek } from './screens/DeaconWeek'
@@ -32,6 +33,7 @@ const SCREENS: Record<string, ReactNode> = {
   reports: <Reports />,
   year: <Year />,
   reference: <Reference />,
+  robertsRules: <RobertsRules />,
   boardCalendar: <Calendar side="deacon" />,
   boardDiscussion: <Discussion side="deacon" />,
   today: <Today />,

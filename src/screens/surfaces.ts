@@ -20,7 +20,8 @@ export interface Surface {
   path: string
   /** The nav label; the title is the H1. */
   nav: string
-  /** Sidebar group: 0 the landing screen, 1 the week, 2 the instruments. */
+  /** Sidebar group: 0 the landing screen, 1 the week, 2 the instruments, 3 the
+      committee rooms, 4 the reference kept at the foot of the menu. */
   group: number
   eyebrow: string
   title: string
@@ -105,6 +106,23 @@ export const SURFACES: Record<string, Surface> = {
     eyebrow: 'The manual, as transcribed',
     title: 'Governance reference',
     lead: 'The constitution, bylaws, policies and procedures, as transcribed — searchable down to the paragraph, and the same on both sides. This surface reads; nothing here edits the record.',
+  },
+  /* Robert's Rules, at the foot of the deacon side's menu (group 4, below the
+     committee rooms): a reference anyone at the table may need mid-meeting.
+     Everyone on the deacon side gets it, committee members included, as with
+     the year and the manual. It reads only, and what it reads is a public-
+     domain book bundled with the app (src/data/parliamentary/book.ts), not a
+     record — the route is the only gate it needs. */
+  robertsRules: {
+    nav: 'Robert’s Rules',
+    group: 4,
+    bodies: ['deacon-board', 'committee:finance', 'committee:personnel', 'committee:building-grounds', 'committee:family-assistance'],
+    side: 'deacon',
+    nested: true,
+    path: '/rules',
+    eyebrow: 'Parliamentary procedure',
+    title: 'Robert’s Rules of Order',
+    lead: 'The 1915 edition of Robert’s Rules of Order Revised, searchable down to the section, with the order of precedence of motions on one table. For the chair and for anyone at the table who needs to know, quickly, whether a motion is in order and what vote it takes.',
   },
   boardCare: {
     nav: 'Care',
