@@ -5,9 +5,9 @@ Updated October 6, 2026. This is the starting point for this release.
 ## Approved behavior
 
 Joshua approved an emailed activation code, choosing a personal password,
-and an option to stay signed in on the same device. The sender is
-`Memorial Baptist Church <mbcstudents@memorialbaptist.com>` through the existing
-Brevo account. A shared church-wide code does not confer access.
+and an option to stay signed in on the same device. The sender uses Joshua’s verified Gmail address through the existing Brevo
+account, with the display name `Memorial Baptist Church`. Brevo rewrites the
+Gmail address to its `brevosend.com` delivery domain. A shared church-wide code does not confer access.
 
 1. Choose **First time here? Activate your account** and enter the approved address.
 2. Enter the complete newest code from the email (the live project uses eight digits).
@@ -49,20 +49,17 @@ approval is checked again when a session is restored.
 Local build, nine automated activation/storage checks, and browser tests of
 invalid code, password setup, reload, new-tab restoration, and cross-tab sign-out
 have passed using synthetic accounts. GitHub CI build and all Postgres policy
-checks passed on commit `7a42bc5`. Draft PR #41 contains the reviewed release.
+checks passed on implementation commit `3c45d14`. PR #41 contains the release.
 Migration 0020 and edge function version 1 are deployed; live denial probes
 confirmed visitors cannot read or consume activation counters.
-Production frontend publication and successful mailbox delivery are pending.
-The Brevo sender is verified and the dedicated SMTP key is saved. With Joshua's
-approval, Brevo authorized outbound server `44.240.241.111`; existing blocking
-protection and the Davis Dashboard server entry remain intact. The next test
-passed SMTP and reached Brevo, but Barracuda rejected it with
-`550 permanent failure for one or more recipients (...:blocked)`.
-The mailbox delivery issue must be resolved before the frontend is published.
-The church domain has not yet been authenticated in this Brevo account; Brevo
-documents temporary rewriting to `brevosend.com` until that is done, but the
-observed MBC test retained `mbcstudents@memorialbaptist.com` as its sender.
-See [Brevo's domain troubleshooting guidance](https://help.brevo.com/hc/en-us/articles/16045394674066-Troubleshooting-issues-with-domain-authentication-Brevo-code-DKIM-DMARC).
+The custom SMTP key is saved. With Joshua's approval, Brevo authorized outbound
+server `44.240.241.111`; existing blocking protection and the Davis Dashboard
+server entry remain intact. The church-address sender's test was rejected by
+Barracuda. Joshua selected his existing verified Gmail sender instead.
+The replacement test on October 6 at 2:39 PM Central was recorded as **Delivered**
+to the owner's approved church mailbox by Brevo. No church DNS changes were made.
+Production frontend publication and the owner's live password entry remain to
+be checked; synthetic tests already cover the complete password setup flow.
 
 1. Run `npm ci`, `npm run build`, and `npm run test:auth`.
 2. Open a PR and require CI **build** and **policies** to pass. The latter applies
@@ -75,7 +72,7 @@ See [Brevo's domain troubleshooting guidance](https://help.brevo.com/hc/en-us/ar
    the dedicated Brevo key directly in Password and save the form.
 5. Check Brevo's authorized sending IPs for this Supabase project's outbound
    mail. Preserve existing entries and IP enforcement. Check domain authentication
-   before relying on production delivery.
+   if switching to a church-domain sender later.
 6. The **Magic link or OTP** template must contain `{{ .Token }}`; retain
    `{{ .ConfirmationURL }}` for link compatibility. This template was updated in
    preparation. Keep signup disabled and the canonical Site URL
