@@ -20,6 +20,7 @@ jobs:
 
       # `npm run build` is `tsc -b && vite build`, so this is the typecheck too.
       - run: npm run build
+      - run: npm run test:auth
 
   # The build proves the code compiles. This proves the policies hold: the
   # migrations are applied to a throwaway Postgres and supabase/tests/policies.sql

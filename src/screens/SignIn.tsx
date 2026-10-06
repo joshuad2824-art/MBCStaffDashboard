@@ -1,240 +1,85 @@
 import { useState } from 'react'
-import { Button, Card, Eyebrow, Input } from '../components/ui'
+import { Button, Eyebrow, Input } from '../components/ui'
+import { AccountSetupFrame, AuthMessage, authCopy, authLink } from '../components/AccountSetupFrame'
+import { RememberDevice } from '../components/RememberDevice'
 import { useData } from '../data/store'
 import { canSignIn } from '../data/types'
 import { useSession } from '../session/session'
-
-/* Invite-only. There is no sign-up.
-
-   With Supabase configured this screen accepts an administrator-created
-   password and also keeps magic links as a fallback. Without it the app is on
-   seed data and "Open the link" stands in for clicking one — which is fine on
-   a laptop and is not fine on a deployed site, so the stub says so out loud. */
-
-type SignInMethod = 'password' | 'link'
-
+type Method = 'password' | 'activate' | 'recover' | 'link'
 export function SignIn() {
   const { people } = useData()
   const { signIn, auth } = useSession()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [method, setMethod] = useState<SignInMethod>('password')
+  const [code, setCode] = useState('')
+  const [method, setMethod] = useState<Method>('password')
   const [sent, setSent] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-
+  const [resendAt, setResendAt] = useState(0)
   const live = auth.mode === 'supabase'
   const passwordMode = live && method === 'password'
+  const codeMode = live && (method === 'activate' || method === 'recover')
   const shown = error ?? auth.error
-
-  const submit = async () => {
+  const choose = (next: Method) => {
+    setMethod(next); setSent(null); setCode(''); setPassword(''); setError(null); auth.clearError()
+  }
+  const request = async () => {
     const address = email.trim().toLowerCase()
-    if (!address) {
-      setError('Enter your church email address.')
-      return
-    }
+    setError(null)
+    if (!address) { setError('Enter your approved email address.'); return }
     if (passwordMode) {
-      if (!password) {
-        setError('Enter your password.')
-        return
-      }
-      setError(null)
+      if (!password) { setError('Enter your password.'); return }
       await auth.signInWithPassword(address, password)
       return
     }
+    if (codeMode && Date.now() < resendAt) { setError('Please wait one minute before requesting another code.'); return }
+    const ok = codeMode ? await auth.requestCode(address) : await auth.requestLink(address)
+    if (ok) { setSent(address); setCode(''); setResendAt(Date.now() + 60000) }
+  }
+  const verify = async () => {
     setError(null)
-    // A real magic link never says whether the address is on staff — that would
-    // turn the form into a roster. The stub keeps the same silence.
-    const ok = await auth.requestLink(address)
-    if (ok) setSent(address)
+    if (!/^\d{6}$/.test(code)) { setError('Enter the six-digit code from your email.'); return }
+    if (sent) await auth.verifyCode(sent, code)
   }
-
-  const openLink = () => {
-    // Only someone with an account: a person on the roster who owns things but
-    // has not been invited cannot sign in.
-    const member = people.find((person) => person.email.toLowerCase() === sent && canSignIn(person))
-    if (!member) {
-      setError('That link did not sign anyone in. Ask the office to send an invitation.')
-      setSent(null)
-      return
-    }
-    signIn(member.id)
+  const openStub = () => {
+    const member = people.find(person => person.email.toLowerCase() === sent && canSignIn(person))
+    if (member) signIn(member.id)
+    else { setError('That link did not sign anyone in. Ask the office to send an invitation.'); setSent(null) }
   }
-
-  const back = () => {
-    setSent(null)
-    setError(null)
-    auth.clearError()
-  }
-
-  const message = (text: string, tone: 'error' | 'muted') => (
-    <p
-      style={{
-        font: '400 13px/1.6 var(--mbc-font-sans)',
-        color: tone === 'error' ? 'var(--text-error)' : 'var(--text-muted)',
-        margin: 0,
-      }}
-    >
-      {text}
-    </p>
-  )
-
-  return (
-    <div style={{ minHeight: 'var(--ui-vh)', display: 'grid', placeItems: 'center', padding: '40px 24px' }}>
-      <div style={{ width: '100%', maxWidth: 430 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, marginBottom: 30 }}>
-          <img src="/assets/mbc-mark.png" alt="" width={44} height={44} style={{ objectFit: 'contain' }} />
-          <div style={{ textAlign: 'center' }}>
-            <p
-              style={{
-                font: '600 30px/1.1 var(--mbc-font-serif)',
-                letterSpacing: '-.02em',
-                color: 'var(--text-heading)',
-                margin: 0,
-              }}
-            >
-              Staff dashboard
-            </p>
-            <p style={{ font: '400 15px/1.6 var(--mbc-font-sans)', color: 'var(--text-meta)', margin: '10px 0 0' }}>
-              Memorial Baptist Church · Tulsa
-            </p>
-          </div>
-        </div>
-
-        <Card pad={34}>
-          {sent === null ? (
-            <form
-              style={{ display: 'grid', gap: 22 }}
-              onSubmit={(event) => {
-                event.preventDefault()
-                void submit()
-              }}
-            >
-              <div>
-                <Eyebrow>Invite only</Eyebrow>
-                <p
-                  style={{
-                    font: '400 15px/1.65 var(--mbc-font-sans)',
-                    color: 'var(--text-body)',
-                    margin: '12px 0 0',
-                    maxWidth: '46ch',
-                  }}
-                >
-                  {passwordMode
-                    ? 'There is no public sign-up. Sign in with the church email and password that were created for you.'
-                    : 'There is no public sign-up. Enter your church email and we will send a one-time sign-in link.'}
-                </p>
-              </div>
-              <Input
-                label="Church email"
-                on="card"
-                type="email"
-                autoComplete="email"
-                placeholder="name@memorialbaptist.com"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-              {passwordMode ? (
-                <Input
-                  label="Password"
-                  on="card"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
-              ) : null}
-              <Button type="submit" variant="primary" full shape="input" disabled={auth.sending}>
-                {auth.sending
-                  ? passwordMode
-                    ? 'Signing in…'
-                    : 'Sending…'
-                  : passwordMode
-                    ? 'Sign in'
-                    : 'Email me a sign-in link'}
-              </Button>
-              {shown ? message(shown, 'error') : null}
-              {live ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMethod(passwordMode ? 'link' : 'password')
-                    setError(null)
-                    auth.clearError()
-                  }}
-                  style={linkButton}
-                >
-                  {passwordMode ? 'Use an emailed link instead' : 'Use a password instead'}
-                </button>
-              ) : null}
-              {live
-                ? null
-                : message('Sign-in is not connected yet: this build runs on sample data and sends no mail.', 'muted')}
-              <p
-                style={{
-                  font: '400 13px/1.6 var(--mbc-font-sans)',
-                  color: 'var(--text-muted)',
-                  margin: 0,
-                  paddingTop: 20,
-                  borderTop: '1px solid var(--border-card)',
-                }}
-              >
-                Care pipelines and the discussion board hold named members’ circumstances. Access is by role, enforced
-                in the database.
-              </p>
-            </form>
-          ) : (
-            <div style={{ display: 'grid', gap: 22 }}>
-              <div>
-                <Eyebrow tone="sage">Link sent</Eyebrow>
-                <p
-                  style={{
-                    font: '600 22px/1.3 var(--mbc-font-serif)',
-                    color: 'var(--text-heading)',
-                    margin: '12px 0 0',
-                  }}
-                >
-                  Check your inbox.
-                </p>
-                <p style={{ font: '400 15px/1.65 var(--mbc-font-sans)', color: 'var(--text-body)', margin: '12px 0 0' }}>
-                  {live
-                    ? `If ${sent} is on staff, a link is on its way. It expires in fifteen minutes, can be used once, and has to be opened on this device.`
-                    : `We sent a link to ${sent}. It expires in fifteen minutes and can be used once.`}
-                </p>
-              </div>
-              {live ? null : (
-                <Button variant="dark" full shape="input" onClick={openLink}>
-                  Open the link
-                </Button>
-              )}
-              {shown ? message(shown, 'error') : null}
-              <button type="button" onClick={back} style={linkButton}>
-                {live ? 'Use a different email, or send another link' : 'Use a different email'}
-              </button>
-            </div>
-          )}
-        </Card>
-
-        <p
-          style={{
-            font: '400 12px/1.6 var(--mbc-font-sans)',
-            color: 'var(--text-muted)',
-            textAlign: 'center',
-            margin: '26px 0 0',
-          }}
-        >
-          for the glory of God and the good of all people
-        </p>
-      </div>
+  return <AccountSetupFrame>
+    <div style={{ display: 'grid', gap: 20 }}>
+      <Eyebrow>{sent ? codeMode ? 'Check your email' : 'Sign-in link' : method === 'activate' ? 'First time here?' : method === 'recover' ? 'Reset your password' : 'Invite only'}</Eyebrow>
+      <p style={{ ...authCopy, overflowWrap: 'anywhere' }}>{sent
+        ? codeMode ? `If ${sent} is approved for access, a one-time code is on its way. Enter it here to choose your password. Use the newest code; each code works once.` : `If ${sent} has an account, a one-time sign-in link is on its way. Open it on this device.`
+        : codeMode ? 'Enter the email address the church has approved for you. We’ll email a code, then help you choose your own password.'
+        : passwordMode ? 'Sign in with your email and password. If you haven’t set a password yet, choose “First time here?” below.'
+        : 'Enter your approved email address and we’ll send a one-time sign-in link.'}</p>
+      {sent && codeMode ? <form style={{ display: 'grid', gap: 18 }} onSubmit={event => { event.preventDefault(); void verify() }}>
+        <Input label="Six-digit code" on="card" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required autoFocus value={code} onChange={event => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))} />
+        <RememberDevice />
+        <Button type="submit" variant="primary" full shape="input" disabled={auth.sending}>{auth.sending ? 'Checking…' : 'Verify code'}</Button>
+      </form> : sent ? <>
+        <RememberDevice />
+        {!live ? <Button variant="dark" full shape="input" onClick={openStub}>Open the link</Button> : null}
+      </> : <form style={{ display: 'grid', gap: 18 }} onSubmit={event => { event.preventDefault(); void request() }}>
+        <Input label="Email address" on="card" type="email" autoComplete="email" placeholder="Your approved email address" required value={email} onChange={event => setEmail(event.target.value)} />
+        {passwordMode ? <Input label="Password" on="card" type="password" autoComplete="current-password" required value={password} onChange={event => setPassword(event.target.value)} /> : null}
+        <RememberDevice />
+        <Button type="submit" variant="primary" full shape="input" disabled={auth.sending}>{auth.sending ? passwordMode ? 'Signing in…' : 'Requesting…' : passwordMode ? 'Sign in' : codeMode ? 'Email me a code' : 'Email me a sign-in link'}</Button>
+      </form>}
+      <AuthMessage text={shown} error />
+      {sent ? <div style={{ display: 'grid', gap: 2 }}>
+        {codeMode ? <button type="button" style={authLink} disabled={auth.sending} onClick={() => void request()}>Request a new code</button> : null}
+        <button type="button" style={authLink} disabled={auth.sending} onClick={() => { setSent(null); setCode(''); setError(null); auth.clearError() }}>Use a different email</button>
+        <button type="button" style={authLink} disabled={auth.sending} onClick={() => choose('password')}>Back to sign in</button>
+      </div> : live ? <div style={{ display: 'grid', gap: 2 }}>
+        {method === 'password' ? <>
+          <button type="button" style={authLink} disabled={auth.sending} onClick={() => choose('activate')}>First time here? Activate your account</button>
+          <button type="button" style={authLink} disabled={auth.sending} onClick={() => choose('recover')}>Forgot your password?</button>
+          <button type="button" style={authLink} disabled={auth.sending} onClick={() => choose('link')}>Use an emailed link instead</button>
+        </> : <button type="button" style={authLink} disabled={auth.sending} onClick={() => choose('password')}>Back to sign in</button>}
+      </div> : <AuthMessage text="This local preview uses sample data and sends no mail." />}
+      <p style={{ ...authCopy, fontSize: 12, color: 'var(--text-muted)', paddingTop: 16, borderTop: '1px solid var(--border-card)' }}>Access is by invitation and role. Activating an account keeps the permissions the church has assigned.</p>
     </div>
-  )
+  </AccountSetupFrame>
 }
-
-const linkButton = {
-  background: 'none',
-  border: 'none',
-  padding: 0,
-  font: '400 14px/1.5 var(--mbc-font-sans)',
-  color: 'var(--text-link)',
-  cursor: 'pointer',
-  justifySelf: 'start',
-} as const

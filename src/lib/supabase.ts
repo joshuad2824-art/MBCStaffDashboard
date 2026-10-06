@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { browserDeviceStorage } from './deviceStorage'
 
 /* The auth seam.
 
@@ -20,6 +21,22 @@ const url = (import.meta.env.VITE_SUPABASE_URL ?? '').trim()
 const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? '').trim()
 
 export const supabaseConfigured = Boolean(url && anonKey)
+const storageKey = url ? `sb-${new URL(url).hostname.split('.')[0]}-auth-token` : 'mbc.auth.local'
+export const deviceStorage = browserDeviceStorage(storageKey)
+
+const SETUP_KEY = 'mbc.auth.password-setup'
+export function passwordSetupEmail(): string | null {
+  try { return window.sessionStorage.getItem(SETUP_KEY) } catch { return null }
+}
+export function markPasswordSetup(email: string | null): void {
+  try {
+    if (email) window.sessionStorage.setItem(SETUP_KEY, email)
+    else window.sessionStorage.removeItem(SETUP_KEY)
+  } catch { /* The current page still keeps the setup state. */ }
+}
+const callback = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+export const passwordSetupCallback = ['invite', 'recovery'].includes(callback.get('type') ?? '') ||
+  new URLSearchParams(window.location.search).get('setup') === 'password'
 
 /* Read the callback off the URL before the client is built.
 
@@ -40,12 +57,12 @@ function readCallbackFailure(): string | null {
   // Say the one thing the person can act on. The raw text underneath is written
   // for whoever wired the project up, not for whoever is trying to get to work.
   if (code === 'otp_expired') {
-    return 'That sign-in link has expired. Links last fifteen minutes — ask for a fresh one below.'
+    return 'That sign-in link has expired. Ask for a fresh one below.'
   }
   // Supabase answers a used link and a stale one with the same sentence, so
   // this says both rather than guessing at which it was.
   if (code === 'access_denied' || /invalid|expired/i.test(described ?? '')) {
-    return 'That sign-in link is no longer good — links last fifteen minutes and work only once. Ask for a fresh one below.'
+    return 'That sign-in link is no longer good. Ask for a fresh one below.'
   }
   return described ? described.replace(/\+/g, ' ') : 'That sign-in link did not work. Ask for a fresh one below.'
 }
@@ -64,6 +81,8 @@ export const supabase: SupabaseClient | null = supabaseConfigured
   ? createClient(url, anonKey, {
       auth: {
         persistSession: true,
+        storageKey,
+        storage: deviceStorage.storage,
         autoRefreshToken: true,
         // Invites sent from the Supabase dashboard and links sent from this app
         // come back in different shapes. This is what reads both of them.

@@ -4,6 +4,7 @@ import { AppShell } from './components/shell/AppShell'
 import { SURFACES, isStub, surfacesFor } from './screens/surfaces'
 import { Stub } from './components/shell/Stub'
 import { SignIn } from './screens/SignIn'
+import { SetPassword } from './screens/SetPassword'
 import { Today } from './screens/Today'
 import { Huddle } from './screens/Huddle'
 import { Cadence } from './screens/Cadence'
@@ -63,6 +64,7 @@ export function App() {
      somebody who has just done everything right that it did not work. */
   if (auth.checking) return <Waiting />
   if (!member) return <SignIn />
+  if (auth.needsPassword) return <SetPassword />
 
   /* Routes exist only for the surfaces this person may open. Typing the path
      of any other gets the same answer as a path that was never there: the

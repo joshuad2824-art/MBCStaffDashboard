@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react'
 import { useData, useStore } from '../data/store'
 import { nextId } from '../lib/derive'
-import { clearCallbackFromUrl, linkFailure, supabase, supabaseConfigured } from '../lib/supabase'
+import { clearCallbackFromUrl, deviceStorage, linkFailure, markPasswordSetup, passwordSetupCallback, passwordSetupEmail, supabase, supabaseConfigured } from '../lib/supabase'
 import { loadAccount } from './account'
 import type { Account, Seat } from './account'
 import { seedSeatsFor } from '../data/seed'
@@ -15,12 +15,12 @@ import type { PreviewSeat } from './viewAs'
    There are two ways in, and which one is live depends on whether the build
    carries VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY:
 
-   **Supabase.** A person can sign in with an administrator-created password or
-   ask for an emailed link. Either route brings a session back to the site, and
+   **Supabase.** An approved person can verify an emailed code, choose a password,
+   or sign in with an existing password or emailed link. Each route brings a session back to the site, and
    `claim_account()` says whether the verified address belongs to somebody on
    the roster and what they may see. There is no sign-up: a person gets in
-   because staff put them on the roster and created an account, and for no
-   other reason.
+   because staff already approved their roster access. The server provisions
+   missing passwordless accounts only for those approved addresses.
 
    **The stub.** No variables, no network: entering a known address from
    src/data/seed.ts and pressing "Open the link" signs you in. This is what
@@ -70,6 +70,13 @@ export interface AuthValue {
   signInWithPassword(email: string, password: string): Promise<boolean>
   /** Resolves true when the screen should say "check your inbox". */
   requestLink(email: string): Promise<boolean>
+  requestCode(email: string): Promise<boolean>
+  verifyCode(email: string, code: string): Promise<boolean>
+  needsPassword: boolean
+  finishPasswordSetup(password: string): Promise<boolean>
+  rememberDevice: boolean
+  setRememberDevice(value: boolean): void
+  storageNotice: string | null
 }
 
 interface SessionValue {
@@ -144,6 +151,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [checking, setChecking] = useState(supabaseConfigured)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(linkFailure)
+  const [needsPassword, setNeedsPassword] = useState(passwordSetupCallback || Boolean(passwordSetupEmail()))
+  const setupAddress = useRef<string | null>(passwordSetupEmail())
+  const setupFromCallback = useRef(passwordSetupCallback)
+  const [rememberDevice, setRemember] = useState(deviceStorage.isRemembered())
+  const [storageNotice, setStorageNotice] = useState(deviceStorage.notice())
+  const authRevision = useRef(0)
   const claimedFor = useRef<string | null>(null)
 
   const signIn = useCallback((id: number) => {
@@ -158,6 +171,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = useCallback(() => {
+    authRevision.current++
+    setupAddress.current = null
+    setupFromCallback.current = false
+    markPasswordSetup(null)
+    setNeedsPassword(false)
     try {
       window.localStorage.removeItem(SESSION_KEY)
     } catch {
@@ -168,7 +186,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setStaffId(null)
     setPreviewSeat(null)
     setPresentMode(false)
-    if (supabase) void supabase.auth.signOut()
+    if (supabase) void supabase.auth.signOut({ scope: 'local' }).finally(() => {
+      deviceStorage.clear()
+      setRemember(false)
+      setStorageNotice(null)
+    })
+  }, [])
+
+  const setRememberDevice = useCallback((value: boolean) => {
+    setStorageNotice(deviceStorage.choose(value))
+    setRemember(value)
   }, [])
 
   /* Read-only has to be real: every store's write path asks this lock before
@@ -194,6 +221,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     let live = true
 
     const resolve = async (email: string | undefined) => {
+      const revision = ++authRevision.current
       if (!email) {
         if (live) {
           setAccount(null)
@@ -203,8 +231,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         return
       }
       const found = await loadAccount()
-      if (!live) return
+      if (!live || revision !== authRevision.current) return
+      if (found.state === 'failed') {
+        // A network failure does not revoke a remembered device.
+        setError(found.message)
+        setChecking(false)
+        return
+      }
       if (found.state === 'account') {
+        const pending = setupAddress.current ?? passwordSetupEmail()
+        if (setupFromCallback.current) {
+          setupAddress.current = found.account.email
+          markPasswordSetup(found.account.email)
+          setupFromCallback.current = false
+        }
+        setNeedsPassword(setupAddress.current === found.account.email || pending === found.account.email)
         setAccount(found.account)
         setError(null)
         clearCallbackFromUrl()
@@ -220,21 +261,35 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           ? NOT_ON_ROSTER
           : found.state === 'not-set-up'
             ? NOT_SET_UP
-            : found.message,
+            : NOT_SET_UP,
       )
       clearCallbackFromUrl()
       setChecking(false)
-      void supabase?.auth.signOut()
+      setupAddress.current = null
+      markPasswordSetup(null)
+      setNeedsPassword(false)
+      void supabase?.auth.signOut({ scope: 'local' })
     }
 
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         if (!live) return
+        authRevision.current++
         claimedFor.current = null
         setAccount(null)
         setStaffId(null)
         setChecking(false)
+        setNeedsPassword(false)
+        markPasswordSetup(null)
+        setupAddress.current = null
+        deviceStorage.clear()
+        setRemember(false)
         return
+      }
+      if (event === 'PASSWORD_RECOVERY') {
+        setupAddress.current = session?.user?.email ?? null
+        markPasswordSetup(setupAddress.current)
+        setNeedsPassword(true)
       }
       // Supabase holds its auth lock while this callback runs. `resolve()`
       // calls RPCs on the same client, so starting it here can deadlock the
@@ -247,6 +302,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // event, so nothing above would ever stop the "checking" state.
     void supabase.auth.getSession().then(({ data: current }) => {
       if (live && !current.session) setChecking(false)
+    }).catch(() => {
+      if (live) {
+        setChecking(false)
+        setError('Sign-in could not reach the server. Check your connection and try again.')
+      }
     })
 
     return () => {
@@ -306,6 +366,67 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }))
   }, [account, people, update])
 
+  const requestCode = useCallback(async (address: string): Promise<boolean> => {
+    if (!supabase) return false
+    setError(null)
+    setSending(true)
+    try {
+      const { data, error: failed } = await supabase.functions.invoke('request-activation-code', {
+        body: { email: address },
+      })
+      if (failed || data?.error) {
+        setError('We could not request a code right now. Wait a minute and try again, or contact the office.')
+        return false
+      }
+      setupAddress.current = address
+      markPasswordSetup(address)
+      setNeedsPassword(true)
+      return true
+    } catch {
+      setError('The code request could not reach the server. Check your connection and try again.')
+      return false
+    } finally { setSending(false) }
+  }, [])
+
+  const verifyCode = useCallback(async (address: string, token: string): Promise<boolean> => {
+    if (!supabase) return false
+    setError(null)
+    setSending(true)
+    try {
+      const { error: failed } = await supabase.auth.verifyOtp({ email: address, token, type: 'email' })
+      if (failed) {
+        setError('That code was not accepted. Check the code, or request a fresh one.')
+        return false
+      }
+      setStorageNotice(deviceStorage.notice())
+      return true
+    } catch {
+      setError('The code could not be checked. Check your connection and try again.')
+      return false
+    } finally { setSending(false) }
+  }, [])
+
+  const finishPasswordSetup = useCallback(async (password: string): Promise<boolean> => {
+    if (!supabase) return false
+    setError(null)
+    setSending(true)
+    try {
+      const { error: failed } = await supabase.auth.updateUser({ password })
+      if (failed) {
+        setError(failed.code === 'same_password' ? 'Choose a password different from your current password.' : failed.message)
+        return false
+      }
+      setupAddress.current = null
+      markPasswordSetup(null)
+      setNeedsPassword(false)
+      setStorageNotice(deviceStorage.notice())
+      return true
+    } catch {
+      setError('The password could not be saved. Check your connection and try again.')
+      return false
+    } finally { setSending(false) }
+  }, [])
+
   const requestLink = useCallback(async (address: string): Promise<boolean> => {
     setError(null)
     if (!supabase) return true
@@ -345,7 +466,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSending(true)
     try {
       const { error: failed } = await supabase.auth.signInWithPassword({ email: address, password })
-      if (!failed) return true
+      if (!failed) {
+        setStorageNotice(deviceStorage.notice())
+        return true
+      }
 
       const code = (failed as { code?: string }).code ?? ''
       if (code === 'invalid_credentials' || /invalid login credentials/i.test(failed.message)) {
@@ -353,7 +477,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         return false
       }
       if (code === 'email_not_confirmed' || /email not confirmed/i.test(failed.message)) {
-        setError('That account has not been confirmed yet. Ask an administrator to confirm it.')
+        setError('That account has not been confirmed yet. Choose “First time here?” to verify your email.')
         return false
       }
 
@@ -439,8 +563,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       clearError: () => setError(null),
       signInWithPassword,
       requestLink,
+      requestCode,
+      verifyCode,
+      needsPassword,
+      finishPasswordSetup,
+      rememberDevice,
+      setRememberDevice,
+      storageNotice,
     }),
-    [checking, account, staffId, sending, error, signInWithPassword, requestLink],
+    [checking, account, staffId, sending, error, signInWithPassword, requestLink, requestCode, verifyCode, needsPassword, finishPasswordSetup, rememberDevice, setRememberDevice, storageNotice],
   )
 
   const value = useMemo<SessionValue>(

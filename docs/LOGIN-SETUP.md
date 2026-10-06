@@ -1,5 +1,12 @@
 # Turning on staff login
 
+> Historical setup guide. As of October 6, 2026, the application supports
+> approved-member activation by emailed code, personal passwords, and a
+> “Stay signed in on this device” option. Start with
+> [ACCOUNT-ACTIVATION.md](ACCOUNT-ACTIVATION.md) for current release steps.
+> The passwordless-only descriptions and original three-migration checklist
+> below describe the initial release, not the current application.
+
 The application side of this is now built. "Email me a sign-in link" sends a
 real link, an opened link signs the person in for thirty days, and the roster in
 Postgres decides what they may see. What it needs from you is a Supabase project

@@ -23,5 +23,6 @@ for migration in "${here}"/../migrations/*.sql; do
   run "${migration}"
 done
 run "${here}/policies.sql"
+run "${here}/activation.sql"
 
 echo "policies hold"

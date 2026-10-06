@@ -47,8 +47,8 @@ npm run build    # typecheck, then a production build into dist/
 ```
 
 Sign in with any address in `src/data/seed.ts` — `joshua@memorialbaptist.com`
-is the one the seed data is written around. There is no password anywhere in
-this application; locally there is not even any mail. With no Supabase
+is the one the seed data is written around. Local sample mode uses no password
+or mail. With no Supabase
 variables set, the magic-link flow is stubbed and "Open the link" stands in for
 clicking it in your inbox, which is why working on a screen needs no secrets.
 
@@ -56,6 +56,9 @@ To run against a real project, copy `.env.example` to `.env.local` and fill in
 the two values. Sign-in then goes through Supabase Auth for real. See
 `docs/LOGIN-SETUP.md` for standing the project up, and `supabase/README.md` for
 what the migrations do.
+
+For approved-member activation, passwords, and optional remembered devices,
+start with [docs/ACCOUNT-ACTIVATION.md](docs/ACCOUNT-ACTIVATION.md).
 
 The sample records were written around a Friday in August 2026. On a **first**
 load they are slid forward to the current week as one piece — every date moves

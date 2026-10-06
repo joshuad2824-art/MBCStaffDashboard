@@ -6,6 +6,7 @@ import { useSession } from '../../session/session'
 import { useNarrow } from '../../lib/displayScale'
 import { SURFACES, bodyName, surfacesFor } from '../../screens/surfaces'
 import { ChangePasswordDialog } from './ChangePasswordDialog'
+import { RememberDevice } from '../RememberDevice'
 import { DisplaySizeControl } from './DisplaySizeControl'
 
 interface NavItem {
@@ -135,6 +136,7 @@ function Account({ deacon, onChangePassword }: { deacon: boolean; onChangePasswo
         </button>
       </div>
       <DisplaySizeControl />
+      {!previewSeat ? <RememberDevice compact /> : null}
     </div>
   )
 }

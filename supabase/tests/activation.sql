@@ -1,0 +1,24 @@
+-- 13. Activation counters never become a public directory or a bypass of approval.
+select test.sign_out();
+set role anon;
+select test.refused('select * from activation_request_limit', '42501', 'activation: signed-out cannot read counters');
+select test.refused($q$ select consume_activation_request(repeat('a',64), repeat('b',64)) $q$, '42501', 'activation: signed-out cannot consume server allowance');
+reset role;
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+select test.refused('select * from activation_request_limit', '42501', 'activation: even staff cannot read counters');
+select test.refused($q$ select consume_activation_request(repeat('a',64), repeat('b',64)) $q$, '42501', 'activation: staff cannot bypass server throttling');
+reset role;
+select test.assert(consume_activation_request(repeat('a',64), repeat('b',64)), 'activation: first request allowed');
+select test.assert(not consume_activation_request(repeat('a',64), repeat('b',64)), 'activation: rapid repeat refused');
+update activation_request_limit set last_request = now() - interval '61 seconds';
+select test.assert(consume_activation_request(repeat('a',64), repeat('b',64)), 'activation: cooldown releases');
+update activation_request_limit set requests = 5, last_request = now() - interval '61 seconds' where key like 'email:%';
+select test.assert(not consume_activation_request(repeat('a',64), repeat('b',64)), 'activation: email hourly limit enforced');
+update activation_request_limit set window_start = now() - interval '61 minutes', last_request = now() - interval '61 minutes';
+select test.assert(consume_activation_request(repeat('a',64), repeat('b',64)), 'activation: expired window resets');
+select test.assert(not consume_activation_request('invalid', repeat('b',64)), 'activation: malformed identity refused');
+select test.assert(not consume_activation_request(null, repeat('b',64)), 'activation: missing identity refused');
+set role service_role;
+select test.assert(consume_activation_request(repeat('c',64), repeat('d',64)), 'activation: server role can consume allowance');
+reset role;

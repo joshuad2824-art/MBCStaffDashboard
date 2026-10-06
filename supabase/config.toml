@@ -1,0 +1,2 @@
+[functions.request-activation-code]
+verify_jwt = true
