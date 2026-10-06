@@ -74,7 +74,7 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
             marginInline: 'auto',
           }}
         >
-          {surface.noLeadOn === context ? null : (
+          {!surface.lead || surface.noLeadOn === context ? null : (
             <p
               style={{
                 // Raised for the deacon side: monthly users, some in their seventies.

@@ -164,7 +164,7 @@ export function Reference() {
     documents.length === 0
       ? 'The corpus has not been loaded yet. The administrator loads it with the script in supabase/governance.'
       : query.length < 2
-        ? `${documents.length} documents. Search finds any sentence in any of them; the categories below are for when you would rather look than ask.`
+        ? ''
         : hits === null
           ? `Searching for “${query}”…`
           : searching
@@ -181,10 +181,6 @@ export function Reference() {
     if (!first) return
     const target = documents.find((d) => d.id === first.documentId)
     if (target) openSection(target, first.anchor)
-  }
-  const tryThis = (text: string) => {
-    setQ(text)
-    if (slug) navigate('/reference')
   }
 
   return (
@@ -212,17 +208,12 @@ export function Reference() {
             style={{ width: '100%', background: 'var(--surface-field)', border: '1px solid var(--mbc-border-input)', borderRadius: 12, padding: '0 18px', minHeight: 56, font: '400 18px/1 var(--mbc-font-sans)', color: 'var(--text-heading)' }}
           />
         </label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 20px', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 16 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 20px', alignItems: 'baseline', justifyContent: 'space-between', marginTop: countLine || q ? 16 : 0 }}>
           <p role="status" className="tabular" style={{ ...meta, font: '400 17px/1.6 var(--mbc-font-sans)', margin: 0, maxWidth: '70ch', textWrap: 'pretty' } as CSSProperties}>{countLine}</p>
           {q ? (
             <button type="button" onClick={goHome} style={{ ...link, minHeight: 44 }}>Clear the search</button>
           ) : null}
         </div>
-        {!q && !atDoc ? (
-          <div style={{ marginTop: 14 }}>
-            <Tries onTry={tryThis} />
-          </div>
-        ) : null}
       </section>
 
       {atDoc && doc ? (
@@ -235,7 +226,7 @@ export function Reference() {
           onSection={(a) => navigate(`/reference/${encodeURIComponent(doc.slug)}#${a}`, { replace: true })}
         />
       ) : atResults ? (
-        <Results hits={hits} busy={searching} query={query} documents={documents} nearest={nearest} onOpen={openSection} onOpenDocument={openDocument} onTry={tryThis} onClear={goHome} />
+        <Results hits={hits} busy={searching} query={query} documents={documents} nearest={nearest} onOpen={openSection} onOpenDocument={openDocument} onClear={goHome} />
       ) : browse.at === 'category' ? (
         <CategoryList
           kind={browse.kind}
@@ -386,7 +377,7 @@ function CategoryList({ kind, documents, sectionsOf, openLetter, onLetter, onBac
 
 /* ------------------------------------------------------------ 2 · results */
 
-function Results({ hits, busy, query, documents, nearest, onOpen, onOpenDocument, onTry, onClear }: {
+function Results({ hits, busy, query, documents, nearest, onOpen, onOpenDocument, onClear }: {
   hits: SearchHit[] | null
   busy: boolean
   query: string
@@ -394,7 +385,6 @@ function Results({ hits, busy, query, documents, nearest, onOpen, onOpenDocument
   nearest: GovernanceDocument[]
   onOpen(doc: GovernanceDocument, anchor: string): void
   onOpenDocument(doc: GovernanceDocument): void
-  onTry(q: string): void
   onClear(): void
 }) {
   if (hits === null) return <p style={{ ...meta, font: '400 17px/1.6 var(--mbc-font-sans)', margin: 0 }}>Searching…</p>
@@ -417,7 +407,6 @@ function Results({ hits, busy, query, documents, nearest, onOpen, onOpenDocument
             </div>
           </div>
         ) : null}
-        <Tries onTry={onTry} />
         <div style={{ marginTop: 6 }}>
           <Button variant="outline" size="md" onClick={onClear}>Browse the categories instead</Button>
         </div>
@@ -663,22 +652,6 @@ function hitHeading(hit: SearchHit): string {
 /** A citation hit has no marked words; strip the heading line so the snippet is the text. */
 function plainSnippet(text: string): string {
   return text.replace(/^#{1,6}[ \t]+.*$/m, '').replace(/\s+/g, ' ').trim()
-}
-
-/** Searches that work, one press away — for the person staring at an empty field. */
-const TRY = ['kitchen', 'vehicles', 'bereavement flowers', 'quorum', 'A009', 'Art. II.B']
-
-function Tries({ onTry }: { onTry(q: string): void }) {
-  return (
-    <div role="group" aria-label="Searches to try" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-      <span style={{ ...meta, font: '400 17px/1.4 var(--mbc-font-sans)' }}>Try:</span>
-      {TRY.map((text) => (
-        <button key={text} type="button" onClick={() => onTry(text)} style={chip}>
-          {text}
-        </button>
-      ))}
-    </div>
-  )
 }
 
 function Note({ children }: { children: ReactNode }) {

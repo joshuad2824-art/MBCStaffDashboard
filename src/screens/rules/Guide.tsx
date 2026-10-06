@@ -25,8 +25,6 @@ import { useSession } from '../../session/session'
    Same older-reader rules as the reference: 17px body, 44px controls, the
    search first and never autofocused, nothing carried by colour alone. */
 
-const TRY = ['table it', 'call the question', 'enough people', 'change our minds', 'two-thirds', 'minutes', '§28']
-
 export function Guide() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -85,8 +83,8 @@ export function Guide() {
   const corrected = hits && hits.length > 0 && hits.every((h) => h.matchKind === 'corrected') ? hits[0].matchedAs : ''
   const partial = hits !== null && hits.length > 0 && hits.every((h) => h.matchKind === 'some')
   const n = hits?.length ?? 0
-  /* On the deacon side the resting line is left off: the search box and the
-     chips beneath it say the same. Once a search runs, the line reports it. */
+  /* On the deacon side the resting line is left off: the search box's own
+     placeholder says the same. Once a search runs, the line reports it. */
   const countLine = !fires
     ? context === 'deacon' ? '' : `${guide.articles.length} short articles in plain language, each with a short answer first. Type what’s happening — “table it”, “call the question”, “do we have enough people” — or a section number.`
     : hits === null || searching
@@ -137,12 +135,6 @@ export function Guide() {
           <p role="status" style={{ ...meta, font: '400 17px/1.6 var(--mbc-font-sans)', margin: 0, maxWidth: '70ch', textWrap: 'pretty' } as CSSProperties}>{countLine}</p>
           {q ? <button type="button" onClick={clear} style={{ ...link, minHeight: 44 }}>Clear the search</button> : null}
         </div>
-        {!q && !article ? (
-          <div role="group" aria-label="Searches to try" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginTop: 14 }}>
-            <span style={{ ...meta, font: '400 17px/1.4 var(--mbc-font-sans)' }}>Try:</span>
-            {TRY.map((text) => <button key={text} type="button" onClick={() => setQ(text)} style={chip}>{text}</button>)}
-          </div>
-        ) : null}
       </section>
 
       {fires && !article ? (
