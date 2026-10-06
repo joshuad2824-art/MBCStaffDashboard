@@ -107,22 +107,22 @@ export const SURFACES: Record<string, Surface> = {
     title: 'Governance reference',
     lead: 'The constitution, bylaws, policies and procedures, as transcribed — searchable down to the paragraph, and the same on both sides. This surface reads; nothing here edits the record.',
   },
-  /* Robert's Rules, at the foot of the deacon side's menu (group 4, below the
-     committee rooms): a reference anyone at the table may need mid-meeting.
-     Everyone on the deacon side gets it, committee members included, as with
-     the year and the manual. It reads only, and what it reads is a public-
-     domain book bundled with the app (src/data/parliamentary/book.ts), not a
-     record — the route is the only gate it needs. */
+  /* Robert's Rules, at the foot of the menu on both sides (group 4): a
+     plain-language guide written for MBC, with the 1915 text behind it. Open
+     to everyone who signs in, as the manual is since 0015; the hand-off asked
+     for staff and deacons alike. It reads only, and what it reads is bundled
+     with the app (src/data/parliamentary/), not a record — the route is the
+     only gate it needs. */
   robertsRules: {
     nav: 'Robert’s Rules',
     group: 4,
-    bodies: ['deacon-board', 'committee:finance', 'committee:personnel', 'committee:building-grounds', 'committee:family-assistance'],
-    side: 'deacon',
+    bodies: ['staff', 'deacon-board', 'committee:finance', 'committee:personnel', 'committee:building-grounds', 'committee:family-assistance'],
+    side: 'both',
     nested: true,
     path: '/rules',
-    eyebrow: 'Parliamentary procedure',
+    eyebrow: 'Parliamentary procedure, in plain words',
     title: 'Robert’s Rules of Order',
-    lead: 'The 1915 edition of Robert’s Rules of Order Revised, searchable down to the section, with the order of precedence of motions on one table. For the chair and for anyone at the table who needs to know, quickly, whether a motion is in order and what vote it takes.',
+    lead: 'For the moment somebody in the room asks “can we do that?” — the motion, the words to say and the vote it takes, answered first and explained after. Where MBC’s bylaws or policies say something different, the article’s At MBC note says so, and they govern.',
   },
   boardCare: {
     nav: 'Care',
