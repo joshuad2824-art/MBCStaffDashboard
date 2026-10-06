@@ -25,7 +25,8 @@ export interface Surface {
   group: number
   eyebrow: string
   title: string
-  lead: string
+  /** Left out where the screen beneath already says what the surface is. */
+  lead?: string
   /** Body slugs. A person opens the surface if they belong to any of them. */
   bodies: string[]
   /** Which side of the application it is drawn on. `both` is the landing
@@ -133,7 +134,6 @@ export const SURFACES: Record<string, Surface> = {
     path: '/rules',
     eyebrow: 'Parliamentary procedure, in plain words',
     title: 'Robert’s Rules of Order',
-    lead: 'For the moment somebody in the room asks “can we do that?” — the motion, the words to say and the vote it takes, answered first and explained after. Where MBC’s bylaws or policies say something different, the article’s At MBC note says so, and they govern.',
   },
   boardCare: {
     nav: 'Care',

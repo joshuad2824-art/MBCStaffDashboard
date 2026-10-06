@@ -171,7 +171,8 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   `off` switches a surface off for everyone, view-as included; `noLeadOn` drops the lead paragraph
   on one side. Joshua decided on 6 October 2026 that *The year* is off (its obligations still reach
   the meeting's agenda) and that the deacon side shows no lead on Reference and no resting intro line
-  in the Robert's Rules search.
+  in the Robert's Rules search. The same day, on both sides: Robert's Rules has no lead (`lead` is
+  optional), neither search offers "Try:" chips, and Reference has no resting line under its box.
 - **`src/session/`** — `claim_account()` establishes who the signed-in person is and `my_seats()`
   which bodies they sit in and in what role. Both are read in `account.ts`; `session.tsx` exposes
   `seats`, `bodies`, `isChairOf()`, `sides` and the `context` — the side the interface is drawn
