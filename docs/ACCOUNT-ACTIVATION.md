@@ -10,7 +10,7 @@ and an option to stay signed in on the same device. The sender is
 Brevo account. A shared church-wide code does not confer access.
 
 1. Choose **First time here? Activate your account** and enter the approved address.
-2. Enter the newest six-digit code from the email.
+2. Enter the complete newest code from the email (the live project uses eight digits).
 3. Choose and confirm a personal password. Optionally select **Stay signed in on this device**.
 4. Later visits can use the password. **Forgot your password?** uses another email code.
 
@@ -46,17 +46,22 @@ approval is checked again when a session is restored.
 
 ## Release sequence and status
 
-Local build, eight automated activation/storage checks, and browser tests of
+Local build, nine automated activation/storage checks, and browser tests of
 invalid code, password setup, reload, new-tab restoration, and cross-tab sign-out
 have passed using synthetic accounts. GitHub CI build and all Postgres policy
-checks passed on commit `9f385f9`. Draft PR #41 contains the reviewed release.
+checks passed on commit `7a42bc5`. Draft PR #41 contains the reviewed release.
 Migration 0020 and edge function version 1 are deployed; live denial probes
 confirmed visitors cannot read or consume activation counters.
-Production frontend publication and email delivery are pending.
-The Brevo sender is verified. SMTP connection still needs the user to paste the
-dedicated sending key into the prepared settings and save the form.
+Production frontend publication and successful mailbox delivery are pending.
+The Brevo sender is verified and the dedicated SMTP key is saved. With Joshua's
+approval, Brevo authorized outbound server `44.240.241.111`; existing blocking
+protection and the Davis Dashboard server entry remain intact. The next test
+passed SMTP and reached Brevo, but Barracuda rejected it with
+`550 permanent failure for one or more recipients (...:blocked)`.
+The mailbox delivery issue must be resolved before the frontend is published.
 The church domain has not yet been authenticated in this Brevo account; Brevo
-temporarily rewrites the sender domain to `brevosend.com` until that is done.
+documents temporary rewriting to `brevosend.com` until that is done, but the
+observed MBC test retained `mbcstudents@memorialbaptist.com` as its sender.
 See [Brevo's domain troubleshooting guidance](https://help.brevo.com/hc/en-us/articles/16045394674066-Troubleshooting-issues-with-domain-authentication-Brevo-code-DKIM-DMARC).
 
 1. Run `npm ci`, `npm run build`, and `npm run test:auth`.

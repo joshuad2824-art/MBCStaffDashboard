@@ -38,7 +38,7 @@ export function SignIn() {
   }
   const verify = async () => {
     setError(null)
-    if (!/^\d{6}$/.test(code)) { setError('Enter the six-digit code from your email.'); return }
+    if (!/^\d{6,10}$/.test(code)) { setError('Enter the complete code from your email.'); return }
     if (sent) await auth.verifyCode(sent, code)
   }
   const openStub = () => {
@@ -55,7 +55,7 @@ export function SignIn() {
         : passwordMode ? 'Sign in with your email and password. If you haven’t set a password yet, choose “First time here?” below.'
         : 'Enter your approved email address and we’ll send a one-time sign-in link.'}</p>
       {sent && codeMode ? <form style={{ display: 'grid', gap: 18 }} onSubmit={event => { event.preventDefault(); void verify() }}>
-        <Input label="Six-digit code" on="card" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required autoFocus value={code} onChange={event => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))} />
+        <Input label="Email code" on="card" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,10}" maxLength={10} required autoFocus value={code} onChange={event => setCode(event.target.value.replace(/\D/g, '').slice(0, 10))} />
         <RememberDevice />
         <Button type="submit" variant="primary" full shape="input" disabled={auth.sending}>{auth.sending ? 'Checking…' : 'Verify code'}</Button>
       </form> : sent ? <>

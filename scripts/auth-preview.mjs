@@ -20,7 +20,7 @@ createHttpServer(async (req,res) => {
   let result=[],status=200
   if(path.endsWith('/request-activation-code'))result={requested:true}
   else if(path.endsWith('/verify')){
-    if(input.token!=='123456'){status=403;result={code:'otp_expired',msg:'Invalid code'}}
+    if(input.token!=='12345678'){status=403;result={code:'otp_expired',msg:'Invalid code'}}
     else result=token()
   } else if(path.endsWith('/token'))result=token()
   else if(path.endsWith('/logout'))result={}
@@ -34,4 +34,4 @@ const vite=await createViteServer({server:{host:'127.0.0.1',port:5174,strictPort
   'import.meta.env.VITE_SUPABASE_URL':JSON.stringify('http://127.0.0.1:8788'),
   'import.meta.env.VITE_SUPABASE_ANON_KEY':JSON.stringify('local-test-only'),
 }})
-await vite.listen();console.log('Local Auth fixture: http://localhost:5174 (code 123456; no email sent)')
+await vite.listen();console.log('Local Auth fixture: http://localhost:5174 (code 12345678; no email sent)')
