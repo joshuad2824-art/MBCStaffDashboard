@@ -138,7 +138,7 @@ export function Book1915() {
   const partial = hits !== null && hits.length > 0 && hits.every((h) => h.matchKind === 'some')
   const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
   const countLine = !fires
-    ? `${book.sections.filter((s) => s.citation).length} numbered sections, both tables of motions, the preface and the introduction. Search finds any sentence; a number on its own (29, or §29) opens that section.`
+    ? ''
     : hits === null || searching
       ? `Searching for “${query}”…`
       : sectionCount === 0
@@ -174,7 +174,7 @@ export function Book1915() {
             style={{ width: '100%', background: 'var(--surface-field)', border: '1px solid var(--mbc-border-input)', borderRadius: 12, padding: '0 18px', minHeight: 56, font: '400 18px/1 var(--mbc-font-sans)', color: 'var(--text-heading)' }}
           />
         </label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 20px', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 16 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 20px', alignItems: 'baseline', justifyContent: 'space-between', marginTop: countLine || q ? 16 : 0 }}>
           <p role="status" className="tabular" style={{ ...meta, font: '400 17px/1.6 var(--mbc-font-sans)', margin: 0, maxWidth: '70ch', textWrap: 'pretty' } as CSSProperties}>{countLine}</p>
           {q ? <button type="button" onClick={goHome} style={{ ...link, minHeight: 44 }}>Clear the search</button> : null}
         </div>

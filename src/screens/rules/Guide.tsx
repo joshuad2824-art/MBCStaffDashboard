@@ -9,7 +9,6 @@ import { citedSection, sectionPath } from '../../data/parliamentary/book'
 import type { SearchHit } from '../../data/reference/types'
 import { Snippet, meta } from '../reference/Markdown'
 import { GuideMarkdown } from './GuideMarkdown'
-import { useSession } from '../../session/session'
 
 /* Robert's Rules in plain language — for the moment somebody in the room asks
    "can we do that?" and the answer is wanted in under a minute.
@@ -28,7 +27,6 @@ import { useSession } from '../../session/session'
 export function Guide() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { context } = useSession()
   const [guide, setGuide] = useState<GuideData | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
   const [q, setQ] = useState('')
@@ -83,10 +81,9 @@ export function Guide() {
   const corrected = hits && hits.length > 0 && hits.every((h) => h.matchKind === 'corrected') ? hits[0].matchedAs : ''
   const partial = hits !== null && hits.length > 0 && hits.every((h) => h.matchKind === 'some')
   const n = hits?.length ?? 0
-  /* On the deacon side the resting line is left off: the search box's own
-     placeholder says the same. Once a search runs, the line reports it. */
+  // Nothing under the box until a search runs; then the line reports it.
   const countLine = !fires
-    ? context === 'deacon' ? '' : `${guide.articles.length} short articles in plain language, each with a short answer first. Type what’s happening — “table it”, “call the question”, “do we have enough people” — or a section number.`
+    ? ''
     : hits === null || searching
       ? `Searching for “${query}”…`
       : cited !== null

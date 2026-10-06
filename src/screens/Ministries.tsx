@@ -48,14 +48,9 @@ function MinistryIndex() {
   const ministries = directoryMinistries(data)
   const gaps = gapsIn(data)
   const gapMinistries = [...new Set(gaps.map((g) => data.ministries.find((m) => m.id === g.ministryId)?.name ?? ''))].filter(Boolean)
-  const groupsTotal = liveGroups(data).length
 
   return (
     <div style={{ display: 'grid', gap: 20 }}>
-      <p style={{ ...lead, margin: 0 }}>
-        {ministries.length} ministries · {groupsTotal} {groupsTotal === 1 ? 'group' : 'groups'}. Open the one you need — the groups inside it, and who serves in each, live on its page. Classes, community groups and teams all sit under the ministry they belong to.
-      </p>
-
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
         {ministries.map((ministry) => {
           const live = liveGroups(data, ministry.id)
@@ -553,7 +548,6 @@ function plural(n: number, [one, many]: [string, string]): string {
   return n === 1 ? one : many
 }
 
-const lead: CSSProperties = { font: '400 16px/1.7 var(--mbc-font-sans)', color: 'var(--text-meta)', maxWidth: '66ch' }
 const meta: CSSProperties = { font: '400 13px/1.5 var(--mbc-font-sans)', color: 'var(--text-meta)' }
 const cardStyle: CSSProperties = { background: 'var(--surface-card)', border: '1px solid var(--border-card)', borderRadius: 'var(--mbc-radius-panel)' }
 const field: CSSProperties = { width: '100%', minHeight: 44, background: 'var(--surface-field)', border: '1px solid var(--mbc-border-input)', borderRadius: 'var(--mbc-radius-input)', padding: '0 12px', font: '400 16px/1.2 var(--mbc-font-sans)', color: 'var(--text-heading)' }
