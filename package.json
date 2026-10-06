@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
-    "test:policies": "bash supabase/tests/run.sh"
+    "test:policies": "bash supabase/tests/run.sh",
+    "test:auth": "node --test scripts/auth.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
