@@ -37,6 +37,12 @@ export interface Surface {
   nested?: boolean
   /** Staff-role only, within the staff body: the pastoral surfaces. */
   staffOnly?: boolean
+  /** Switched off: no nav entry and no route, for anyone, in view-as too.
+      The screen and its data stay, so switching it back on is one line. */
+  off?: boolean
+  /** The side on which the lead is left off, because the screen beneath it
+      already says what the surface is. */
+  noLeadOn?: Side
   /* Whether a wide screen buys this surface anything.
 
      A table or a calendar is better at every extra pixel: columns stop
@@ -88,6 +94,10 @@ export const SURFACES: Record<string, Surface> = {
     group: 2,
     bodies: ['deacon-board', 'committee:finance', 'committee:personnel', 'committee:building-grounds', 'committee:family-assistance'],
     side: 'deacon',
+    /* Off since 6 October 2026, at Joshua's ask: little use for the space it
+       took. The obligations still reach the meeting's agenda (Meeting.tsx);
+       only the page is gone. */
+    off: true,
     path: '/year',
     eyebrow: 'Derived, never typed',
     title: 'The deacon year',
@@ -103,6 +113,7 @@ export const SURFACES: Record<string, Surface> = {
     side: 'both',
     nested: true,
     path: '/reference',
+    noLeadOn: 'deacon',
     eyebrow: 'The manual, as transcribed',
     title: 'Governance reference',
     lead: 'The constitution, bylaws, policies and procedures, as transcribed — searchable down to the paragraph, and the same on both sides. This surface reads; nothing here edits the record.',
@@ -356,6 +367,7 @@ function asSeat(viewer: Viewer): Viewer {
     sides sees one side at a time. It never lets anyone open a surface their
     bodies would not. */
 export function canOpen(surface: Surface, viewer: Viewer): boolean {
+  if (surface.off) return false
   if (!surface.bodies.some((slug) => viewer.bodies.includes(slug))) return false
   if (surface.staffOnly && viewer.viewAs !== 'staff') return false
   if (surface.bothSides && viewer.sides.length < 2) return false

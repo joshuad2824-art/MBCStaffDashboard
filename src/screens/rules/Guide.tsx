@@ -9,6 +9,7 @@ import { citedSection, sectionPath } from '../../data/parliamentary/book'
 import type { SearchHit } from '../../data/reference/types'
 import { Snippet, meta } from '../reference/Markdown'
 import { GuideMarkdown } from './GuideMarkdown'
+import { useSession } from '../../session/session'
 
 /* Robert's Rules in plain language — for the moment somebody in the room asks
    "can we do that?" and the answer is wanted in under a minute.
@@ -29,6 +30,7 @@ const TRY = ['table it', 'call the question', 'enough people', 'change our minds
 export function Guide() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { context } = useSession()
   const [guide, setGuide] = useState<GuideData | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
   const [q, setQ] = useState('')
@@ -83,8 +85,10 @@ export function Guide() {
   const corrected = hits && hits.length > 0 && hits.every((h) => h.matchKind === 'corrected') ? hits[0].matchedAs : ''
   const partial = hits !== null && hits.length > 0 && hits.every((h) => h.matchKind === 'some')
   const n = hits?.length ?? 0
+  /* On the deacon side the resting line is left off: the search box and the
+     chips beneath it say the same. Once a search runs, the line reports it. */
   const countLine = !fires
-    ? `${guide.articles.length} short articles in plain language, each with a short answer first. Type what’s happening — “table it”, “call the question”, “do we have enough people” — or a section number.`
+    ? context === 'deacon' ? '' : `${guide.articles.length} short articles in plain language, each with a short answer first. Type what’s happening — “table it”, “call the question”, “do we have enough people” — or a section number.`
     : hits === null || searching
       ? `Searching for “${query}”…`
       : cited !== null
@@ -129,7 +133,7 @@ export function Guide() {
             style={{ width: '100%', background: 'var(--surface-field)', border: '1px solid var(--mbc-border-input)', borderRadius: 12, padding: '0 18px', minHeight: 56, font: '400 18px/1 var(--mbc-font-sans)', color: 'var(--text-heading)' }}
           />
         </label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 20px', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 16 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 20px', alignItems: 'baseline', justifyContent: 'space-between', marginTop: countLine || q ? 16 : 0 }}>
           <p role="status" style={{ ...meta, font: '400 17px/1.6 var(--mbc-font-sans)', margin: 0, maxWidth: '70ch', textWrap: 'pretty' } as CSSProperties}>{countLine}</p>
           {q ? <button type="button" onClick={clear} style={{ ...link, minHeight: 44 }}>Clear the search</button> : null}
         </div>
