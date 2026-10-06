@@ -42,6 +42,19 @@ test('existing sessions survive the upgrade and refresh replaces their stored to
   client.storage.setItem(key, 'refreshed-session')
   assert.equal(createDeviceStorage(local, store(), key).storage.getItem(key), 'refreshed-session')
 })
+test('an older open tab cannot re-remember the device after another tab opts out', () => {
+  const local = store(), firstTab = store(), secondTab = store()
+  const first = createDeviceStorage(local, firstTab, key)
+  first.choose(true); first.storage.setItem(key, 'session')
+  const second = createDeviceStorage(local, secondTab, key)
+  assert.equal(second.storage.getItem(key), 'session')
+  first.choose(false)
+  second.storage.setItem(key, 'refreshed-session')
+  assert.equal(second.isRemembered(), false)
+  assert.equal(local.getItem(key), null)
+  assert.equal(secondTab.getItem(key), 'refreshed-session')
+  assert.equal(createDeviceStorage(local, store(), key).storage.getItem(key), null)
+})
 test('blocked storage allows the current visit and clearly reports inability to remember', () => {
   const blocked = { getItem() { throw Error('blocked') }, setItem() { throw Error('blocked') }, removeItem() { throw Error('blocked') } }
   const client = createDeviceStorage(blocked, blocked, key)

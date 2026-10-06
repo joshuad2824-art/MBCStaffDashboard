@@ -21,13 +21,20 @@ export function createDeviceStorage(local: SessionStorage, tab: SessionStorage, 
   }
   let remember = read(local, PREFERENCE) === 'true' ||
     (read(local, PREFERENCE) === null && read(local, sessionKey) !== null)
+  const syncChoice = () => {
+    const choice = read(local, PREFERENCE)
+    if (choice === 'true' || choice === 'false') remember = choice === 'true'
+    return remember
+  }
 
   const storage: SessionStorage = {
     getItem(key) {
+      syncChoice()
       keys.add(key)
       return read(remember ? local : tab, key) ?? memory.get(key) ?? null
     },
     setItem(key, value) {
+      syncChoice()
       keys.add(key)
       memory.set(key, value)
       try {
@@ -48,7 +55,7 @@ export function createDeviceStorage(local: SessionStorage, tab: SessionStorage, 
 
   return {
     storage,
-    isRemembered: () => remember,
+    isRemembered: syncChoice,
     notice: () => notice,
     choose(value: boolean) {
       const saved = new Map([...keys].map(key => [key, storage.getItem(key)]))

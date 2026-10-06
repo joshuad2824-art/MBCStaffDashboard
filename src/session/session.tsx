@@ -198,6 +198,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setRemember(value)
   }, [])
 
+  useEffect(() => {
+    const syncDeviceChoice = (event: StorageEvent) => {
+      if (event.key === 'mbc.auth.remember-device') setRemember(deviceStorage.isRemembered())
+    }
+    window.addEventListener('storage', syncDeviceChoice)
+    return () => window.removeEventListener('storage', syncDeviceChoice)
+  }, [])
+
   /* Read-only has to be real: every store's write path asks this lock before
      it writes, so a composer somebody forgot to hide cannot write anyway. */
   useEffect(() => {
