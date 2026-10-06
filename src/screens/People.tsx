@@ -84,11 +84,6 @@ export function People() {
   return (
     <div style={{ display: 'grid', gap: 20 }}>
       <Card tone="panel" radius="card" pad="22px 24px" style={{ display: 'grid', gap: 16 }}>
-        <p style={{ font: '400 15px/1.7 var(--mbc-font-sans)', color: 'var(--text-body)', margin: 0, maxWidth: '68ch' }}>
-          Being on this list means you can be named as the owner of something. Having an account means you can open the
-          site and read what is on it. They are deliberately not the same: a deacon can own the men's fellowship without
-          being able to read a care record.
-        </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
           <Chip active={showing === 'all'} onClick={() => setShowing('all')}>
             Everyone · {data.people.length}
