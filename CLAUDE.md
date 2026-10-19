@@ -128,14 +128,30 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   `ministryNames(data)` from the table; `'All'` and `'All groups'` are rows the foreign key needs and
   the directory does not draw. The screen edits in place, one undoable mutation per change, creates a
   roster entry and an assignment in one motion, and ends things with a date; it deletes nothing.
+- **Rooms, lamps and after dark** (October 2026 redesign, decided with Joshua on 18 October). There is no
+  sidebar. `AppShell` is a sticky `TopBar` (mark, the room's lamp and name, in-room tabs, and the side switch
+  for the two people who hold both sides — it replaced the dark context band and the *Which side today* page,
+  which is `off`) and a fixed `RoomPill` at the bottom. `src/screens/rooms.ts` groups surfaces into rooms —
+  staff: Today, Huddle, Calendar, Work, People; deacon: Meeting, Reports, Care, Board room — built **only**
+  from `surfacesFor()`, so a room none of whose surfaces opens is not drawn and absence-not-greyed-out holds.
+  The manual and Robert's Rules, recent changes, present mode, view as, appearance, display size and the
+  account live in `MoreSheet`. Each room has one colour that means the same on both sides (home brown, talk
+  Lamplight, time Doorway Blue, instruments and records Sunbeam, care Yale Sage); tiles wear the colour of
+  the room they open. `src/styles/theme.css` holds those tokens and the evening theme: from 7 PM, or by
+  choice in More (`src/lib/theme.tsx`), semantic tokens switch to the MBC Students' Night ground — screen
+  only, never print. This is a dashboard scope over the design system, like the ministry sub-brands; the
+  website keeps its proportions. Window Blue `#7FB0CC` is the one colour the layer adds. The mockup's
+  private "missed two meetings" note was **not** built: there is no attendance tracker. Still to do on the
+  same pattern: the Cadence ledger as a list with one sheet per item, and a "+" in the pill that opens each
+  room's real composer.
 - **`src/lib/displayScale.tsx`** and **`src/components/shell/`** — one app on a phone, a desk monitor and a
   wall. *Narrow* is a width of 900 or less **after** the display scale, asked as `useNarrow()` and never as a
   media query, because CSS `zoom` (how Display size works: Auto, Normal, Large, Wall, remembered in this
   browser) does not move media queries. Under zoom `100vh` and `100vw` are multiplied, so "the height of the
   screen" is `var(--ui-vh)` and "the width" `var(--ui-vw)`; a bare `100vh` is a bug at any scale but 1. Narrow
-  swaps the sidebar for a slim sticky bar and a menu built from the same `surfacesFor()`, and the page title
-  scrolls away. The view-as bar, the context bar and (on wide screens) the header are one sticky stack in
-  `AppShell`, so none slides under another. `@media (pointer: coarse)` in `global.css` is the 44px floor for
+  folds the pill to ← and the room you are in, whose name opens More with every room in it. The view-as bar
+  and the top bar are one sticky stack in `AppShell`, so neither slides under the other, and every page leaves
+  `--pill-lane` free at the bottom. `@media (pointer: coarse)` in `global.css` is the 44px floor for
   every control. Display size is a view setting like the context toggle: it decides nothing about what anyone
   may read, and printing resets it to 1.
 - **`src/screens/filing/FilingGuide.tsx`** — *Who files what*, at the top of Reports. It decides nothing: a
