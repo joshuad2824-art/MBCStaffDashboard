@@ -72,13 +72,11 @@ export function App() {
   const viewer = { bodies, viewAs, sides, context, previewSeat, access }
   const open = surfacesFor(viewer)
   if (open.length === 0) return <NoSurfaces />
-  /* Home is the landing screen for the two people who hold both sides, else
-     Today on the staff side and the meeting on the deacon side. */
-  const home = (
-    open.find((surface) => surface === SURFACES.whichSide) ??
-    open.find((surface) => surface === (context === 'deacon' ? SURFACES.meeting : SURFACES.today)) ??
-    open[0]
-  ).path
+  /* Home is Today on the staff side and the meeting on the deacon side. The
+     two people who hold both sides choose with the switch in the header, which
+     stays on screen after the choice is made (brief §2.4); the landing page
+     that used to ask is switched off. */
+  const home = (open.find((surface) => surface === (context === 'deacon' ? SURFACES.meeting : SURFACES.today)) ?? open[0]).path
 
   return (
     <Routes>

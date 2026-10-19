@@ -58,6 +58,9 @@ export const SURFACES: Record<string, Surface> = {
     bodies: ['staff'],
     side: 'both',
     bothSides: true,
+    /* Off since the October 2026 redesign: the side switch in the header
+       answers "which side today?" and stays visible after it is answered. */
+    off: true,
     path: '/which-side',
     eyebrow: 'You hold both sides',
     title: 'Which side today?',
