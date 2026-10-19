@@ -1,0 +1,318 @@
+/* The dashboard's own layer over the bound design system (tokens.css is a copy
+   of the system and is not edited). Two things live here.
+
+   1. Rooms. Each room hangs its own lamp — the arch from the steeple in the
+      mark — in one colour that means the same thing on both sides: home is
+      paper and brown, talk is Lamplight, time is Doorway Blue, the instruments
+      and the records are Sunbeam, people and care are Yale Sage. A colour
+      never travels without its word, and it says where, never how bad.
+
+   2. After dark. From seven in the evening (or by choice, in More) the page
+      turns to the Night ground the MBC Students sub-brand already contrast-
+      checked. It is a screen theme only: paper never prints dark.
+
+   This is a deliberate dashboard scope, the way the ministry sub-brands are
+   theme scopes. The website keeps its quieter proportions. */
+
+:root {
+  /* Room lamps, on a light ground. */
+  --room-today: var(--mbc-steeple-brown);
+  --room-huddle: var(--mbc-lamplight);
+  --room-calendar: #2F6C8C; /* Doorway Blue, from MBC Kids */
+  --room-work: #E8A33D; /* Sunbeam, from MBC Kids */
+  --room-people: var(--mbc-yale-sage);
+  --room-more: var(--mbc-stone);
+
+  /* The same lamps, lit, for the dark pill. Window Blue (#7FB0CC) is the one
+     colour this layer adds: Doorway Blue lightened to read on a dark ground. */
+  --lamp-today: var(--mbc-on-dark);
+  --lamp-huddle: #D2703C;
+  --lamp-calendar: #7FB0CC;
+  --lamp-work: #E8A33D;
+  --lamp-people: #8FBE86;
+  --lamp-more: var(--mbc-on-dark-soft);
+
+  /* Tiles. Each pair is a ground and the ink that passes AA on it. */
+  --tile-home: var(--mbc-steeple-brown);
+  --tile-home-ink: var(--mbc-on-dark);
+  --tile-home-accent: var(--mbc-brass);
+  --tile-home-edge: transparent;
+  --tile-talk: var(--mbc-lamplight);
+  --tile-talk-ink: var(--mbc-on-accent);
+  --tile-talk-rule: var(--mbc-lamplight-deep);
+  --tile-time: #2F6C8C;
+  --tile-time-ink: var(--mbc-on-accent);
+  --tile-time-soft: #F6E8CE;
+  --tile-gold: #E8A33D;
+  --tile-gold-ink: var(--mbc-steeple-brown);
+  --tile-gold-rule: #C98A2E;
+  --tile-care: var(--mbc-yale-sage);
+  --tile-care-ink: var(--mbc-on-accent);
+  --tile-tint: var(--mbc-lamplight-tint);
+  --tile-tint-ink: var(--mbc-ink);
+  --tile-tint-label: var(--mbc-lamplight-deep);
+  --tile-tint-rule: #E6CDB6;
+  --tile-chalk: #F6E8CE;
+
+  /* Ministry dots on the calendar. Students and Children wear their own
+     sub-brand colours, so the staff calendar matches the hallway poster. */
+  --ministry-whole: transparent;
+  --ministry-staff: var(--mbc-steeple-brown);
+  --ministry-adults: var(--mbc-yale-sage);
+  --ministry-students: #D2703C;
+  --ministry-children: #2F6C8C;
+  --ministry-preschool: #E8A33D;
+  --ministry-music: var(--mbc-brass);
+  --ministry-men: var(--mbc-lamplight-deep);
+  --ministry-women: #6F9E63;
+
+  /* The pill: the one floating thing. Its shadow is the system's own print
+     shadow — the only depth the brand allows, and it is earned here. */
+  --pill-ground: var(--mbc-steeple-brown);
+  --pill-ink: var(--mbc-on-dark);
+  --pill-rule: var(--mbc-dark-rule);
+  --pill-hover: var(--mbc-ink-soft);
+  --pill-well: var(--mbc-on-dark);
+  --pill-well-ink: var(--mbc-ink);
+  --pill-shadow: var(--mbc-shadow-print);
+  --pill-lane: 112px;
+
+  color-scheme: light;
+}
+
+@media screen {
+  :root[data-theme='evening'] {
+    color-scheme: dark;
+
+    --surface-page: #221E1B;
+    --surface-card: #2A2420;
+    --surface-panel: #332C26;
+    --surface-field: #2A2420;
+    --surface-dark: #3B342E;
+    --surface-dark-deep: #171412;
+    --surface-dark-card: #3B342E;
+    --surface-print: #2A2420;
+
+    --text-heading: #EDE4D6;
+    --text-body: #C8BAA8;
+    --text-scripture: #DBAE84;
+    --text-meta: #B8A48C;
+    --text-muted: #A2937F;
+    --text-eyebrow: #DBAE84;
+    --text-category: #8FBE86;
+    --text-link: #DBAE84;
+    --text-link-hover: #EDE4D6;
+    --text-error: #E8907F;
+
+    --border-card: #3B342E;
+    --border-section: #3B342E;
+    --border-hairline: #3B342E;
+    --border-control: #6B5E52;
+    --border-control-hover: #EDE4D6;
+    --border-dark: #55493F;
+
+    --action-primary: #D2703C;
+    --action-primary-text: #221E1B;
+    --action-dark: #55493F;
+    --action-dark-press: #6B5E52;
+    --action-light: #EDE4D6;
+    --action-ghost-hover: #332C26;
+
+    /* Raw palette colours some screens reach for directly. */
+    --mbc-yale-sage: #8FBE86;
+    --mbc-lamplight: #D2703C;
+    --mbc-lamplight-deep: #DBAE84;
+    --mbc-lamplight-tint: #3D2C22;
+    --mbc-parchment: #332C26;
+    --mbc-panel: #332C26;
+    --mbc-field: #2A2420;
+    --mbc-bark: #B8A48C;
+    --mbc-rule: #3B342E;
+    --mbc-rule-hair: #3B342E;
+    --mbc-rule-paper: #3B342E;
+    --mbc-border-panel: #453C35;
+    --mbc-border-input: #55493F;
+    --mbc-border-chip: #55493F;
+    --mbc-border-photo: #453C35;
+    --mbc-border-control: #6B5E52;
+    --mbc-selection: #55493F;
+    --mbc-stripe-a: #332C27;
+    --mbc-stripe-b: #2A241F;
+    --mbc-header-bg: rgba(34, 30, 27, 0.94);
+
+    --room-today: #EDE4D6;
+    --room-huddle: #D2703C;
+    --room-calendar: #7FB0CC;
+    --room-people: #8FBE86;
+
+    --tile-home: #2A2420;
+    --tile-home-ink: #EDE4D6;
+    --tile-home-accent: #DBAE84;
+    --tile-home-edge: #DBAE84;
+    --tile-talk: #D2703C;
+    --tile-talk-ink: #221E1B;
+    --tile-talk-rule: #8A4C2E;
+    --tile-time: #245571;
+    --tile-gold-ink: #221E1B;
+    --tile-care: #8FBE86;
+    --tile-care-ink: #221E1B;
+    --tile-tint: #332C26;
+    --tile-tint-ink: #EDE4D6;
+    --tile-tint-label: #D2703C;
+    --tile-tint-rule: #453C35;
+    --tile-chalk: #3B342E;
+
+    --ministry-staff: #EDE4D6;
+    --ministry-adults: #8FBE86;
+    --ministry-children: #7FB0CC;
+    --ministry-men: #C8BAA8;
+
+    --pill-ground: #2A2420;
+    --pill-rule: #453C35;
+    --pill-hover: #3B342E;
+    --pill-well: #EDE4D6;
+    --pill-well-ink: #221E1B;
+    --pill-shadow: 0 0 0 1px #453C35;
+  }
+}
+
+/* -------------------------------------------------------------- the pieces */
+
+/* The lamp: an arch, the shape of the steeple in the mark. */
+.lamp {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  height: 19px;
+  border-radius: 999px 999px 3px 3px;
+}
+.lamp-sm {
+  display: inline-block;
+  flex: none;
+  width: 7px;
+  height: 10px;
+  border-radius: 999px 999px 2px 2px;
+}
+
+.chev {
+  display: inline-block;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-3px) rotate(45deg);
+}
+.chev-up {
+  display: inline-block;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-left: 2px solid currentColor;
+  border-top: 2px solid currentColor;
+  transform: translateY(2px) rotate(45deg);
+}
+
+.room-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 16px;
+  min-width: 104px;
+  border-radius: 999px;
+  font: 700 14px/1 var(--mbc-font-sans);
+  color: var(--pill-ink);
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
+}
+.room-link:hover { color: var(--pill-ink); background: var(--pill-hover); }
+.room-link[aria-current='page'] { background: var(--pill-well); color: var(--pill-well-ink); }
+.room-link[aria-current='page']:hover { color: var(--pill-well-ink); }
+[data-side='deacon'] .room-link { height: 48px; font-size: 15px; min-width: 118px; }
+
+.room-tab {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 1px solid var(--border-control);
+  font: 700 14px/1 var(--mbc-font-sans);
+  color: var(--text-heading);
+  transition: var(--motion-hover);
+  white-space: nowrap;
+}
+.room-tab:hover { color: var(--text-heading); border-color: var(--border-control-hover); background: var(--action-ghost-hover); }
+.room-tab[aria-current='page'] { background: var(--tab-fill); border-color: var(--tab-fill); color: var(--tab-ink); }
+[data-side='deacon'] .room-tab { height: 48px; font-size: 15px; }
+
+/* A tile on a board: generous, no shadow, the ground does the work. */
+.tile {
+  border-radius: var(--mbc-radius-panel);
+  padding: 26px 28px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tile-label {
+  font: 700 11px/1 var(--mbc-font-sans);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.tile-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 4px;
+  border-top: 1px solid var(--border-hairline);
+  color: var(--text-heading);
+  font: 400 16px/1.4 var(--mbc-font-sans);
+  text-align: left;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  width: 100%;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.tile-row:hover { background: var(--surface-panel); color: var(--text-heading); }
+.tile-link {
+  margin-top: auto;
+  font: 700 15px/1 var(--mbc-font-sans);
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  background: none;
+  border: none;
+  padding: 6px 0;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.tile-link:hover { color: inherit; opacity: 0.85; }
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 20px;
+}
+.board[data-narrow] { grid-template-columns: minmax(0, 1fr); }
+.board[data-narrow] > * { grid-column: 1 / -1 !important; }
+.board[data-medium] > * { grid-column: span 6 !important; }
+.board[data-medium] > [data-wide] { grid-column: 1 / -1 !important; }
+
+.dot {
+  display: inline-block;
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+}
+
+/* Lists inside a tile scroll without a visible bar, as Field Notes does. */
+.quiet-scroll { scrollbar-width: none; }
+.quiet-scroll::-webkit-scrollbar { display: none; }

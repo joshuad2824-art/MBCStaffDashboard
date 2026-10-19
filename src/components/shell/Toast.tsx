@@ -1,7 +1,8 @@
 import { Button } from '../ui'
 import { useStore } from '../../data/store'
 
-/** Fixed bottom-centre pill. Auto-dismisses after three seconds and carries an
+/** Fixed bottom-centre pill, sitting just above the rooms pill so the two
+    never overlap. Auto-dismisses after three seconds and carries an
     UNDO button when the action it announces can be taken back. */
 export function Toast() {
   const { toast, undo, dismissToast } = useStore()
@@ -14,7 +15,7 @@ export function Toast() {
       style={{
         position: 'fixed',
         left: '50%',
-        bottom: 26,
+        bottom: 'calc(var(--pill-lane) - 14px)',
         transform: 'translateX(-50%)',
         zIndex: 40,
         display: 'flex',

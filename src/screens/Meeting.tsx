@@ -24,6 +24,7 @@ import { assembleFor } from '../data/meetings/render'
 import { obligationsForMeeting, onAgenda } from '../data/meetings/year'
 import { formatLong, formatShort, parseDate, startOfToday, todayIso } from '../lib/date'
 import { SURFACES } from './surfaces'
+import { MeetingLanding } from './meeting/Landing'
 
 /** Absolute, so a phase can be reached from any depth of the meeting's URL. */
 const meetingPath = (meetingId: string, phase?: Phase) => `${SURFACES.meeting.path}/${meetingId}${phase ? '/' + phase : ''}`
@@ -39,6 +40,7 @@ export function Meeting() {
   const current = currentMeeting(data.meetings, startOfToday())
   return (
     <div style={{ display: 'grid', gap: 20 }}>
+      <MeetingLanding data={data} meeting={current} />
       {/* What either side has announced to the Board, on the Board's landing screen. */}
       <Announcements side="deacon" />
       <Routes>
