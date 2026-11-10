@@ -12,7 +12,8 @@
     "test:auth": "node --test scripts/auth.test.mjs",
     "test:weather": "node --test scripts/weather.test.mjs",
     "test:repository": "node --test scripts/repository.test.mjs",
-    "test:import": "node --test scripts/import.test.mjs"
+    "test:import": "node --test scripts/import.test.mjs",
+    "test:unfurl": "node --test scripts/unfurl.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

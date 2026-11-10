@@ -17,6 +17,7 @@ import { MonthGrid, MonthNav, useMonthPager } from '../components/month/Month'
 import { Announcements } from './discussion/Announcements'
 import { Ring } from './Needs'
 import { comingRound, grouped, newThisWeek, onTheBoard, shortDay, whenLabel } from '../lib/family'
+import { sharedThisWeek } from '../lib/news'
 import { useCanOpen } from './useSurfaces'
 import { SURFACES } from './surfaces'
 import type { DashboardData } from '../data/types'
@@ -72,6 +73,7 @@ export function Home() {
         <ScheduleTile data={data} today={today} span={12} />
         <FamilyTile data={data} today={today} span={12} />
         <MonthTile data={data} span={12} />
+        <NewsTile data={data} span={12} />
         <PagesTile data={data} span={12} />
         {announcements}
       </div>
@@ -91,7 +93,11 @@ export function Home() {
       <WeatherTile weather={weather} span={3} />
       <FamilyTile data={data} today={today} span={6} />
       <WaitingTile data={data} span={3} />
-      <PagesTile data={data} span={3} />
+      {/* Pages, and the single-word News tile beneath it (§2.2). */}
+      <div style={{ gridColumn: 'span 3', display: 'grid', gridTemplateRows: '1fr auto', gap: 20, minWidth: 0 }}>
+        <PagesTile data={data} span={1} />
+        <NewsTile data={data} span={1} />
+      </div>
       {announcements}
     </div>
   )
@@ -510,6 +516,29 @@ function FamilyTile({ data, today, span }: { data: DashboardData; today: Date; s
           Open church family
         </button>
       </div>
+    </Tile>
+  )
+}
+
+/* ------------------------------------------------------------------ news */
+
+/** The single-word tile (§2.2): the word, and how many links were shared
+    this week. Opens News. */
+function NewsTile({ data, span }: { data: DashboardData; span: number }) {
+  const navigate = useNavigate()
+  const count = sharedThisWeek(data)
+  return (
+    <Tile label="News" heading={false} opens="news" span={span} style={{ padding: 0, background: 'var(--tile-talk)', color: 'var(--tile-talk-ink)' }}>
+      <button
+        type="button"
+        onClick={() => navigate(SURFACES.news.path)}
+        style={{ ...bare, justifySelf: 'stretch', width: '100%', padding: '22px 24px', display: 'grid', gap: 6, color: 'inherit', borderRadius: 'inherit' }}
+      >
+        <span style={{ font: '600 34px/1 var(--mbc-font-serif)', letterSpacing: '-.02em' }}>News</span>
+        <span className="tabular" style={{ font: '400 17px/1.3 var(--mbc-font-sans)' }}>
+          {count === 0 ? 'Nothing shared this week' : `${count} shared this week`}
+        </span>
+      </button>
     </Tile>
   )
 }

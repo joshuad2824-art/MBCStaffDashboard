@@ -106,6 +106,10 @@ function withAudiences(data: DashboardData): DashboardData {
     // A board stored before 0022 has no church family.
     familyNews: data.familyNews ?? [],
     memberDates: data.memberDates ?? [],
+    // A board stored before 0023 has no news; the categories come from the seed.
+    newsCategories: data.newsCategories?.length ? data.newsCategories : seed.newsCategories,
+    newsPosts: data.newsPosts ?? [],
+    newsComments: data.newsComments ?? [],
   }
 }
 
@@ -129,13 +133,15 @@ type Entity =
   | 'needComment'
   | 'familyNews'
   | 'memberDate'
+  | 'newsPost'
+  | 'newsComment'
 
 type Row = Record<string, unknown>
 
 const entities: Entity[] = [
   'person', 'cadence', 'event', 'huddle', 'notice', 'care',
   'thread', 'post', 'mention', 'announcement', 'goal', 'week',
-  'ministry', 'group', 'assignment', 'need', 'needComment', 'familyNews', 'memberDate',
+  'ministry', 'group', 'assignment', 'need', 'needComment', 'familyNews', 'memberDate', 'newsPost', 'newsComment',
 ]
 
 function emptyDashboard(): DashboardData {
@@ -145,6 +151,7 @@ function emptyDashboard(): DashboardData {
     ministries: [], servingRoles: [], groups: [], assignments: [],
     needs: [], needTags: [], needComments: [],
     familyNews: [], memberDates: [],
+    newsCategories: [], newsPosts: [], newsComments: [],
   }
 }
 
@@ -301,7 +308,7 @@ export class SupabaseRepository implements Repository {
 
     const [peopleRows, cadenceRows, occurrenceRows, eventRows, huddleRows, noticeRows, careRows,
       threadRows, postRows, mentionRows, announcementRows, goalRows, weekRows, settingsRows,
-      ministryRows, roleRows, groupRows, assignmentRows, needRows, needTagRows, needCommentRows, familyRows, memberDateRows] = await Promise.all([
+      ministryRows, roleRows, groupRows, assignmentRows, needRows, needTagRows, needCommentRows, familyRows, memberDateRows, newsCategoryRows, newsPostRows, newsCommentRows] = await Promise.all([
       this.read('person', 'id,name,role,email,access,active'),
       this.read('cadence_item', 'id,name,ministry,owner_id,interval_count,interval_label,notice_days,last_held,notes,archived'),
       this.read('cadence_occurrence', 'cadence_item_id,held_on'),
@@ -325,6 +332,9 @@ export class SupabaseRepository implements Repository {
       this.readLater('need_comment', 'id,need_id,author,body,created_at'),
       this.readLater('family_news', 'id,kind,names,on_date,detail,link,restricted,show_until,posted_by,created_at'),
       this.readLater('member_date', 'id,names,kind,month,day,year,source'),
+      this.readLater('news_category', 'slug,name,description,position,active'),
+      this.readLater('news_post', 'id,url,title,site_name,image_url,note,categories,shared_by,post_on,expires_on,created_at'),
+      this.readLater('news_comment', 'id,post_id,author,body,created_at'),
     ])
 
     this.resetIds()
@@ -470,7 +480,23 @@ export class SupabaseRepository implements Repository {
       source: (text(row.source) === 'breeze-import' ? 'breeze-import' : 'manual') as MemberDate['source'],
     }))
 
-    const loaded = { people, cadence, huddle, notices, care, goals, threads, posts, mentions, events, announcements, weeks, settings, ministries, servingRoles, groups, assignments, needs, needTags, needComments, familyNews, memberDates }
+    const newsCategories = newsCategoryRows.map((row) => ({
+      slug: text(row.slug), name: text(row.name), description: text(row.description), position: number(row.position), active: row.active !== false,
+    })).sort((a, b) => a.position - b.position)
+    const newsPosts = newsPostRows.map((row) => ({
+      id: this.localId('newsPost', row.id), url: text(row.url), title: text(row.title), siteName: text(row.site_name),
+      imageUrl: nullableText(row.image_url), note: text(row.note), categories: slugs(row.categories),
+      sharedBy: this.localId('person', row.shared_by), postOn: text(row.post_on), expiresOn: text(row.expires_on), createdAt: text(row.created_at),
+    }))
+    const newsComments = newsCommentRows.map((row) => {
+      const created = localDateTime(row.created_at)
+      return {
+        id: this.localId('newsComment', row.id), postId: this.localId('newsPost', row.post_id), authorId: this.localId('person', row.author),
+        body: text(row.body), createdAt: created.date, time: created.time,
+      }
+    }).sort((a, b) => (a.createdAt + a.time).localeCompare(b.createdAt + b.time))
+
+    const loaded = { people, cadence, huddle, notices, care, goals, threads, posts, mentions, events, announcements, weeks, settings, ministries, servingRoles, groups, assignments, needs, needTags, needComments, familyNews, memberDates, newsCategories, newsPosts, newsComments }
     this.lastSnapshot = loaded
     return loaded
   }
@@ -737,6 +763,29 @@ export class SupabaseRepository implements Repository {
       }))
       await this.save('memberDate', 'member_date', dateRows.filter((row) => changedDates.has(this.localId('memberDate', row.id))))
       await this.deleteMissing('memberDate', 'member_date', ids('memberDate', data.memberDates))
+    }
+
+    // News (0023). The sharer or a staff-role account edits and removes a
+    // post, so posts have deleteMissing() — over rows this person loaded, and
+    // the policy decides whether each removal is theirs. Comments are only
+    // ever added; categories are changed by migration and never written here.
+    if (!this.missing.has('news_post')) {
+      const changedPosts = changed(data.newsPosts, prior?.newsPosts)
+      const postRows = data.newsPosts.map((n) => ({
+        id: this.remoteId('newsPost', n.id), url: n.url, title: n.title, site_name: n.siteName, image_url: n.imageUrl,
+        note: n.note, categories: n.categories, shared_by: this.remoteId('person', n.sharedBy), post_on: n.postOn, expires_on: n.expiresOn,
+      }))
+      await this.save('newsPost', 'news_post', postRows.filter((row) => changedPosts.has(this.localId('newsPost', row.id))))
+      await this.deleteMissing('newsPost', 'news_post', ids('newsPost', data.newsPosts))
+      if (!this.missing.has('news_comment')) {
+        const changedComments = changed(data.newsComments, prior?.newsComments)
+        const commentRows = data.newsComments.map((c) => ({
+          id: this.remoteId('newsComment', c.id), post_id: this.remoteId('newsPost', c.postId), author: this.remoteId('person', c.authorId), body: c.body,
+        }))
+        await this.save('newsComment', 'news_comment', commentRows.filter((row) => changedComments.has(this.localId('newsComment', row.id))))
+        // A removed post took its comments with it (on delete cascade).
+        this.knownRemote.set('newsComment', ids('newsComment', data.newsComments))
+      }
     }
 
     const meetingTimes = data.settings.meetingBlocks.map((block) => [block.day, ...block.lines].join(' · ')).join('\n')

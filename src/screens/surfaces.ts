@@ -268,6 +268,18 @@ export const SURFACES: Record<string, Surface> = {
     eyebrow: 'Waiting on someone',
     title: 'Needs',
   },
+  /* News & articles (home brief §5): links staff share, their own notes and
+     categories. /news, /news/<category> and /news/archive are one screen. */
+  news: {
+    nav: 'News',
+    group: 1,
+    bodies: ['staff'],
+    side: 'staff',
+    nested: true,
+    path: '/news',
+    eyebrow: 'Shared by the staff',
+    title: 'News & articles',
+  },
   /* Church family (home brief §4): reached from its panel on Home, not the
      menu (§1.1 lists it on neither), so `hidden`. The whole staff body; the
      restricted kinds are the database's to withhold. */

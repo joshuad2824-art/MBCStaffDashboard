@@ -41,6 +41,8 @@ const DATE_FIELDS = [
   'seenAt',
   'onDate',
   'showUntil',
+  'postOn',
+  'expiresOn',
 ] as const
 
 function shiftIso(value: unknown, days: number): unknown {

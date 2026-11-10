@@ -9,8 +9,8 @@ import type { Surface } from './surfaces'
    opens is not drawn — absence, not greyed-out, exactly as before.
 
    Since 10 November 2026 (home brief §1.1) the staff rooms are the short menu
-   the brief draws — Home · Calendar · Needs · Discussion · Ministries · People
-   today, with News, Leadership, Homebound and Resources joining as each is
+   the brief draws — Home · Calendar · Needs · News · Discussion · Ministries ·
+   People today, with Leadership, Homebound and Resources joining as each is
    built. The deacon rooms are kept as written; every surface in them is off,
    so none is drawn.
 
@@ -18,7 +18,7 @@ import type { Surface } from './surfaces'
    since the same date — live in More until Resources (§7) lists them: they
    are opened twice a year, not twice a day. */
 
-export type RoomKey = 'today' | 'calendar' | 'needs' | 'discussion' | 'ministries' | 'work' | 'people' | 'meeting' | 'reports' | 'care' | 'boardroom'
+export type RoomKey = 'today' | 'calendar' | 'needs' | 'news' | 'discussion' | 'ministries' | 'work' | 'people' | 'meeting' | 'reports' | 'care' | 'boardroom'
 
 export interface Room {
   key: RoomKey
@@ -38,6 +38,7 @@ export const ROOMS: Room[] = [
   { key: 'today', side: 'staff', label: 'Home', lamp: 'var(--room-today)', lit: 'var(--lamp-today)', tabFill: 'var(--action-dark)', tabInk: 'var(--text-on-dark)', surfaces: ['today'] },
   { key: 'calendar', side: 'staff', label: 'Calendar', lamp: 'var(--room-calendar)', lit: 'var(--lamp-calendar)', tabFill: 'var(--tile-time)', tabInk: 'var(--tile-time-ink)', surfaces: ['calendar'] },
   { key: 'needs', side: 'staff', label: 'Needs', lamp: 'var(--room-work)', lit: 'var(--lamp-work)', tabFill: 'var(--tile-gold)', tabInk: 'var(--tile-gold-ink)', surfaces: ['needs'] },
+  { key: 'news', side: 'staff', label: 'News', lamp: 'var(--room-huddle)', lit: 'var(--lamp-huddle)', tabFill: 'var(--tile-talk)', tabInk: 'var(--tile-talk-ink)', surfaces: ['news'] },
   /* Huddle, Cadence, the Notice log, the Communicator, Care and Goals are off
      (home brief §1.2). Their keys stay listed in a room, so switching one back
      on puts it somewhere sensible without touching this file; the Work room

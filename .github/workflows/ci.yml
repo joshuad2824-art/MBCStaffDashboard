@@ -24,6 +24,7 @@ jobs:
       - run: npm run test:weather
       - run: npm run test:repository
       - run: npm run test:import
+      - run: npm run test:unfurl
 
   # The build proves the code compiles. This proves the policies hold: the
   # migrations are applied to a throwaway Postgres and supabase/tests/policies.sql
