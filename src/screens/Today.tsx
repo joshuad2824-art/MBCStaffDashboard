@@ -16,6 +16,7 @@ import { useUnreadThreadIds } from '../lib/unread'
 import { MonthGrid, MonthNav, useMonthPager } from '../components/month/Month'
 import { Announcements } from './discussion/Announcements'
 import { Ring } from './Needs'
+import { comingRound, grouped, newThisWeek, onTheBoard, shortDay, whenLabel } from '../lib/family'
 import { useCanOpen } from './useSurfaces'
 import { SURFACES } from './surfaces'
 import type { DashboardData } from '../data/types'
@@ -69,6 +70,7 @@ export function Home() {
         <PostTile span={12} compact />
         <WaitingTile data={data} span={12} />
         <ScheduleTile data={data} today={today} span={12} />
+        <FamilyTile data={data} today={today} span={12} />
         <MonthTile data={data} span={12} />
         <PagesTile data={data} span={12} />
         {announcements}
@@ -87,8 +89,9 @@ export function Home() {
       <ScheduleTile data={data} today={today} span={4} />
       <MonthTile data={data} span={3} />
       <WeatherTile weather={weather} span={3} />
-      <WaitingTile data={data} span={7} />
-      <PagesTile data={data} span={5} />
+      <FamilyTile data={data} today={today} span={6} />
+      <WaitingTile data={data} span={3} />
+      <PagesTile data={data} span={3} />
       {announcements}
     </div>
   )
@@ -425,6 +428,88 @@ function WaitingTile({ data, span }: { data: DashboardData; span: number }) {
       <button type="button" className="tile-link" style={{ fontSize: 15, justifySelf: 'start', alignSelf: 'flex-start' }} onClick={() => navigate(SURFACES.needs.path)}>
         {others > 0 ? `${others} other${others === 1 ? '' : 's'} open` : 'Open Needs'}
       </button>
+    </Tile>
+  )
+}
+
+/* ----------------------------------------------------------- church family */
+
+/** The reading tile (§2.2): the one cream panel on the board, in the serif at
+    19px, because it is meant to be read and not glanced at. Newest first,
+    grouped by kind, and This week's birthdays and anniversaries at the foot.
+    A limited account's panel simply lacks the restricted kinds — the database
+    never sent them — and says nothing about it. */
+function FamilyTile({ data, today, span }: { data: DashboardData; today: Date; span: number }) {
+  const navigate = useNavigate()
+  const board = onTheBoard(data, today)
+  const fresh = newThisWeek(board, today)
+  const groups = grouped(board)
+  const week = comingRound(data.memberDates, 7, today)
+  const birthdays = week.filter((w) => w.entry.kind === 'birthday')
+  const anniversaries = week.filter((w) => w.entry.kind === 'anniversary')
+  let budget = 6
+
+  return (
+    <Tile label="Church family" heading={false} opens="churchFamily" span={span} style={{ background: 'var(--tile-chalk)', color: 'var(--tile-tint-ink)', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+        <p className="tile-label" style={{ fontSize: 13, color: 'var(--tile-tint-label)' }}>Church family</p>
+        <span style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
+          {fresh > 0 ? <span className="tabular" style={{ font: '700 14px/1 var(--mbc-font-sans)', color: 'var(--tile-tint-label)' }}>{fresh} new</span> : null}
+          <button type="button" onClick={() => navigate(`${SURFACES.churchFamily.path}?new=1`)} style={{ ...bare, minHeight: 44, font: '700 15px/1 var(--mbc-font-sans)', color: 'var(--text-link)' }}>
+            + Add
+          </button>
+        </span>
+      </div>
+
+      {groups.length === 0 ? (
+        <p style={{ margin: 0, font: '400 19px/1.5 var(--mbc-font-serif)' }}>Nothing on the board this week.</p>
+      ) : (
+        <div style={{ display: 'grid', gap: 14 }}>
+          {groups.map(({ info, entries }) => {
+            if (budget <= 0) return null
+            const shown = entries.slice(0, budget)
+            budget -= shown.length
+            return (
+              <div key={info.kind} style={{ display: 'grid', gap: 4 }}>
+                <span style={{ font: '700 12px/1.3 var(--mbc-font-sans)', letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--tile-tint-label)' }}>{info.heading}</span>
+                {shown.map((entry) => {
+                  const line = [whenLabel(entry, today), entry.kind === 'birth' && entry.detail ? `welcomed ${entry.detail}` : entry.detail].filter(Boolean).join(' · ')
+                  return (
+                    <p key={entry.id} style={{ margin: 0, font: '400 19px/1.45 var(--mbc-font-serif)' }}>
+                      <strong style={{ fontWeight: 600 }}>{entry.names}</strong>
+                      {line ? <span style={{ color: 'var(--text-meta)' }}> — {line}</span> : null}
+                    </p>
+                  )
+                })}
+              </div>
+            )
+          })}
+          {board.length > 6 ? <p style={{ margin: 0, font: '400 16px/1.4 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>and {board.length - 6} more on the page</p> : null}
+        </div>
+      )}
+
+      <div style={{ marginTop: 'auto', paddingTop: 12, borderTop: '1px solid var(--tile-tint-rule)', display: 'grid', gap: 6 }}>
+        <span style={{ font: '700 12px/1.3 var(--mbc-font-sans)', letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--tile-tint-label)' }}>This week</span>
+        {week.length === 0 ? (
+          <p style={{ margin: 0, font: '400 17px/1.45 var(--mbc-font-serif)', color: 'var(--text-meta)' }}>No birthdays or anniversaries this week.</p>
+        ) : (
+          <>
+            {birthdays.length ? (
+              <p style={{ margin: 0, font: '400 17px/1.45 var(--mbc-font-serif)' }}>
+                Birthdays: {birthdays.map((w) => `${w.entry.names} (${shortDay(w.date).split(' ')[0]})`).join(' · ')}
+              </p>
+            ) : null}
+            {anniversaries.length ? (
+              <p style={{ margin: 0, font: '400 17px/1.45 var(--mbc-font-serif)' }}>
+                Anniversaries: {anniversaries.map((w) => `${w.entry.names}${w.years ? `, ${w.years} years` : ''} (${shortDay(w.date).split(' ')[0]})`).join(' · ')}
+              </p>
+            ) : null}
+          </>
+        )}
+        <button type="button" className="tile-link" style={{ fontSize: 15, justifySelf: 'start', marginTop: 4 }} onClick={() => navigate(SURFACES.churchFamily.path)}>
+          Open church family
+        </button>
+      </div>
     </Tile>
   )
 }

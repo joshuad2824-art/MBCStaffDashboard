@@ -268,6 +268,19 @@ export const SURFACES: Record<string, Surface> = {
     eyebrow: 'Waiting on someone',
     title: 'Needs',
   },
+  /* Church family (home brief §4): reached from its panel on Home, not the
+     menu (§1.1 lists it on neither), so `hidden`. The whole staff body; the
+     restricted kinds are the database's to withhold. */
+  churchFamily: {
+    nav: 'Church family',
+    group: 1,
+    bodies: ['staff'],
+    side: 'staff',
+    hidden: true,
+    path: '/church-family',
+    eyebrow: 'What the church would announce',
+    title: 'Church family',
+  },
   huddle: {
     nav: 'Huddle',
     group: 1,

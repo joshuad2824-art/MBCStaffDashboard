@@ -39,6 +39,8 @@ const DATE_FIELDS = [
   'neededBy',
   'doneAt',
   'seenAt',
+  'onDate',
+  'showUntil',
 ] as const
 
 function shiftIso(value: unknown, days: number): unknown {
@@ -108,5 +110,14 @@ export function freshenSeed(data: DashboardData, today = startOfToday()): Dashbo
     }),
   }))
 
-  return { ...shifted, weeks }
+  /* Birthdays and anniversaries are a month and a day, not an ISO date, so
+     shiftDeep leaves them be; they slide by the same days here, in the seed's
+     own year, so the board's This week keeps the seed's company. */
+  const epoch = parseDate(SEED_EPOCH) as Date
+  const memberDates = shifted.memberDates.map((entry) => {
+    const moved = addDays(new Date(epoch.getFullYear(), entry.month - 1, entry.day), days)
+    return { ...entry, month: moved.getMonth() + 1, day: moved.getDate() }
+  })
+
+  return { ...shifted, weeks, memberDates }
 }
