@@ -249,6 +249,25 @@ export const seed: DashboardData = {
     { id: 6, groupId: 5, personId: 2, roleSlug: 'teacher', startedOn: '2026-01-11', endedOn: '2026-05-17', isPrimary: true },
   ],
 
+  // Needs (home brief §3). Dated around the seed's Friday and slid forward
+  // with everything else, so the board always has something waiting.
+  needs: [
+    { id: 1, title: 'Flyer for the Christmas Eve service', body: 'Draft is in the shared drive. Does the service time read clearly from across a room?', link: 'https://www.canva.com/', neededBy: '2026-09-01', createdBy: 8, createdAt: '2026-08-27', doneAt: null, doneBy: null },
+    { id: 2, title: 'Room for the December 6 parent meeting', body: '', link: '', neededBy: '2026-09-03', createdBy: 4, createdAt: '2026-08-26', doneAt: null, doneBy: null },
+    { id: 3, title: 'Order more bulletin paper', body: '', link: '', neededBy: null, createdBy: 7, createdAt: '2026-08-25', doneAt: null, doneBy: null },
+    { id: 4, title: 'Proof the fall newsletter', body: '', link: '', neededBy: '2026-08-26', createdBy: 2, createdAt: '2026-08-20', doneAt: '2026-08-25', doneBy: 8 },
+  ],
+  needTags: [
+    { needId: 1, personId: 1, seenAt: null },
+    { needId: 1, personId: 2, seenAt: '2026-08-27' },
+    { needId: 2, personId: 8, seenAt: null },
+    { needId: 4, personId: 8, seenAt: '2026-08-21' },
+  ],
+  needComments: [
+    { id: 1, needId: 1, authorId: 2, body: 'Time reads fine. Could the address be a size larger?', createdAt: '2026-08-27', time: '2:14 PM' },
+    { id: 2, needId: 4, authorId: 8, body: 'Two typos marked on page 3. Otherwise ready.', createdAt: '2026-08-25', time: '10:02 AM' },
+  ],
+
   settings: {
     welcome:
       'If you are visiting, please fill out a contact card \u2014 in the pew or at memorialbaptist.com \u2014 and return it to an offering box or the Welcome Desk.',

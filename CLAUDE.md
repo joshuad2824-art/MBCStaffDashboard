@@ -79,7 +79,7 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too (it covers `netlify/functions` as well as `src`) — then `test:auth` and `test:weather`. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0021_…` (the home brief numbers 0021–0026) |
+| Migrations | Continue the sequence: next is `supabase/migrations/0022_…` (the home brief numbers 0021–0026) |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -145,13 +145,25 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   them, never around them. Other in-page links into an off room follow the same rule (Discussion's Promote,
   More's present mode). The policy test did not move, which is the proof this was a nav-and-route change.
 - **Home** (home brief §2, part one, 10 November 2026) — `src/screens/Today.tsx`, still the `today` surface,
-  named Home. The board is the §2.2 composition with what exists today: Date · Today / Coming up · Month ·
-  Weather, then Waiting on someone · Pages, and live announcements beneath; on a phone, one column in the
-  brief's priority order. No masthead, no greeting, no lead. Post a need, Church family and News join through
-  `Tile` when their workstreams land. **The month is shared:** `src/components/month/Month.tsx` is the pager
+  named Home. The board is the §2.2 composition with what exists today: Date over Post a need · Today / Coming
+  up · Month · Weather, then Waiting on you · Pages, and live announcements beneath; on a phone, one column in the
+  brief's priority order. No masthead, no greeting, no lead. Church family and News join through `Tile` when
+  their workstreams land. **The month is shared:** `src/components/month/Month.tsx` is the pager
   (`useMonthPager`), the ‹ Today › control and the compact grid; the Calendar screen uses the same pager and
   control, and opens at `?day=YYYY-MM-DD`, which is how Home's tiles land on a day. Home shows standing
   services and staff events only — nothing derived from a room that is off, nothing pastoral.
+- **Needs** (home brief §3, `0021_needs.sql`) — `need`, `need_tag`, `need_comment`; `src/screens/Needs.tsx`,
+  `src/lib/needs.ts`. A short ask of colleagues, or a to-do when nobody is tagged. **Not an approval workflow,
+  and must not become one:** two states, open and done, no approver, no statuses; anyone on staff moves a need
+  between them. The whole staff body reads and writes, limited accounts included (a need is logistics; the form
+  says "For pastoral matters, talk in person"). `guard_need()` writes who posted, who marked done and when —
+  what the browser sends for those is ignored — and refuses a non-author's change to the ask; only the author
+  adds or removes a tag, and only the tagged person marks their tag seen (`seen_at` quiets Home's "New" and gates
+  nothing). Nothing is deleted but a tag: no delete policy on `need` or `need_comment`, done needs stay behind
+  *Show done*. In the store, posting a need or a reply is `update()`, not an undo step — an undo could only hide
+  what the database keeps; done, reopen and edit are undoable. Home's *Waiting on you* (needs tagged to you,
+  soonest `needed_by` first, undated last) and *Post a need* tiles open it, and the pill shows what is waiting
+  on you beside Needs as a plain number, never a coloured badge. Email on tag is a later, opt-in PR (§3.3).
 - **Weather** — `netlify/functions/weather.mts` asks Open-Meteo and the NWS (Tulsa County, `OKC143` and
   `OKZ060`) and returns one payload; the forecast keeps 30 minutes and the alerts 2, in memory on a warm
   instance and as the CDN's `s-maxage`. Never call either source from the browser. `src/lib/weatherFeed.ts` is

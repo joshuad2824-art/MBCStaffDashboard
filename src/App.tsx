@@ -6,6 +6,7 @@ import { Stub } from './components/shell/Stub'
 import { SignIn } from './screens/SignIn'
 import { SetPassword } from './screens/SetPassword'
 import { Today } from './screens/Today'
+import { Needs } from './screens/Needs'
 import { Huddle } from './screens/Huddle'
 import { Cadence } from './screens/Cadence'
 import { Discussion } from './screens/Discussion'
@@ -39,6 +40,7 @@ const SCREENS: Record<string, ReactNode> = {
   boardCalendar: <Calendar side="deacon" />,
   boardDiscussion: <Discussion side="deacon" />,
   today: <Today />,
+  needs: <Needs />,
   huddle: <Huddle />,
   cadence: <Cadence />,
   notice: <NoticeLog />,

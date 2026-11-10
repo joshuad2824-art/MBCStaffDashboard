@@ -96,6 +96,10 @@ function withAudiences(data: DashboardData): DashboardData {
     servingRoles: data.servingRoles?.length ? data.servingRoles : seed.servingRoles,
     groups: data.groups ?? [],
     assignments: data.assignments ?? [],
+    // A board stored before 0021 has no needs.
+    needs: data.needs ?? [],
+    needTags: data.needTags ?? [],
+    needComments: data.needComments ?? [],
   }
 }
 
@@ -115,13 +119,15 @@ type Entity =
   | 'ministry'
   | 'group'
   | 'assignment'
+  | 'need'
+  | 'needComment'
 
 type Row = Record<string, unknown>
 
 const entities: Entity[] = [
   'person', 'cadence', 'event', 'huddle', 'notice', 'care',
   'thread', 'post', 'mention', 'announcement', 'goal', 'week',
-  'ministry', 'group', 'assignment',
+  'ministry', 'group', 'assignment', 'need', 'needComment',
 ]
 
 function emptyDashboard(): DashboardData {
@@ -129,6 +135,7 @@ function emptyDashboard(): DashboardData {
     people: [], cadence: [], huddle: [], notices: [], care: [], goals: [],
     threads: [], posts: [], mentions: [], events: [], announcements: [], weeks: [], settings: seed.settings,
     ministries: [], servingRoles: [], groups: [], assignments: [],
+    needs: [], needTags: [], needComments: [],
   }
 }
 
@@ -263,7 +270,7 @@ export class SupabaseRepository implements Repository {
 
     const [peopleRows, cadenceRows, occurrenceRows, eventRows, huddleRows, noticeRows, careRows,
       threadRows, postRows, mentionRows, announcementRows, goalRows, weekRows, settingsRows,
-      ministryRows, roleRows, groupRows, assignmentRows] = await Promise.all([
+      ministryRows, roleRows, groupRows, assignmentRows, needRows, needTagRows, needCommentRows] = await Promise.all([
       this.read('person', 'id,name,role,email,access,active'),
       this.read('cadence_item', 'id,name,ministry,owner_id,interval_count,interval_label,notice_days,last_held,notes,archived'),
       this.read('cadence_occurrence', 'cadence_item_id,held_on'),
@@ -282,6 +289,9 @@ export class SupabaseRepository implements Repository {
       this.read('serving_role', 'slug,name,position,leads'),
       this.read('serving_group', 'id,ministry_id,kind,name,meets,location,audience_note,notes,started_on,ended_on'),
       this.read('serving_assignment', 'id,group_id,person_id,role_slug,started_on,ended_on,is_primary'),
+      this.read('need', 'id,title,body,link,needed_by,created_by,created_at,done_at,done_by'),
+      this.read('need_tag', 'need_id,person_id,seen_at'),
+      this.read('need_comment', 'id,need_id,author,body,created_at'),
     ])
 
     this.resetIds()
@@ -400,7 +410,23 @@ export class SupabaseRepository implements Repository {
       roleSlug: text(row.role_slug), startedOn: text(row.started_on), endedOn: nullableText(row.ended_on), isPrimary: row.is_primary === true,
     }))
 
-    const loaded = { people, cadence, huddle, notices, care, goals, threads, posts, mentions, events, announcements, weeks, settings, ministries, servingRoles, groups, assignments }
+    const needs = needRows.map((row) => ({
+      id: this.localId('need', row.id), title: text(row.title), body: text(row.body), link: text(row.link),
+      neededBy: nullableText(row.needed_by), createdBy: this.localId('person', row.created_by), createdAt: text(row.created_at),
+      doneAt: nullableText(row.done_at), doneBy: this.localOptional('person', row.done_by),
+    }))
+    const needTags = needTagRows.map((row) => ({
+      needId: this.localId('need', row.need_id), personId: this.localId('person', row.person_id), seenAt: nullableText(row.seen_at),
+    }))
+    const needComments = needCommentRows.map((row) => {
+      const created = localDateTime(row.created_at)
+      return {
+        id: this.localId('needComment', row.id), needId: this.localId('need', row.need_id), authorId: this.localId('person', row.author),
+        body: text(row.body), createdAt: created.date, time: created.time,
+      }
+    }).sort((a, b) => (a.createdAt + a.time).localeCompare(b.createdAt + b.time))
+
+    const loaded = { people, cadence, huddle, notices, care, goals, threads, posts, mentions, events, announcements, weeks, settings, ministries, servingRoles, groups, assignments, needs, needTags, needComments }
     this.lastSnapshot = loaded
     return loaded
   }
@@ -449,6 +475,38 @@ export class SupabaseRepository implements Repository {
       if (error) throw new Error(`Could not remove ${table}: ${error.message}`)
     }
     this.knownRemote.set(entity, current)
+  }
+
+  /* A tag has no id of its own: it is a (need, person) pair. Tags the author
+     added are inserted, tags the author took away are deleted, and a tag
+     whose seen_at changed is updated — the policies decide whether each is
+     theirs to do. */
+  private async saveNeedTags(current: DashboardData['needTags'], previous: DashboardData['needTags']): Promise<void> {
+    if (!supabase) return
+    const client = supabase
+    const key = (tag: { needId: number; personId: number }) => `${tag.needId}:${tag.personId}`
+    const before = new Map(previous.map((tag) => [key(tag), tag]))
+    const now = new Map(current.map((tag) => [key(tag), tag]))
+    const pair = (tag: { needId: number; personId: number }) => ({ need_id: this.remoteId('need', tag.needId), person_id: this.remoteId('person', tag.personId) })
+
+    const added = current.filter((tag) => !before.has(key(tag)))
+    const removed = previous.filter((tag) => !now.has(key(tag)))
+    const seen = current.filter((tag) => before.has(key(tag)) && before.get(key(tag))?.seenAt !== tag.seenAt)
+
+    if (added.length) {
+      const { error } = await client.from('need_tag').insert(added.map((tag) => ({ ...pair(tag), seen_at: tag.seenAt })))
+      if (error) throw new Error(`Could not add need_tag: ${error.message}`)
+    }
+    await Promise.all(removed.map(async (tag) => {
+      const { need_id, person_id } = pair(tag)
+      const { error } = await client.from('need_tag').delete().eq('need_id', need_id).eq('person_id', person_id)
+      if (error) throw new Error(`Could not remove need_tag: ${error.message}`)
+    }))
+    await Promise.all(seen.map(async (tag) => {
+      const { need_id, person_id } = pair(tag)
+      const { error } = await client.from('need_tag').update({ seen_at: tag.seenAt }).eq('need_id', need_id).eq('person_id', person_id)
+      if (error) throw new Error(`Could not update need_tag: ${error.message}`)
+    }))
   }
 
   private async persistSnapshot(data: DashboardData): Promise<void> {
@@ -589,6 +647,25 @@ export class SupabaseRepository implements Repository {
     this.knownRemote.set('ministry', ids('ministry', data.ministries))
     this.knownRemote.set('group', ids('group', data.groups))
     this.knownRemote.set('assignment', ids('assignment', data.assignments))
+
+    // Needs (0021). A need and a comment are never deleted, so neither has a
+    // deleteMissing(). The database writes who posted, who marked done and
+    // when; what is sent for those is only a request (guard_need()).
+    const changedNeeds = changed(data.needs, prior?.needs)
+    const changedNeedComments = changed(data.needComments, prior?.needComments)
+    const needRows = data.needs.map((n) => ({
+      id: this.remoteId('need', n.id), title: n.title, body: n.body, link: n.link || null, needed_by: n.neededBy,
+      created_by: this.remoteId('person', n.createdBy), done_at: n.doneAt ? new Date(n.doneAt.length === 10 ? n.doneAt + 'T12:00:00' : n.doneAt).toISOString() : null,
+      done_by: this.remoteOptional('person', n.doneBy),
+    }))
+    const needCommentRows = data.needComments.map((c) => ({
+      id: this.remoteId('needComment', c.id), need_id: this.remoteId('need', c.needId), author: this.remoteId('person', c.authorId), body: c.body,
+    }))
+    await this.save('need', 'need', needRows.filter((row) => changedNeeds.has(this.localId('need', row.id))))
+    this.knownRemote.set('need', ids('need', data.needs))
+    await this.saveNeedTags(data.needTags, prior?.needTags ?? [])
+    await this.save('needComment', 'need_comment', needCommentRows.filter((row) => changedNeedComments.has(this.localId('needComment', row.id))))
+    this.knownRemote.set('needComment', ids('needComment', data.needComments))
 
     const meetingTimes = data.settings.meetingBlocks.map((block) => [block.day, ...block.lines].join(' · ')).join('\n')
     const contactLines = data.settings.contacts.map((contact) => [contact.role, contact.name, contact.phone].join(' · '))

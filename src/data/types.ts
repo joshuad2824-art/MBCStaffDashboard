@@ -296,6 +296,45 @@ export interface NoticeCategory {
   std: number
 }
 
+/* Needs (home brief §3): ask a colleague for input, or keep a to-do. Two
+   states only — open, and done with who and when — and nothing deleted but a
+   tag. Logistics, never pastoral care. */
+export interface Need {
+  id: Id
+  /** One line. */
+  title: string
+  /** Optional, markdown. */
+  body: string
+  /** Optional: a doc, a flyer, a Canva link. */
+  link: string
+  /** YYYY-MM-DD, or null for no date. */
+  neededBy: string | null
+  createdBy: Id
+  /** YYYY-MM-DD, or an ISO time from the database. */
+  createdAt: string
+  /** When it was marked done, or null while open. The database writes it. */
+  doneAt: string | null
+  doneBy: Id | null
+}
+
+/** Whose input a need asks for. One row per person; `seenAt` is for the Home
+    count and gates nothing. */
+export interface NeedTag {
+  needId: Id
+  personId: Id
+  seenAt: string | null
+}
+
+/** A reply under a need. Appended, never edited. */
+export interface NeedComment {
+  id: Id
+  needId: Id
+  authorId: Id
+  body: string
+  createdAt: string
+  time: string
+}
+
 export interface DashboardData {
   people: Person[]
   cadence: CadenceItem[]
@@ -315,4 +354,8 @@ export interface DashboardData {
   servingRoles: ServingRole[]
   groups: ServingGroup[]
   assignments: ServingAssignment[]
+  /** Needs (0021). */
+  needs: Need[]
+  needTags: NeedTag[]
+  needComments: NeedComment[]
 }

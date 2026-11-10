@@ -17,6 +17,7 @@ export function RoomPill({
   room,
   home,
   unread,
+  waiting = {},
   moreOpen,
   onMore,
 }: {
@@ -24,6 +25,8 @@ export function RoomPill({
   room: OpenRoom | null
   home: string
   unread: Partial<Record<RoomKey, number>>
+  /** Things waiting on you, shown as a plain number: not a badge. */
+  waiting?: Partial<Record<RoomKey, number>>
   moreOpen: boolean
   onMore(): void
 }) {
@@ -119,6 +122,7 @@ export function RoomPill({
               <span className="lamp-sm" style={{ background: r === room ? wellLamp(r) : r.lit }} aria-hidden="true" />
               {r.label}
               {unread[r.key] ? <Badge n={unread[r.key] ?? 0} /> : null}
+              {waiting[r.key] ? <Count n={waiting[r.key] ?? 0} /> : null}
             </Link>
           ))}
           <span aria-hidden="true" style={{ width: 1, height: 26, background: 'var(--pill-rule)', margin: '0 6px' }} />
@@ -144,6 +148,15 @@ export function RoomPill({
 function wellLamp(room: OpenRoom | null): string {
   if (!room) return 'var(--room-more)'
   return room.key === 'today' || room.key === 'meeting' ? 'var(--pill-well-ink)' : room.lamp
+}
+
+/** A count of what is waiting on you: the number in the pill's own ink. */
+function Count({ n }: { n: number }) {
+  return (
+    <span className="tabular" aria-label={`${n} waiting on you`} style={{ font: '700 14px/1 var(--mbc-font-sans)', opacity: 0.9 }}>
+      {n}
+    </span>
+  )
 }
 
 function Badge({ n }: { n: number }) {
