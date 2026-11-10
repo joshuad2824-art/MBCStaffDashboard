@@ -98,7 +98,7 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too (it covers `netlify/functions` as well as `src`) — then `test:auth`, `test:weather`, `test:repository`, `test:import` and `test:unfurl`. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0024_…` (the home brief numbers 0021–0026) |
+| Migrations | Continue the sequence: next is `supabase/migrations/0025_…` (the home brief numbers 0021–0026) |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -153,8 +153,8 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 - **Simplified, 10 November 2026** (home brief §1). Every `side: 'deacon'` surface is `off`, and so are the
   staff instruments — Huddle, Cadence, the Notice log, the Communicator, Care and Goals — each with a dated
   comment; no data was deleted and no migration reverted. The staff rooms are the short menu: **Home ·
-  Calendar · Needs · News · Discussion · Ministries · People** (People `adminOnly`, the administrator only),
-  with Leadership, Homebound and Resources joining as they are built. A side with nothing switched on is not
+  Calendar · Needs · News · Discussion · Ministries · Leadership · People** (People `adminOnly`, the
+  administrator only), with Homebound and Resources joining as they are built. A side with nothing switched on is not
   in the session's `sides` (`sideIsDrawn()`), so Jacob and Joshua are drawn the staff side, the side switch
   has nothing to switch to and is not shown, and `context` stays so the deacon side can come back without a
   rewrite. `hidden` on a surface means routable but in no room — the manual and Robert's Rules, which sit in
@@ -252,6 +252,20 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   the kind by `guard_family_news()` so no form can get it wrong; a limited account is not offered those kinds
   and the database refuses them anyway. Entries leave the board on `show_until` (illness 14 days, expecting
   120, most things 30 days past their date); nothing purges them.
+- **Leadership** (home brief §6, `0024_leadership.sql`) — `src/screens/Leadership.tsx` at `/leadership`. **It is
+  the serving directory, not a parallel table:** a board and a committee are `serving_group` kinds (`board`,
+  `committee`), an office is a `serving_role` (chairman, vice-chairman, secretary, the deacon officers finance,
+  building-grounds and personnel, member, ex-officio — `OFFICES` / `LEADERSHIP_ROLES` in `src/lib/serving.ts`),
+  and a term is an assignment's `started_on` / `ended_on`. All of it sits under the *Church leadership*
+  ministry, which has `directory = false`, so the Ministries index and `/ministries/<slug>` never show it, and the
+  Ministries role pickers offer only `directoryRoles()`. The September turnover is a date entered on the
+  outgoing term and a new assignment for the incoming one — never a row removed — so *Show past terms* answers
+  "who chaired Finance last year". The chairman is the leading role for both kinds, so an empty chair is a gap,
+  as a class with no teacher is. **A directory, not access control:** nothing here reads or writes
+  `membership`, nothing is derived from one into the other, and the policy test proves that naming a chair moves
+  no membership row. The whole staff body reads; the staff role edits, behind a per-group *Edit* toggle so the
+  page reads as a list. 0024 also changed counts §12 of the policy test asserted (roles, ministries, groups);
+  those now say so, and the group counts are scoped to the directory's own kinds.
 - **News & articles** (home brief §5, `0023_news.sql`) — `news_category`, `news_post`, `news_comment`;
   `src/screens/News.tsx` serves `/news`, `/news/<category>` and `/news/archive` (one `nested` surface);
   `src/lib/news.ts` derives current (`post_on ≤ today ≤ expires_on`), archive (past `expires_on`) and the

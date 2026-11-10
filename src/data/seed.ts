@@ -18,6 +18,8 @@ export const SEED_MINISTRIES: MinistryRecord[] = [
   { id: 7, slug: 'music', name: 'Music', description: 'The worship team and the choirs.', position: 50, active: true, directory: true },
   { id: 8, slug: 'men', name: 'Men', description: '', position: 60, active: true, directory: true },
   { id: 9, slug: 'women', name: 'Women', description: '', position: 70, active: true, directory: true },
+  // 0024: the parent of the Deacon Board and the committees; not listed in the directory.
+  { id: 10, slug: 'leadership', name: 'Church leadership', description: 'The Deacon Board and the church’s committees: who serves in each, in what office, for what term.', position: 100, active: true, directory: false },
 ]
 
 /** The enumerated roles, as 0017 seeds them. Free text would become eleven
@@ -31,6 +33,15 @@ export const SERVING_ROLES: ServingRole[] = [
   { slug: 'host', name: 'Host', position: 60, leads: true },
   { slug: 'volunteer', name: 'Volunteer', position: 70, leads: false },
   { slug: 'coordinator', name: 'Coordinator', position: 80, leads: true },
+  // 0024: Leadership's offices.
+  { slug: 'chairman', name: 'Chairman', position: 100, leads: true },
+  { slug: 'vice-chairman', name: 'Vice-Chairman', position: 110, leads: false },
+  { slug: 'secretary', name: 'Secretary', position: 120, leads: false },
+  { slug: 'finance', name: 'Finance', position: 130, leads: false },
+  { slug: 'building-grounds', name: 'Building & Grounds', position: 140, leads: false },
+  { slug: 'personnel', name: 'Personnel', position: 150, leads: false },
+  { slug: 'member', name: 'Member', position: 160, leads: false },
+  { slug: 'ex-officio', name: 'Ex officio', position: 170, leads: false },
 ]
 
 export const NOTICE_CATEGORIES: NoticeCategory[] = [
@@ -239,6 +250,11 @@ export const seed: DashboardData = {
     { id: 3, ministryId: 3, kind: 'community-group', name: 'Thursday Morning · Women', meets: 'Thursdays 9:30 AM', location: 'The parlor', audienceNote: 'Women, all ages', notes: '', startedOn: '2026-01-08', endedOn: null },
     { id: 4, ministryId: 7, kind: 'team', name: 'Worship team', meets: 'Wednesdays 6:30 PM rehearsal', location: 'Sanctuary', audienceNote: 'Anyone who can carry a part', notes: '', startedOn: null, endedOn: null },
     { id: 5, ministryId: 3, kind: 'class', name: 'Spring 2026 · Financial Peace', meets: 'Sundays 5:00 PM, nine weeks', location: 'Room 212', audienceNote: 'Adults, any age', notes: '', startedOn: '2026-01-11', endedOn: '2026-05-17' },
+    // Leadership (0024): the board and three committees, under Church leadership.
+    { id: 6, ministryId: 10, kind: 'board', name: 'Deacon Board', meets: 'Second Sunday, 4:00 PM', location: 'The library', audienceNote: '', notes: '', startedOn: null, endedOn: null },
+    { id: 7, ministryId: 10, kind: 'committee', name: 'Finance Committee', meets: '', location: '', audienceNote: '', notes: '', startedOn: null, endedOn: null },
+    { id: 8, ministryId: 10, kind: 'committee', name: 'Personnel Committee', meets: '', location: '', audienceNote: '', notes: '', startedOn: null, endedOn: null },
+    { id: 9, ministryId: 10, kind: 'committee', name: 'Building & Grounds Committee', meets: '', location: '', audienceNote: '', notes: '', startedOn: null, endedOn: null },
   ],
   assignments: [
     { id: 1, groupId: 1, personId: 4, roleSlug: 'teacher', startedOn: '2025-09-07', endedOn: null, isPrimary: true },
@@ -247,6 +263,23 @@ export const seed: DashboardData = {
     { id: 4, groupId: 3, personId: 7, roleSlug: 'volunteer', startedOn: '2026-01-08', endedOn: null, isPrimary: true },
     { id: 5, groupId: 4, personId: 3, roleSlug: 'coordinator', startedOn: '2025-09-03', endedOn: null, isPrimary: true },
     { id: 6, groupId: 5, personId: 2, roleSlug: 'teacher', startedOn: '2026-01-11', endedOn: '2026-05-17', isPrimary: true },
+    // The board, officers by office; the September 2026 turnover is a date.
+    { id: 7, groupId: 6, personId: 8, roleSlug: 'chairman', startedOn: '2025-09-01', endedOn: null, isPrimary: true },
+    { id: 8, groupId: 6, personId: 11, roleSlug: 'vice-chairman', startedOn: '2026-09-01', endedOn: null, isPrimary: false },
+    { id: 9, groupId: 6, personId: 10, roleSlug: 'secretary', startedOn: '2024-09-01', endedOn: null, isPrimary: false },
+    { id: 10, groupId: 6, personId: 9, roleSlug: 'finance', startedOn: '2025-09-01', endedOn: null, isPrimary: false },
+    { id: 11, groupId: 6, personId: 12, roleSlug: 'building-grounds', startedOn: '2025-09-01', endedOn: null, isPrimary: false },
+    { id: 12, groupId: 6, personId: 13, roleSlug: 'personnel', startedOn: '2026-09-01', endedOn: null, isPrimary: false },
+    { id: 13, groupId: 6, personId: 1, roleSlug: 'ex-officio', startedOn: '2024-09-01', endedOn: null, isPrimary: false },
+    { id: 14, groupId: 6, personId: 11, roleSlug: 'member', startedOn: '2025-09-01', endedOn: '2026-08-31', isPrimary: false },
+    { id: 15, groupId: 7, personId: 9, roleSlug: 'chairman', startedOn: '2026-09-01', endedOn: null, isPrimary: true },
+    { id: 16, groupId: 7, personId: 10, roleSlug: 'chairman', startedOn: '2024-09-01', endedOn: '2026-08-31', isPrimary: false },
+    { id: 17, groupId: 7, personId: 10, roleSlug: 'member', startedOn: '2026-09-01', endedOn: null, isPrimary: false },
+    { id: 18, groupId: 7, personId: 7, roleSlug: 'ex-officio', startedOn: '2025-09-01', endedOn: null, isPrimary: false },
+    { id: 19, groupId: 8, personId: 13, roleSlug: 'chairman', startedOn: '2026-09-01', endedOn: null, isPrimary: true },
+    { id: 20, groupId: 8, personId: 1, roleSlug: 'ex-officio', startedOn: '2024-09-01', endedOn: null, isPrimary: false },
+    { id: 21, groupId: 9, personId: 12, roleSlug: 'chairman', startedOn: '2025-09-01', endedOn: null, isPrimary: true },
+    { id: 22, groupId: 9, personId: 11, roleSlug: 'member', startedOn: '2025-09-01', endedOn: null, isPrimary: false },
   ],
 
   // Needs (home brief §3). Dated around the seed's Friday and slid forward

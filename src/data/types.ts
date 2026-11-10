@@ -51,7 +51,9 @@ export interface MinistryRecord {
   directory: boolean
 }
 
-export type GroupKind = 'class' | 'community-group' | 'team'
+/** 'board' and 'committee' since 0024: Leadership's groups, under the
+    Church leadership ministry the directory does not list. */
+export type GroupKind = 'class' | 'community-group' | 'team' | 'board' | 'committee'
 
 /** A class, a community group or a ministry team: where and when it meets
     and a note on whom it is for. Who serves in it is a ServingAssignment.

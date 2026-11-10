@@ -1418,8 +1418,10 @@ select test.assert(
   'groups: the roles are enumerated by migration, not written through the API');
 select test.assert((select count(*) from ministry where name in ('All', 'Children', 'Students', 'Men', 'Women', 'Music', 'All groups')) = 7,
   'ministries: every string the ledger already used is seeded, so 0018 holds and no data moves');
-select test.assert((select count(*) from ministry where directory) = 7 and (select count(*) from ministry where not directory) = 2,
-  'ministries: All and All groups exist for the foreign key and are not listed in the directory');
+select test.assert((select count(*) from ministry where directory) = 7
+                   and (select count(*) from ministry where not directory) = 3
+                   and (select count(*) from ministry where not directory and slug in ('all', 'all-groups', 'leadership')) = 3,
+  'ministries: All and All groups exist for the foreign key, Church leadership (0024) parents the board and committees, and none of the three is listed in the directory');
 
 -- 12a. Signed out: nothing.
 
@@ -1433,13 +1435,13 @@ reset role;
 
 select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
 set role authenticated;
-select test.assert((select count(*) from ministry) = 9, 'staff: reads the ministries');
-select test.assert((select count(*) from serving_role) = 8, 'staff: reads the eight roles');
+select test.assert((select count(*) from ministry) = 10, 'staff: reads the ministries, Church leadership (0024) among them');
+select test.assert((select count(*) from serving_role) = 16, 'staff: reads the sixteen roles — 0017''s eight and 0024''s offices');
 insert into serving_group (id, ministry_id, kind, name, meets, location, audience_note)
   values ('a4000000-0000-0000-0000-000000000001', (select id from ministry where slug = 'children'), 'class', 'Sunday Morning · Grades 1–6', 'Sundays 9:15 AM', 'Hall A', 'Grades 1–6');
 insert into serving_assignment (id, group_id, person_id, role_slug, is_primary)
   values ('a5000000-0000-0000-0000-000000000001', 'a4000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000004', 'teacher', true);
-select test.assert((select count(*) from serving_group) = 1 and (select count(*) from serving_assignment) = 1, 'staff: adds a class and names its teacher');
+select test.assert((select count(*) from serving_group where kind not in ('board', 'committee')) = 1 and (select count(*) from serving_assignment) = 1, 'staff: adds a class and names its teacher');
 select test.refused(
   $q$ insert into serving_assignment (group_id, person_id, role_slug) values ('a4000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000004', 'discussion-leader') $q$,
   '23503', 'staff: a role outside the enumerated list is refused');
@@ -1450,7 +1452,7 @@ update serving_assignment set ended_on = current_date where id = 'a5000000-0000-
 select test.assert((select ended_on from serving_assignment where id = 'a5000000-0000-0000-0000-000000000001') = current_date, 'staff: ends an assignment with a date');
 delete from serving_assignment;
 delete from serving_group;
-select test.assert((select count(*) from serving_assignment) = 1 and (select count(*) from serving_group) = 1, 'staff: deletes nothing — an ended assignment is a fact about last spring');
+select test.assert((select count(*) from serving_assignment) = 1 and (select count(*) from serving_group where kind not in ('board', 'committee')) = 1, 'staff: deletes nothing — an ended assignment is a fact about last spring');
 update ministry set description = 'Rewritten' where slug = 'children';
 select test.assert((select description from ministry where slug = 'children') = 'Rewritten', 'staff: edits what a ministry says about itself');
 select test.refused(
@@ -1465,7 +1467,7 @@ reset role;
 
 select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
 set role authenticated;
-select test.assert((select count(*) from serving_group) = 1,      'limited: reads the directory');
+select test.assert((select count(*) from serving_group where kind not in ('board', 'committee')) = 1,      'limited: reads the directory');
 select test.assert((select count(*) from serving_assignment) = 1, 'limited: reads who serves');
 select test.refused(
   $q$ insert into serving_group (ministry_id, kind, name) values ((select id from ministry where slug = 'children'), 'team', 'Mine') $q$,
@@ -1835,3 +1837,73 @@ set role authenticated;
 select test.assert((select count(*) from news_post) = 0,     'deacon A: reads zero news');
 select test.assert((select count(*) from news_comment) = 0,  'deacon A: reads zero news comments');
 reset role;
+
+-- ---------------------------------------------------------- 16. leadership (0024)
+--
+-- Home brief §6 and §11. The board and the committees are groups in the
+-- serving directory, offices are roles, terms are dates. The directory's
+-- catalogue rule still holds with the new kinds — no attendee, roster,
+-- enrolment, member or headcount column (§12 runs that check on the final
+-- schema). And it is a directory, not access control: naming a chair changes
+-- no membership.
+
+reset role;
+
+select test.assert(
+  not exists (select 1 from information_schema.columns
+               where table_schema = 'public' and table_name in ('serving_group', 'serving_assignment')
+                 and (column_name ilike '%attend%' or column_name ilike '%roster%' or column_name ilike '%enrol%'
+                      or column_name ilike '%member%' or column_name ilike '%headcount%')),
+  'leadership: with board and committee kinds, the directory still has no attendee or member column');
+select test.assert((select count(*) from serving_group g join ministry m on m.id = g.ministry_id where m.slug = 'leadership' and g.kind = 'board') = 1,
+  'leadership: the Deacon Board is a group under Church leadership');
+select test.assert((select count(*) from serving_role where slug in ('chairman', 'vice-chairman', 'secretary', 'finance', 'building-grounds', 'personnel', 'member', 'ex-officio')) = 8,
+  'leadership: the offices are enumerated roles');
+select test.assert((select leads from serving_role where slug = 'chairman'), 'leadership: the chair is a leading role — an empty chair is a gap');
+
+create temporary table membership_before as select count(*) as n, coalesce(max(id::text), '') as last from membership;
+grant select on membership_before to authenticated;
+
+-- 16a. The staff role names the board's chairman, sets up a committee, and
+-- turns a term over in September.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+insert into serving_group (id, ministry_id, kind, name)
+  values ('a4100000-0000-0000-0000-000000000001', (select id from ministry where slug = 'leadership'), 'committee', 'Finance Committee');
+insert into serving_assignment (id, group_id, person_id, role_slug, started_on, is_primary) values
+  ('a5100000-0000-0000-0000-000000000001', (select id from serving_group where kind = 'board'), 'b0000000-0000-0000-0000-000000000003', 'chairman', '2025-09-01', true),
+  ('a5100000-0000-0000-0000-000000000002', 'a4100000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000004', 'chairman', '2025-09-01', true);
+-- September: last year's chair's term ends with a date; the new chair is named.
+update serving_assignment set ended_on = '2026-08-31', is_primary = false where id = 'a5100000-0000-0000-0000-000000000002';
+insert into serving_assignment (group_id, person_id, role_slug, started_on, is_primary)
+  values ('a4100000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000003', 'chairman', '2026-09-01', true);
+select test.refused($q$ insert into serving_group (ministry_id, kind, name) values ((select id from ministry where slug = 'leadership'), 'cabal', 'X') $q$,
+  '23514', 'staff: a kind outside the five is refused');
+reset role;
+select test.assert((select count(*) from serving_assignment where group_id = 'a4100000-0000-0000-0000-000000000001') = 2,
+  'staff: a September turnover is a date entered, not a row destroyed — who chaired Finance last year stays answerable');
+select test.assert((select count(*) from serving_assignment where group_id = 'a4100000-0000-0000-0000-000000000001' and ended_on is null and role_slug = 'chairman') = 1,
+  'staff: and this year''s chair is the one current chairman');
+select test.assert((select n from membership_before) = (select count(*) from membership),
+  'leadership: naming a chairman and setting up a committee changed no membership — a directory, not access control');
+
+-- 16b. A limited account reads the page and changes nothing on it.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from serving_group where kind in ('board', 'committee')) = 2, 'limited: reads the board and the committees');
+select test.refused($q$ insert into serving_group (ministry_id, kind, name) values ((select id from ministry where slug = 'leadership'), 'committee', 'Mine') $q$,
+  '42501', 'limited: cannot add a committee');
+update serving_assignment set role_slug = 'member' where group_id = 'a4100000-0000-0000-0000-000000000001';
+reset role;
+select test.assert((select count(*) from serving_assignment where group_id = 'a4100000-0000-0000-0000-000000000001' and role_slug = 'chairman') = 2,
+  'limited: an update aimed at a committee''s offices changed nothing');
+
+-- 16c. The deacon side reads none of it here: Leadership is the staff's directory.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from serving_group where kind in ('board', 'committee')) = 0, 'deacon A: reads zero leadership groups');
+reset role;
+drop table membership_before;

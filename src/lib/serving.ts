@@ -10,8 +10,12 @@ export const KIND_LABEL: Record<GroupKind, string> = {
   class: 'Class',
   'community-group': 'Community group',
   team: 'Ministry team',
+  board: 'Board',
+  committee: 'Committee',
 }
 
+/** The kinds the Ministries directory offers. A board and a committee are
+    Leadership's (0024), made there and not here. */
 export const KINDS: GroupKind[] = ['class', 'community-group', 'team']
 
 /** The leading roles a kind of group needs somebody in, first choice first.
@@ -21,12 +25,29 @@ export const LEADS: Record<GroupKind, string[]> = {
   class: ['teacher', 'co-teacher'],
   'community-group': ['host', 'leader', 'co-leader'],
   team: ['coordinator', 'leader'],
+  board: ['chairman'],
+  committee: ['chairman'],
 }
 
 export const LEAD_WORD: Record<GroupKind, string> = {
   class: 'teacher',
   'community-group': 'host',
   team: 'coordinator',
+  board: 'chairman',
+  committee: 'chairman',
+}
+
+/** Leadership's offices (0024), in the order the board lists them. Every
+    other role is the directory's. */
+export const OFFICES = ['chairman', 'vice-chairman', 'secretary', 'finance', 'building-grounds', 'personnel']
+export const LEADERSHIP_ROLES = [...OFFICES, 'member', 'ex-officio']
+
+export function directoryRoles(data: DashboardData) {
+  return data.servingRoles.filter((r) => !LEADERSHIP_ROLES.includes(r.slug))
+}
+
+export function leadershipRoles(data: DashboardData) {
+  return data.servingRoles.filter((r) => LEADERSHIP_ROLES.includes(r.slug)).sort((a, b) => a.position - b.position)
 }
 
 export function isLive(group: ServingGroup): boolean {
