@@ -17,5 +17,5 @@
     "noFallthroughCasesInSwitch": true,
     "types": ["vite/client"]
   },
-  "include": ["src", "netlify/functions"]
+  "include": ["src", "netlify/functions", "netlify/types"]
 }
