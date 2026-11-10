@@ -11,6 +11,7 @@ import type { Appearance } from '../../lib/theme'
 import { DisplaySizeControl } from './DisplaySizeControl'
 import { ViewAsPicker } from './ViewAsPicker'
 import { RememberDevice } from '../RememberDevice'
+import { useCanOpen } from '../../screens/useSurfaces'
 
 /* More: one sheet, two taps from anywhere. On a phone it carries the rooms too,
    since the pill there holds only the room you are in. Below them, the back
@@ -40,6 +41,7 @@ export function MoreSheet({
   const { member, seats, viewAs, sides, context, setContext, admin, previewSeat, setPresentMode, signOut, auth } = useSession()
   const { choice, setChoice } = useTheme()
   const narrow = useNarrow()
+  const canOpen = useCanOpen()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const panel = useRef<HTMLElement>(null)
@@ -193,7 +195,9 @@ export function MoreSheet({
                 Recent changes
               </button>
             ) : null}
-            {context === 'staff' && !narrow ? (
+            {/* Present mode is the Monday huddle on a wall: wins, tensions and
+                the ledger. With the Huddle off there is nothing to present. */}
+            {context === 'staff' && !narrow && canOpen('huddle') ? (
               <button
                 type="button"
                 style={{ ...tileButton, cursor: 'pointer', textAlign: 'left' }}

@@ -4,10 +4,13 @@ One application, two sides. The staff dashboard and the deacons' dashboard are t
 the same database, and the same sign-in. What a person sees is assembled from which bodies they
 belong to.
 
-Read `mbc-staff-dashboard-brief.md`, `mbc-deacons-dashboard-brief.md` and
-`mbc-dashboard-expansion-brief.md` before changing anything structural (the third is the current
-work; `docs/CLAUDE-CODE-KICKOFF.md` is its instruction sheet and `supabase/governance/CORPUS-PREP.md`
-the corpus session that feeds it). The invariants below are the ones that are easy to break by accident and expensive to
+Read `mbc-staff-dashboard-brief.md`, `mbc-deacons-dashboard-brief.md`,
+`mbc-dashboard-expansion-brief.md` and `mbc-dashboard-home-brief.md` before changing anything
+structural. The fourth (10 November 2026) is the current work and wins where it disagrees with the
+others: the deacon side has moved to its own application (*MBC Deacon Resource*), this dashboard is
+the one place staff sign in, and the build order is its §9, one PR each. For the expansion brief,
+`docs/CLAUDE-CODE-KICKOFF.md` is its instruction sheet and `supabase/governance/CORPUS-PREP.md` the
+corpus session that feeds it. The invariants below are the ones that are easy to break by accident and expensive to
 discover later.
 
 ---
@@ -76,7 +79,7 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0020_…` |
+| Migrations | Continue the sequence: next is `supabase/migrations/0021_…` (the home brief numbers 0021–0026) |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -128,6 +131,19 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   `ministryNames(data)` from the table; `'All'` and `'All groups'` are rows the foreign key needs and
   the directory does not draw. The screen edits in place, one undoable mutation per change, creates a
   roster entry and an assignment in one motion, and ends things with a date; it deletes nothing.
+- **Simplified, 10 November 2026** (home brief §1). Every `side: 'deacon'` surface is `off`, and so are the
+  staff instruments — Huddle, Cadence, the Notice log, the Communicator, Care and Goals — each with a dated
+  comment; no data was deleted and no migration reverted. The staff rooms are the short menu: **Home ·
+  Calendar · Discussion · Ministries · People** (People `adminOnly`, the administrator only), with Needs,
+  News, Leadership, Homebound and Resources joining as they are built. A side with nothing switched on is not
+  in the session's `sides` (`sideIsDrawn()`), so Jacob and Joshua are drawn the staff side, the side switch
+  has nothing to switch to and is not shown, and `context` stays so the deacon side can come back without a
+  rewrite. `hidden` on a surface means routable but in no room — the manual and Robert's Rules, which sit in
+  More until Resources (§7) lists them; it is not `off`, which means the route refuses. **Home never points
+  at a room that is off:** every tile and row on `Today.tsx` names the surface it opens and `Tile` / `TileRow`
+  ask `canOpen()` (`useCanOpen()` in `src/screens/useSurfaces.ts`) before drawing — put any new tile through
+  them, never around them. Other in-page links into an off room follow the same rule (Discussion's Promote,
+  More's present mode). The policy test did not move, which is the proof this was a nav-and-route change.
 - **Rooms, lamps and after dark** (October 2026 redesign, decided with Joshua on 18 October). There is no
   sidebar. `AppShell` is a sticky `TopBar` (mark, the room's lamp and name, in-room tabs, and the side switch
   for the two people who hold both sides — it replaced the dark context band and the *Which side today* page,

@@ -26,6 +26,7 @@ import { WhichSide } from './screens/WhichSide'
 import { Meeting } from './screens/Meeting'
 import { Reports } from './screens/Reports'
 import { useSession } from './session/session'
+import { useViewer } from './screens/useSurfaces'
 
 /** The screen behind each surface. Keyed the same way as SURFACES. */
 const SCREENS: Record<string, ReactNode> = {
@@ -57,7 +58,8 @@ const SCREENS: Record<string, ReactNode> = {
 }
 
 export function App() {
-  const { member, bodies, viewAs, sides, context, auth, previewSeat, access } = useSession()
+  const { member, context, auth } = useSession()
+  const viewer = useViewer()
 
   /* An opened link arrives with its tokens on the address bar and takes a
      moment to become a session. Showing the sign-in screen in that gap tells
@@ -69,7 +71,6 @@ export function App() {
   /* Routes exist only for the surfaces this person may open. Typing the path
      of any other gets the same answer as a path that was never there: the
      landing screen. The route refuses; it does not render empty. */
-  const viewer = { bodies, viewAs, sides, context, previewSeat, access }
   const open = surfacesFor(viewer)
   if (open.length === 0) return <NoSurfaces />
   /* Home is Today on the staff side and the meeting on the deacon side. The

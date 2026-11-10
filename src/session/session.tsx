@@ -9,6 +9,12 @@ import { seedSeatsFor } from '../data/seed'
 import type { Access, Person } from '../data/types'
 import { setPreviewLocked } from './viewAs'
 import type { PreviewSeat } from './viewAs'
+import { sideOfBody } from './side'
+import type { Side } from './side'
+import { sideIsDrawn } from '../screens/surfaces'
+
+export { sideOfBody }
+export type { Side }
 
 /* Who is signed in.
 
@@ -35,14 +41,6 @@ import type { PreviewSeat } from './viewAs'
 const SESSION_KEY = 'mbc.staff-dashboard.session'
 const CONTEXT_KEY = 'mbc.dashboard.context'
 const SESSION_DAYS = 30
-
-/** The two sides of the one application. */
-export type Side = 'staff' | 'deacon'
-
-/** Bodies whose surfaces live on the deacon side. */
-export function sideOfBody(slug: string): Side {
-  return slug === 'staff' ? 'staff' : 'deacon'
-}
 
 function readContext(): Side | null {
   try {
@@ -536,8 +534,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
      the person's own. `bodies` above stays real — it is what the data
      providers and the stub consult — and only the drawing follows the seat. */
   const sides = useMemo<Side[]>(() => {
-    const held = new Set((previewSeat ? previewSeat.bodies : bodies).map(sideOfBody))
-    return (['staff', 'deacon'] as Side[]).filter((side) => held.has(side))
+    const drawnFor = previewSeat ? previewSeat.bodies : bodies
+    const held = new Set(drawnFor.map(sideOfBody))
+    /* A side with no surface switched on is not a side anyone can be on. Since
+       10 November 2026 every deacon surface is off (the deacon side moved to the
+       Deacon Resource), so the two people who hold both sides are drawn the
+       staff side, the switch has nothing to switch to and is not shown, and a
+       remembered 'deacon' context falls back to staff. `context` stays, so
+       switching the deacon side back on needs no rewrite. */
+    return (['staff', 'deacon'] as Side[]).filter((side) => held.has(side) && sideIsDrawn(side, drawnFor))
   }, [bodies, previewSeat])
 
   const access: Access = member?.access ?? 'none'
@@ -548,8 +553,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
      browser. Nothing here reaches a query. */
   const context = useMemo<Side>(() => {
     if (sides.length === 1) return sides[0]
+    /* Nothing drawn on any side held — a deacon-only account, now that the
+       deacon side is off: stay on the side they hold, so nothing staff-side is
+       drawn for them by default. */
+    if (sides.length === 0) return (previewSeat ? previewSeat.bodies : bodies).some((slug) => sideOfBody(slug) === 'staff') ? 'staff' : 'deacon'
     return chosenContext && sides.includes(chosenContext) ? chosenContext : 'staff'
-  }, [sides, chosenContext])
+  }, [sides, chosenContext, bodies, previewSeat])
 
   const setContext = useCallback((side: Side) => {
     setChosenContext(side)

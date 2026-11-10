@@ -12,7 +12,8 @@ import { useData } from '../../data/store'
 import { useSession } from '../../session/session'
 import { useUnreadThreadIds } from '../../lib/unread'
 import { reaches } from '../../lib/audience'
-import { homeOf, surfacesFor } from '../../screens/surfaces'
+import { homeOf } from '../../screens/surfaces'
+import { useOpenSurfaces } from '../../screens/useSurfaces'
 import type { Surface } from '../../screens/surfaces'
 import { moreFor, roomOf, roomsFor } from '../../screens/rooms'
 import type { RoomKey } from '../../screens/rooms'
@@ -27,13 +28,13 @@ import { useNarrow } from '../../lib/displayScale'
    More can never offer a surface the router would refuse. */
 export function AppShell({ surface, children }: { surface: Surface; children: ReactNode }) {
   const data = useData()
-  const { member, viewAs, bodies, sides, context, previewSeat, access } = useSession()
+  const { member, viewAs, context, previewSeat } = useSession()
   const [historyOpen, setHistoryOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const narrow = useNarrow()
 
-  const open = surfacesFor({ bodies, viewAs, sides, context, previewSeat, access })
+  const open = useOpenSurfaces()
   const rooms = roomsFor(open, context)
   const room = roomOf(surface, rooms)
   const back = moreFor(open)
@@ -45,7 +46,7 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
   const staffUnread = useUnreadThreadIds(member?.id ?? null, staffThreads).length
   const boardUnread = useUnreadThreadIds(member?.id ?? null, boardThreads).length
   const unread: Partial<Record<RoomKey, number>> = {
-    huddle: viewAs === 'limited' ? 0 : staffUnread,
+    discussion: viewAs === 'limited' ? 0 : staffUnread,
     boardroom: boardUnread,
   }
 
