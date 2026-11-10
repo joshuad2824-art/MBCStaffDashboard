@@ -1907,3 +1907,69 @@ set role authenticated;
 select test.assert((select count(*) from serving_group where kind in ('board', 'committee')) = 0, 'deacon A: reads zero leadership groups');
 reset role;
 drop table membership_before;
+
+-- ------------------------------------------------------------ 17. resources (0025)
+--
+-- Home brief §7. One list, staff-editable: the whole staff body reads and
+-- adds; the person who added a resource, or a staff-role account, edits,
+-- pins and removes it. A link goes out over http(s) or to a path in the app —
+-- never a script, and never a protocol-relative address that leaves the site.
+
+reset role;
+
+-- 17a. Signed out: nothing.
+
+select test.sign_out();
+set role anon;
+select test.assert((select count(*) from resource) = 0, 'signed out: no resources');
+select test.refused($q$ insert into resource (name, url, category) values ('X', 'https://example.org', 'training') $q$, '42501', 'signed out: cannot add a resource');
+reset role;
+
+-- 17b. A limited account adds a link, in its own name.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+insert into resource (id, name, url, description, category, added_by)
+  values ('a6100000-0000-0000-0000-000000000001', 'BAND', 'https://band.us', 'Group messaging', 'ministry-tools', 'b0000000-0000-0000-0000-000000000001');
+select test.assert((select added_by from resource where id = 'a6100000-0000-0000-0000-000000000001') = 'b0000000-0000-0000-0000-000000000002',
+  'limited: adds a resource, recorded in their own name whatever was sent');
+insert into resource (name, url, category) values ('The manual', '/reference', 'reference');
+select test.assert((select count(*) from resource) = 2, 'limited: a path inside the app is a link too');
+select test.refused($q$ insert into resource (name, url, category) values ('X', 'javascript:alert(1)', 'training') $q$, '23514', 'limited: a script is not a link');
+select test.refused($q$ insert into resource (name, url, category) values ('X', '//evil.example/login', 'training') $q$, '23514', 'limited: a protocol-relative address that leaves the site is refused');
+select test.refused($q$ insert into resource (name, url, category) values ('X', 'https://example.org', 'gossip') $q$, '23514', 'limited: a category outside the five is refused');
+reset role;
+
+-- 17c. Another's resource: the limited account cannot change it; the staff role can.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000003', 'other@memorial.test');
+set role authenticated;
+insert into resource (id, name, url, category) values ('a6100000-0000-0000-0000-000000000002', 'Breeze', 'https://example.breezechms.com', 'office-admin');
+reset role;
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+update resource set pinned = true where id = 'a6100000-0000-0000-0000-000000000002';
+delete from resource where id = 'a6100000-0000-0000-0000-000000000002';
+update resource set pinned = true where id = 'a6100000-0000-0000-0000-000000000001';
+reset role;
+select test.assert((select pinned from resource where id = 'a6100000-0000-0000-0000-000000000002') = false, 'limited: cannot pin a resource someone else added');
+select test.assert((select count(*) from resource where id = 'a6100000-0000-0000-0000-000000000002') = 1, 'limited: cannot remove a resource someone else added');
+select test.assert((select pinned from resource where id = 'a6100000-0000-0000-0000-000000000001'), 'limited: pins their own');
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+update resource set pinned = true, description = 'Members and giving' where id = 'a6100000-0000-0000-0000-000000000002';
+select test.refused($q$ update resource set added_by = 'b0000000-0000-0000-0000-000000000001' where id = 'a6100000-0000-0000-0000-000000000002' $q$,
+  'P0001', 'staff: who added a resource does not change');
+delete from resource where id = 'a6100000-0000-0000-0000-000000000001';
+reset role;
+select test.assert((select pinned from resource where id = 'a6100000-0000-0000-0000-000000000002'), 'staff: edits and pins a colleague''s resource');
+select test.assert((select count(*) from resource where id = 'a6100000-0000-0000-0000-000000000001') = 0, 'staff: removes a limited colleague''s resource');
+
+-- 17d. The deacon side: nothing.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from resource) = 0, 'deacon A: reads zero resources');
+reset role;

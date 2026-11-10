@@ -340,6 +340,16 @@ export const seed: DashboardData = {
     { id: 1, postId: 2, authorId: 4, body: 'We should talk about this before the parent meeting.', createdAt: '2026-08-26', time: '3:40 PM' },
   ],
 
+  // Resources (home brief §7). Sample addresses: the real ones are the
+  // staff's to enter. The manual and Robert's Rules are built into the page.
+  resources: [
+    { id: 1, name: 'Breeze', url: 'https://www.breezechms.com/', description: 'Members, giving and check-in', category: 'office-admin', pinned: true, addedBy: 8, position: 10, active: true },
+    { id: 2, name: 'BAND', url: 'https://band.us/', description: 'Group messaging for classes and teams', category: 'ministry-tools', pinned: true, addedBy: 8, position: 20, active: true },
+    { id: 3, name: 'MBC style guide', url: 'https://www.canva.com/', description: 'Colours, type and how the mark is used', category: 'brand-design', pinned: false, addedBy: 7, position: 30, active: true },
+    { id: 4, name: 'Canva team', url: 'https://www.canva.com/', description: 'Flyers, slides and social posts', category: 'brand-design', pinned: false, addedBy: 7, position: 40, active: true },
+    { id: 5, name: 'Child-safety training', url: 'https://www.ministrysafe.com/', description: 'Required yearly for anyone serving with children', category: 'training', pinned: false, addedBy: 4, position: 50, active: true },
+  ],
+
   settings: {
     welcome:
       'If you are visiting, please fill out a contact card \u2014 in the pew or at memorialbaptist.com \u2014 and return it to an offering box or the Welcome Desk.',

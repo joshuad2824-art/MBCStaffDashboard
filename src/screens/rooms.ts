@@ -10,15 +10,15 @@ import type { Surface } from './surfaces'
 
    Since 10 November 2026 (home brief §1.1) the staff rooms are the short menu
    the brief draws — Home · Calendar · Needs · News · Discussion · Ministries ·
-   Leadership · People today, with Homebound and Resources joining as each is
+   Leadership · Resources · People today, with Homebound joining when it is
    built. The deacon rooms are kept as written; every surface in them is off,
    so none is drawn.
 
    The surfaces rooms do not hold — the manual and Robert's Rules, `hidden`
-   since the same date — live in More until Resources (§7) lists them: they
-   are opened twice a year, not twice a day. */
+   since the same date — are reached from Resources (§7), which lists them as
+   built-in entries: they are opened twice a year, not twice a day. */
 
-export type RoomKey = 'today' | 'calendar' | 'needs' | 'news' | 'discussion' | 'ministries' | 'leadership' | 'work' | 'people' | 'meeting' | 'reports' | 'care' | 'boardroom'
+export type RoomKey = 'today' | 'calendar' | 'needs' | 'news' | 'discussion' | 'ministries' | 'leadership' | 'resources' | 'work' | 'people' | 'meeting' | 'reports' | 'care' | 'boardroom'
 
 export interface Room {
   key: RoomKey
@@ -46,6 +46,7 @@ export const ROOMS: Room[] = [
   { key: 'discussion', side: 'staff', label: 'Discussion', lamp: 'var(--room-huddle)', lit: 'var(--lamp-huddle)', tabFill: 'var(--tile-talk)', tabInk: 'var(--tile-talk-ink)', surfaces: ['discussion', 'huddle'] },
   { key: 'ministries', side: 'staff', label: 'Ministries', lamp: 'var(--room-people)', lit: 'var(--lamp-people)', tabFill: 'var(--tile-care)', tabInk: 'var(--tile-care-ink)', surfaces: ['ministries', 'care'] },
   { key: 'leadership', side: 'staff', label: 'Leadership', lamp: 'var(--room-people)', lit: 'var(--lamp-people)', tabFill: 'var(--tile-care)', tabInk: 'var(--tile-care-ink)', surfaces: ['leadership'] },
+  { key: 'resources', side: 'staff', label: 'Resources', lamp: 'var(--room-more)', lit: 'var(--lamp-more)', tabFill: 'var(--action-dark)', tabInk: 'var(--text-on-dark)', surfaces: ['resources'] },
   { key: 'work', side: 'staff', label: 'Work', lamp: 'var(--room-work)', lit: 'var(--lamp-work)', tabFill: 'var(--tile-gold)', tabInk: 'var(--tile-gold-ink)', surfaces: ['cadence', 'notice', 'communicator', 'goals'] },
   { key: 'people', side: 'staff', label: 'People', lamp: 'var(--room-work)', lit: 'var(--lamp-work)', tabFill: 'var(--tile-gold)', tabInk: 'var(--tile-gold-ink)', surfaces: ['people'] },
 
@@ -64,8 +65,9 @@ export const ROOMS: Room[] = [
   { key: 'boardroom', side: 'deacon', label: 'Board room', lamp: 'var(--room-huddle)', lit: 'var(--lamp-huddle)', tabFill: 'var(--tile-talk)', tabInk: 'var(--tile-talk-ink)', surfaces: ['boardDiscussion', 'boardCalendar'] },
 ]
 
-/** The back rooms, in More. */
-export const MORE_SURFACES = ['reference', 'robertsRules']
+/** The back rooms, in More. Empty since Resources (home brief §7) became the
+    home of the manual and Robert's Rules; More keeps the settings. */
+export const MORE_SURFACES: string[] = []
 
 export interface OpenRoom extends Room {
   open: Surface[]

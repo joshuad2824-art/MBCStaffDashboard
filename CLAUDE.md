@@ -98,7 +98,7 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
 | CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too (it covers `netlify/functions` as well as `src`) — then `test:auth`, `test:weather`, `test:repository`, `test:import` and `test:unfurl`. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0025_…` (the home brief numbers 0021–0026) |
+| Migrations | Continue the sequence: next is `supabase/migrations/0026_…` (the home brief numbers 0021–0026) |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -153,12 +153,12 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 - **Simplified, 10 November 2026** (home brief §1). Every `side: 'deacon'` surface is `off`, and so are the
   staff instruments — Huddle, Cadence, the Notice log, the Communicator, Care and Goals — each with a dated
   comment; no data was deleted and no migration reverted. The staff rooms are the short menu: **Home ·
-  Calendar · Needs · News · Discussion · Ministries · Leadership · People** (People `adminOnly`, the
-  administrator only), with Homebound and Resources joining as they are built. A side with nothing switched on is not
+  Calendar · Needs · News · Discussion · Ministries · Leadership · Resources · People** (People `adminOnly`,
+  the administrator only), with Homebound joining when it is built. A side with nothing switched on is not
   in the session's `sides` (`sideIsDrawn()`), so Jacob and Joshua are drawn the staff side, the side switch
   has nothing to switch to and is not shown, and `context` stays so the deacon side can come back without a
-  rewrite. `hidden` on a surface means routable but in no room — the manual and Robert's Rules, which sit in
-  More until Resources (§7) lists them; it is not `off`, which means the route refuses. **Home never points
+  rewrite. `hidden` on a surface means routable but in no room — the manual and Robert's Rules, reached from
+  Resources (§7), which lists them as built-in entries; it is not `off`, which means the route refuses. **Home never points
   at a room that is off:** every tile and row on `Today.tsx` names the surface it opens and `Tile` / `TileRow`
   ask `canOpen()` (`useCanOpen()` in `src/screens/useSurfaces.ts`) before drawing — put any new tile through
   them, never around them. Other in-page links into an off room follow the same rule (Discussion's Promote,
@@ -214,7 +214,9 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   media query, because CSS `zoom` (how Display size works: Auto, Normal, Large, Wall, remembered in this
   browser) does not move media queries. Under zoom `100vh` and `100vw` are multiplied, so "the height of the
   screen" is `var(--ui-vh)` and "the width" `var(--ui-vw)`; a bare `100vh` is a bug at any scale but 1. Narrow
-  folds the pill to ← and the room you are in, whose name opens More with every room in it. The view-as bar
+  folds the pill to ← and the room you are in, whose name opens More with every room in it — and so does any
+  width the full pill would not fit across (`usePillFolds()` in `RoomPill.tsx`: about 118px a room plus ← and
+  More), which More follows when it decides whether to list the rooms. Nine rooms fold below about 1,220px. The view-as bar
   and the top bar are one sticky stack in `AppShell`, so neither slides under the other, and every page leaves
   `--pill-lane` free at the bottom. `@media (pointer: coarse)` in `global.css` is the 44px floor for
   every control. Display size is a view setting like the context toggle: it decides nothing about what anyone
@@ -252,6 +254,16 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   the kind by `guard_family_news()` so no form can get it wrong; a limited account is not offered those kinds
   and the database refuses them anyway. Entries leave the board on `show_until` (illness 14 days, expecting
   120, most things 30 days past their date); nothing purges them.
+- **Resources** (home brief §7, `0025_resources.sql`) — `resource` (name, link, one line, one of five categories,
+  pinned); `src/screens/Resources.tsx` at `/resources`. Pinned first, then by category, with a find box. The
+  whole staff body reads and adds; the person who added a link or a staff-role account edits, pins and removes
+  it — the News rule. A link is http(s) or a path in this app (`/reference`); the database and the form both
+  refuse `//host`, which leaves the site while looking like a path. **The manual and Robert's Rules are
+  built-in entries, not rows** — drawn under Reference whenever `canOpen()` says the person may open them — so
+  they cannot be removed by accident; they left More on the same day (`MORE_SURFACES` is empty). Files are links
+  in v1; upload storage is a later PR if a link will not do. The brief's other examples (Breeze, BAND, the style
+  guide, Lamplight, Roll Call) are the staff's to enter with the church's real addresses; the local seed's
+  addresses are samples.
 - **Leadership** (home brief §6, `0024_leadership.sql`) — `src/screens/Leadership.tsx` at `/leadership`. **It is
   the serving directory, not a parallel table:** a board and a committee are `serving_group` kinds (`board`,
   `committee`), an office is a `serving_role` (chairman, vice-chairman, secretary, the deacon officers finance,

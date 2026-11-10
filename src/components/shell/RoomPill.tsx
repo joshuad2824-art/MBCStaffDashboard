@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import type { OpenRoom, RoomKey } from '../../screens/rooms'
-import { useNarrow } from '../../lib/displayScale'
+import { useDisplayScale, useNarrow } from '../../lib/displayScale'
 
 /* The pill: the one control that floats, and it holds still. Every room keeps
    its slot on every page, so the hand learns where a room is and it stays
@@ -30,7 +30,7 @@ export function RoomPill({
   moreOpen: boolean
   onMore(): void
 }) {
-  const narrow = useNarrow()
+  const narrow = usePillFolds(rooms.length)
   const navigate = useNavigate()
   const { pathname } = useLocation()
 
@@ -141,6 +141,18 @@ export function RoomPill({
       )}
     </nav>
   )
+}
+
+/** Whether the pill folds to ← and the room you are in. On a narrow screen
+    always; and on a wider one whenever every room would not fit across it —
+    nine rooms need about 1,180px, so a 1,100px window folds rather than
+    cutting both ends off. More lists every room whenever the pill is folded,
+    so they are always one tap away. (Measured: each room is about 118px with
+    its lamp and any count, plus ← and More.) */
+export function usePillFolds(roomCount: number): boolean {
+  const narrow = useNarrow()
+  const { width } = useDisplayScale()
+  return narrow || width < roomCount * 118 + 162
 }
 
 /** The lamp drawn inside the lit well. Home's lamp is the well's own ink, so

@@ -414,6 +414,23 @@ export interface NewsComment {
   time: string
 }
 
+/* Resources (home brief §7): the links staff reach for. */
+export type ResourceCategory = 'ministry-tools' | 'office-admin' | 'brand-design' | 'reference' | 'training'
+
+export interface Resource {
+  id: Id
+  name: string
+  /** Out to the web over http(s), or a path inside this app ("/reference"). */
+  url: string
+  /** One line. */
+  description: string
+  category: ResourceCategory
+  pinned: boolean
+  addedBy: Id
+  position: number
+  active: boolean
+}
+
 export interface DashboardData {
   people: Person[]
   cadence: CadenceItem[]
@@ -444,4 +461,6 @@ export interface DashboardData {
   newsCategories: NewsCategory[]
   newsPosts: NewsPost[]
   newsComments: NewsComment[]
+  /** Resources (0025). */
+  resources: Resource[]
 }

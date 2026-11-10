@@ -552,7 +552,7 @@ const PAGES: { key: string; rule: string }[] = [
   { key: 'ministries', rule: 'var(--room-people)' },
   { key: 'leadership', rule: 'var(--room-people)' },
   { key: 'homebound', rule: 'var(--room-people)' },
-  { key: 'resources', rule: 'var(--room-work)' },
+  { key: 'resources', rule: 'var(--room-more)' },
   { key: 'discussion', rule: 'var(--room-huddle)' },
 ]
 

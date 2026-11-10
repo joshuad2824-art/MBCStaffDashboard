@@ -123,7 +123,7 @@ export const SURFACES: Record<string, Surface> = {
     side: 'both',
     nested: true,
     /* Off the menu since 10 November 2026 (home brief §1.2); still routable,
-       and reached from Resources once §7 lands, from More until then. */
+       and reached from Resources (§7), which lists it as a built-in entry. */
     hidden: true,
     path: '/reference',
     eyebrow: 'The manual, as transcribed',
@@ -142,7 +142,7 @@ export const SURFACES: Record<string, Surface> = {
     side: 'both',
     nested: true,
     /* Off the menu since 10 November 2026 (home brief §1.2); still routable,
-       and reached from Resources once §7 lands, from More until then. */
+       and reached from Resources (§7), which lists it as a built-in entry. */
     hidden: true,
     path: '/rules',
     eyebrow: 'Parliamentary procedure, in plain words',
@@ -267,6 +267,17 @@ export const SURFACES: Record<string, Surface> = {
     path: '/needs',
     eyebrow: 'Waiting on someone',
     title: 'Needs',
+  },
+  /* Resources (home brief §7): the links staff reach for, and the home of the
+     manual and Robert's Rules, which left the menu for it. */
+  resources: {
+    nav: 'Resources',
+    group: 3,
+    bodies: ['staff'],
+    side: 'staff',
+    path: '/resources',
+    eyebrow: 'The links staff reach for',
+    title: 'Resources',
   },
   /* Leadership (home brief §6): the deacons and their offices, the church's
      committees and who sits on them. A directory, not access control. */
