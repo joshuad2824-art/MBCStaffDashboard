@@ -49,6 +49,11 @@ under 18 *and anyone whose age it cannot tell*, a birthday stores no year (a che
 names the parents. This amends, for this board only, the rule above that groups hold who serves and never who
 attends; the serving directory is unchanged.
 
+**News holds links and our own notes, never an article's text.** `news_post` has no body, text, content,
+article or html column (the policy test checks the catalogue), `unfurl` reads only a page's own preview tags,
+and no article gets a page of its own — a card opens the article at its source. A scheduled feed, full-text
+reading and licensed sources were set aside on 10 November 2026: staff sharing comes first.
+
 **Absence, not greyed-out.** A surface a person has no membership for is not rendered, not
 disabled and not dimmed. Three layers: navigation omits it, the route refuses it, RLS returns no
 rows. Only the third is a security control; the other two exist so the interface tells the truth.
@@ -92,8 +97,8 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 |---|---|
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
-| CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too (it covers `netlify/functions` as well as `src`) — then `test:auth`, `test:weather`, `test:repository` and `test:import`. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0023_…` (the home brief numbers 0021–0026) |
+| CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too (it covers `netlify/functions` as well as `src`) — then `test:auth`, `test:weather`, `test:repository`, `test:import` and `test:unfurl`. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
+| Migrations | Continue the sequence: next is `supabase/migrations/0024_…` (the home brief numbers 0021–0026) |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -148,8 +153,8 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 - **Simplified, 10 November 2026** (home brief §1). Every `side: 'deacon'` surface is `off`, and so are the
   staff instruments — Huddle, Cadence, the Notice log, the Communicator, Care and Goals — each with a dated
   comment; no data was deleted and no migration reverted. The staff rooms are the short menu: **Home ·
-  Calendar · Discussion · Ministries · People** (People `adminOnly`, the administrator only), with Needs,
-  News, Leadership, Homebound and Resources joining as they are built. A side with nothing switched on is not
+  Calendar · Needs · News · Discussion · Ministries · People** (People `adminOnly`, the administrator only),
+  with Leadership, Homebound and Resources joining as they are built. A side with nothing switched on is not
   in the session's `sides` (`sideIsDrawn()`), so Jacob and Joshua are drawn the staff side, the side switch
   has nothing to switch to and is not shown, and `context` stays so the deacon side can come back without a
   rewrite. `hidden` on a surface means routable but in no room — the manual and Robert's Rules, which sit in
@@ -160,8 +165,8 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   More's present mode). The policy test did not move, which is the proof this was a nav-and-route change.
 - **Home** (home brief §2, part one, 10 November 2026) — `src/screens/Today.tsx`, still the `today` surface,
   named Home. The board is the §2.2 composition with what exists today: Date over Post a need · Today / Coming
-  up · Month · Weather, then Church family · Waiting on you · Pages, and live announcements beneath; on a phone, one column in the
-  brief's priority order. No masthead, no greeting, no lead. News joins through `Tile` when its workstream lands. **The month is shared:** `src/components/month/Month.tsx` is the pager
+  up · Month · Weather, then Church family · Waiting on you · Pages over News, and live announcements beneath; on a phone, one column in the
+  brief's priority order. No masthead, no greeting, no lead. **The month is shared:** `src/components/month/Month.tsx` is the pager
   (`useMonthPager`), the ‹ Today › control and the compact grid; the Calendar screen uses the same pager and
   control, and opens at `?day=YYYY-MM-DD`, which is how Home's tiles land on a day. Home shows standing
   services and staff events only — nothing derived from a room that is off, nothing pastoral.
@@ -247,6 +252,23 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   the kind by `guard_family_news()` so no form can get it wrong; a limited account is not offered those kinds
   and the database refuses them anyway. Entries leave the board on `show_until` (illness 14 days, expecting
   120, most things 30 days past their date); nothing purges them.
+- **News & articles** (home brief §5, `0023_news.sql`) — `news_category`, `news_post`, `news_comment`;
+  `src/screens/News.tsx` serves `/news`, `/news/<category>` and `/news/archive` (one `nested` surface);
+  `src/lib/news.ts` derives current (`post_on ≤ today ≤ expires_on`), archive (past `expires_on`) and the
+  search, which reaches both and is client-side over what is loaded (the stored `search` tsvector and its GIN
+  index are there for when it needs to move to the server). **Categories:** the brief's five plus *Tulsa &
+  Oklahoma* and *Other*, and **a post carries one or more** (Joshua, 10 November 2026) — `categories text[]`,
+  checked by `guard_news_post()` against active `news_category` rows, deduplicated, never empty. Categories are
+  data, changed by the administrator in SQL; there is no API write path. The whole staff body shares and
+  replies; editing and removing a post is the sharer's or a staff-role account's, and a removed post takes its
+  replies with it (`on delete cascade`). Replies are appended, never edited. **`unfurl`**
+  (`netlify/functions/unfurl.mts`, logic in `src/lib/unfurlCore.ts`, tested by `scripts/unfurl.test.mjs`)
+  fetches a URL a person typed, so: http(s) on ports 80/443 only, no logins in the address, DNS checked
+  against private, loopback, link-local and metadata ranges **at every redirect hop**, four hops at most,
+  HTML only, 512 KB at most. It answers a signed-in Supabase session only and **fails closed** when the
+  site's Supabase settings have not reached the function — they must be set for the Functions scope in
+  Netlify — except under `netlify dev`. When it cannot answer, the share form asks for the title by hand.
+  Thumbnails load with `referrerPolicy="no-referrer"`.
 - **A migration not yet applied** — migrations are applied to the live database by hand and the site deploys
   on merge, so for a while a build can run against a database without its newest tables. Tables the home
   brief adds are read with `readLater()` in `src/data/repository.ts`: a table the server says is not there

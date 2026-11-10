@@ -1737,3 +1737,101 @@ set role authenticated;
 select test.assert((select count(*) from family_news) = 0, 'deacon A: reads zero church-family news');
 select test.assert((select count(*) from member_date) = 0, 'deacon A: reads zero birthdays and anniversaries');
 reset role;
+
+-- --------------------------------------------------------------- 15. news (0023)
+--
+-- Home brief §5 and §11. Links and our own notes, never an article's text.
+-- The whole staff body reads, shares and comments; editing or removing a post
+-- is the sharer's or a staff-role account's. A post carries one or more known
+-- categories (Joshua, 10 November 2026). Categories change only by migration.
+
+reset role;
+
+select test.assert(
+  not exists (select 1 from information_schema.columns
+               where table_schema = 'public' and table_name = 'news_post'
+                 and (column_name ilike '%body%' or column_name ilike '%text%' or column_name ilike '%content%'
+                      or column_name ilike '%article%' or column_name ilike '%html%')),
+  'news: news_post has no body, text, content, article or html column — links and our own notes only');
+select test.assert((select count(*) from news_category) = 7, 'news: seven categories, Tulsa & Oklahoma and Other among them');
+select test.assert((select count(*) from pg_policies where tablename = 'news_category' and cmd <> 'SELECT') = 0,
+  'news: categories are changed by the administrator in SQL, not through the API');
+select test.assert((select count(*) from pg_policies where tablename = 'news_comment' and cmd in ('UPDATE', 'DELETE')) = 0,
+  'news: a comment is appended, never edited or deleted through the API');
+
+-- 15a. Signed out: nothing.
+
+select test.sign_out();
+set role anon;
+select test.assert((select count(*) from news_post) = 0,     'signed out: no news');
+select test.assert((select count(*) from news_category) = 0, 'signed out: no categories');
+select test.refused($q$ insert into news_post (url, title, categories) values ('https://example.org', 'Outside', '{other}') $q$,
+  '42501', 'signed out: cannot share a link');
+reset role;
+
+-- 15b. A limited account shares, in several categories, and comments.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from news_category) = 7, 'limited: reads the categories');
+insert into news_post (id, url, title, site_name, note, categories, shared_by)
+  values ('a9000000-0000-0000-0000-000000000001', 'https://example.org/yale-closure', 'Yale Avenue lane closures through December', 'Tulsa World',
+          'Worth knowing before Wednesday night.', '{tulsa,church-faith,tulsa}', 'b0000000-0000-0000-0000-000000000001');
+insert into news_comment (post_id, body) values ('a9000000-0000-0000-0000-000000000001', 'The detour adds ten minutes.');
+select test.assert((select shared_by from news_post where id = 'a9000000-0000-0000-0000-000000000001') = 'b0000000-0000-0000-0000-000000000002',
+  'limited: shares a link, recorded in their own name whatever was sent');
+select test.assert((select categories from news_post where id = 'a9000000-0000-0000-0000-000000000001') = '{church-faith,tulsa}',
+  'limited: a post carries more than one category, without repeats');
+select test.assert((select expires_on - post_on from news_post where id = 'a9000000-0000-0000-0000-000000000001') = 14,
+  'limited: a post with no expiry stays current for two weeks');
+select test.refused($q$ insert into news_post (url, title, categories) values ('https://example.org/x', 'X', '{gossip}') $q$,
+  '23514', 'limited: a category that is not in the table is refused');
+select test.refused($q$ insert into news_post (url, title, categories) values ('https://example.org/x', 'X', '{}') $q$,
+  '23514', 'limited: a post with no category is refused');
+select test.refused($q$ insert into news_post (url, title, categories) values ('javascript:alert(1)', 'X', '{other}') $q$,
+  '23514', 'limited: a link must be an http or https address');
+select test.refused($q$ insert into news_comment (post_id, author, body) values ('a9000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000003', 'Not mine') $q$,
+  '42501', 'limited: cannot comment in a colleague''s name');
+reset role;
+
+-- 15c. Another staff member shares; the limited account cannot touch it.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000003', 'other@memorial.test');
+set role authenticated;
+insert into news_post (id, url, title, categories) values ('a9000000-0000-0000-0000-000000000002', 'https://example.org/ai', 'What churches should know about AI', '{digital-tech,other}');
+reset role;
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+update news_post set title = 'Rewritten by someone else' where id = 'a9000000-0000-0000-0000-000000000002';
+delete from news_post where id = 'a9000000-0000-0000-0000-000000000002';
+update news_post set note = 'Detour via Harvard.' where id = 'a9000000-0000-0000-0000-000000000001';
+reset role;
+select test.assert((select title from news_post where id = 'a9000000-0000-0000-0000-000000000002') = 'What churches should know about AI',
+  'limited: cannot edit a post someone else shared');
+select test.assert((select count(*) from news_post where id = 'a9000000-0000-0000-0000-000000000002') = 1,
+  'limited: cannot remove a post someone else shared');
+select test.assert((select note from news_post where id = 'a9000000-0000-0000-0000-000000000001') = 'Detour via Harvard.',
+  'limited: edits their own post');
+
+-- 15d. A staff-role account may edit or remove any post; who shared it stays.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+update news_post set categories = '{tulsa}' where id = 'a9000000-0000-0000-0000-000000000001';
+select test.refused($q$ update news_post set shared_by = 'b0000000-0000-0000-0000-000000000001' where id = 'a9000000-0000-0000-0000-000000000001' $q$,
+  'P0001', 'staff: who shared a link does not change');
+delete from news_post where id = 'a9000000-0000-0000-0000-000000000001';
+reset role;
+select test.assert((select count(*) from news_post where id = 'a9000000-0000-0000-0000-000000000001') = 0,
+  'staff: removes a post a limited colleague shared — the staff role may');
+select test.assert((select count(*) from news_comment where post_id = 'a9000000-0000-0000-0000-000000000001') = 0,
+  'staff: a removed post takes its comments with it');
+
+-- 15e. The deacon side: nothing of it.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from news_post) = 0,     'deacon A: reads zero news');
+select test.assert((select count(*) from news_comment) = 0,  'deacon A: reads zero news comments');
+reset role;

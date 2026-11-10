@@ -372,6 +372,46 @@ export interface MemberDate {
   source: 'breeze-import' | 'manual'
 }
 
+/* News & articles (home brief §5): links staff share, their own notes, and
+   one or more categories. Never an article's text. */
+export interface NewsCategory {
+  slug: string
+  name: string
+  description: string
+  position: number
+  active: boolean
+}
+
+export interface NewsPost {
+  id: Id
+  url: string
+  title: string
+  /** "Baptist Press". */
+  siteName: string
+  /** The page's own preview image, where the publisher serves it. */
+  imageUrl: string | null
+  /** The sharer's own words. */
+  note: string
+  /** news_category slugs, at least one. */
+  categories: string[]
+  sharedBy: Id
+  /** YYYY-MM-DD. Current from this day… */
+  postOn: string
+  /** …through this one; the archive after. */
+  expiresOn: string
+  createdAt: string
+}
+
+/** A reply under a post. Appended, never edited. */
+export interface NewsComment {
+  id: Id
+  postId: Id
+  authorId: Id
+  body: string
+  createdAt: string
+  time: string
+}
+
 export interface DashboardData {
   people: Person[]
   cadence: CadenceItem[]
@@ -398,4 +438,8 @@ export interface DashboardData {
   /** Church family (0022). */
   familyNews: FamilyNews[]
   memberDates: MemberDate[]
+  /** News (0023). */
+  newsCategories: NewsCategory[]
+  newsPosts: NewsPost[]
+  newsComments: NewsComment[]
 }

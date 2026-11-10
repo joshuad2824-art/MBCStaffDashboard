@@ -286,6 +286,27 @@ export const seed: DashboardData = {
     { id: 4, names: 'Gene and Pat Lowry', kind: 'anniversary', month: 9, day: 4, year: 2001, source: 'manual' },
   ],
 
+  // News (home brief §5): the categories as 0023 seeds them, and a few
+  // links shared around the seed's Friday, slid forward with everything else.
+  newsCategories: [
+    { slug: 'church-faith', name: 'Church & Faith', description: '', position: 10, active: true },
+    { slug: 'tulsa', name: 'Tulsa & Oklahoma', description: 'Road closures, city decisions, school calendars — what touches the church’s week.', position: 20, active: true },
+    { slug: 'world', name: 'World', description: '', position: 30, active: true },
+    { slug: 'politics', name: 'Politics', description: 'News and policy that affect the church — please share reporting, not opinion pieces.', position: 40, active: true },
+    { slug: 'digital-tech', name: 'Digital & Tech', description: '', position: 50, active: true },
+    { slug: 'science', name: 'Science', description: '', position: 60, active: true },
+    { slug: 'other', name: 'Other', description: 'Anything that doesn’t fit cleanly elsewhere — or when you’re just not sure.', position: 70, active: true },
+  ],
+  newsPosts: [
+    { id: 1, url: 'https://www.tulsaworld.com/', title: 'Yale Avenue lane closures run through December', siteName: 'Tulsa World', imageUrl: null, note: 'Worth knowing before Wednesday night — the south entrance is the easy one.', categories: ['tulsa'], sharedBy: 7, postOn: '2026-08-27', expiresOn: '2026-09-10', createdAt: '2026-08-27' },
+    { id: 2, url: 'https://www.baptistpress.com/', title: 'Churches rethink the fall calendar as families stretch thin', siteName: 'Baptist Press', imageUrl: null, note: 'Some of this sounds like our parent meeting conversation.', categories: ['church-faith'], sharedBy: 2, postOn: '2026-08-26', expiresOn: '2026-09-09', createdAt: '2026-08-26' },
+    { id: 3, url: 'https://apnews.com/', title: 'What new AI tools mean for small offices', siteName: 'AP News', imageUrl: null, note: '', categories: ['digital-tech', 'church-faith'], sharedBy: 8, postOn: '2026-08-25', expiresOn: '2026-09-08', createdAt: '2026-08-25' },
+    { id: 4, url: 'https://www.npr.org/', title: 'A summer of heat records, and what comes next', siteName: 'NPR', imageUrl: null, note: '', categories: ['science', 'world'], sharedBy: 3, postOn: '2026-08-05', expiresOn: '2026-08-19', createdAt: '2026-08-05' },
+  ],
+  newsComments: [
+    { id: 1, postId: 2, authorId: 4, body: 'We should talk about this before the parent meeting.', createdAt: '2026-08-26', time: '3:40 PM' },
+  ],
+
   settings: {
     welcome:
       'If you are visiting, please fill out a contact card \u2014 in the pew or at memorialbaptist.com \u2014 and return it to an offering box or the Welcome Desk.',
