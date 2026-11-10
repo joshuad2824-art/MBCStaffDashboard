@@ -78,7 +78,7 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 |---|---|
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
-| CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too (it covers `netlify/functions` as well as `src`) — then `test:auth` and `test:weather`. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
+| CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too (it covers `netlify/functions` as well as `src`) — then `test:auth`, `test:weather` and `test:repository`. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
 | Migrations | Continue the sequence: next is `supabase/migrations/0022_…` (the home brief numbers 0021–0026) |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
@@ -223,6 +223,13 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   row (a new issue is mostly blank), and the sermon line takes its words from the cover until it has its own.
   **The page must never be a dead end:** with no issues it offers to start one (it once said "Start one" and had
   no button, which on a database with no issues was the whole page).
+- **A migration not yet applied** — migrations are applied to the live database by hand and the site deploys
+  on merge, so for a while a build can run against a database without its newest tables. Tables the home
+  brief adds are read with `readLater()` in `src/data/repository.ts`: a table the server says is not there
+  (`isMissingTable()`, `src/data/missingTable.ts`: PGRST205 or 42P01) reads as empty and is not written to
+  until a reload finds it. **Only absence is forgiven** — a policy refusal, an expired session or a missing
+  column still fails loudly, and `scripts/repository.test.mjs` holds that line. Read every new table from
+  0021 on through `readLater()`, and still apply the migration before merging when you can.
 - **`src/data/store.tsx`** — every save goes through `persist()`, which reports a failure in a lasting toast. It
   used to be `void repository.persist(next)`, so a save that failed was silent: the work stayed on screen and was
   not in the database. Do not go back to `void`. The data layer only advances its "last saved" snapshot on success,
