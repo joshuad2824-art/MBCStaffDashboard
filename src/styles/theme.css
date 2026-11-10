@@ -316,3 +316,19 @@
 /* Lists inside a tile scroll without a visible bar, as Field Notes does. */
 .quiet-scroll { scrollbar-width: none; }
 .quiet-scroll::-webkit-scrollbar { display: none; }
+
+/* A tile that is one link (Home's Weather tile, §2.3): no underline, the
+   tile's own ink, and a lift on hover so it reads as something to press. The
+   global :focus-visible ring marks it for the keyboard. */
+a.tile-anchor {
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+a.tile-anchor:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+@media (prefers-reduced-motion: reduce) {
+  a.tile-anchor { transition: none; }
+  a.tile-anchor:hover { transform: none; }
+}

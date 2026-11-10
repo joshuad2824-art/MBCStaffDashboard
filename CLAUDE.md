@@ -78,7 +78,7 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 |---|---|
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
-| CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
+| CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too (it covers `netlify/functions` as well as `src`) — then `test:auth` and `test:weather`. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
 | Migrations | Continue the sequence: next is `supabase/migrations/0021_…` (the home brief numbers 0021–0026) |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
@@ -144,6 +144,25 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   ask `canOpen()` (`useCanOpen()` in `src/screens/useSurfaces.ts`) before drawing — put any new tile through
   them, never around them. Other in-page links into an off room follow the same rule (Discussion's Promote,
   More's present mode). The policy test did not move, which is the proof this was a nav-and-route change.
+- **Home** (home brief §2, part one, 10 November 2026) — `src/screens/Today.tsx`, still the `today` surface,
+  named Home. The board is the §2.2 composition with what exists today: Date · Today / Coming up · Month ·
+  Weather, then Waiting on someone · Pages, and live announcements beneath; on a phone, one column in the
+  brief's priority order. No masthead, no greeting, no lead. Post a need, Church family and News join through
+  `Tile` when their workstreams land. **The month is shared:** `src/components/month/Month.tsx` is the pager
+  (`useMonthPager`), the ‹ Today › control and the compact grid; the Calendar screen uses the same pager and
+  control, and opens at `?day=YYYY-MM-DD`, which is how Home's tiles land on a day. Home shows standing
+  services and staff events only — nothing derived from a room that is off, nothing pastoral.
+- **Weather** — `netlify/functions/weather.mts` asks Open-Meteo and the NWS (Tulsa County, `OKC143` and
+  `OKZ060`) and returns one payload; the forecast keeps 30 minutes and the alerts 2, in memory on a warm
+  instance and as the CDN's `s-maxage`. Never call either source from the browser. `src/lib/weatherFeed.ts` is
+  the pure half — URLs, readers, the payload type — shared by the function, the browser and
+  `scripts/weather.test.mjs`, which runs the function against a stubbed fetch and clock. `src/lib/weather.ts`
+  polls the function every two minutes while the tab is visible, one poll per page, and falls back to a seeded
+  week **labelled as seed**, which claims nothing about alerts. `WEATHER_URL` is the one place weather.com's
+  Tulsa page is named: the whole Weather tile is that one link (a single focus stop, new tab), and so is the
+  severe-weather band. Only a watch or a warning interrupts Home; when one is active the tile becomes the
+  warning and the band runs across the top, carried by words, weight and position — never a status red.
+  Under `npm run dev` the function is absent and the seed shows; `netlify dev` runs it.
 - **Rooms, lamps and after dark** (October 2026 redesign, decided with Joshua on 18 October). There is no
   sidebar. `AppShell` is a sticky `TopBar` (mark, the room's lamp and name, in-room tabs, and the side switch
   for the two people who hold both sides — it replaced the dark context band and the *Which side today* page,

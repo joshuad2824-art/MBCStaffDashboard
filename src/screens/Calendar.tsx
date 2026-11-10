@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { BodyBadge, Button, Card, Rule } from '../components/ui'
 import { useData, useStore } from '../data/store'
 import { useMeetings } from '../data/meetings/store'
@@ -9,7 +10,8 @@ import type { ChurchEvent, Ministry } from '../data/types'
 import { composedAudience, noticesForEventPublish, otherRoom, reaches, roomOf, widen } from '../lib/audience'
 import { monthGrid } from '../lib/calendar'
 import { nextId } from '../lib/derive'
-import { addMonths, formatMonthTitle, formatShort, parseDate, sameDay, startOfToday, toIso, todayIso } from '../lib/date'
+import { formatMonthTitle, formatShort, parseDate, sameDay, startOfToday, toIso, todayIso } from '../lib/date'
+import { MonthNav, useMonthPager } from '../components/month/Month'
 
 /* One calendar, two rooms (mbc-deacons-dashboard-brief.md §3.1). An event is
    one row with an audience. The staff room shows what is addressed to the
@@ -38,8 +40,11 @@ export function Calendar({ side }: { side: Side }) {
   const { mutate } = useStore()
   const { member, bodies } = useSession()
   const today = startOfToday()
-  const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1))
-  const [selected, setSelected] = useState<Date>(today)
+  /* `?day=YYYY-MM-DD` opens the calendar at that day: Home's Month tile and
+     Today / Coming up send people here pointing at something. */
+  const [params] = useSearchParams()
+  const pager = useMonthPager(parseDate(params.get('day')))
+  const { month, selected } = pager
   const [adding, setAdding] = useState(false)
 
   const room = roomOf(side)
@@ -107,15 +112,9 @@ export function Calendar({ side }: { side: Side }) {
               </p>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Pill label="←" title="Previous month" onClick={() => setMonth(addMonths(month, -1))} />
-              <Pill
-                label="Today"
-                onClick={() => {
-                  setMonth(new Date(today.getFullYear(), today.getMonth(), 1))
-                  setSelected(today)
-                }}
-              />
-              <Pill label="→" title="Next month" onClick={() => setMonth(addMonths(month, 1))} />
+              <span style={{ color: 'var(--text-heading)' }}>
+                <MonthNav pager={pager} label={false} />
+              </span>
               <Button variant="outline" size="sm" onClick={() => setAdding((value) => !value)}>
                 {adding ? 'Never mind' : 'Add an event'}
               </Button>
@@ -130,7 +129,7 @@ export function Calendar({ side }: { side: Side }) {
               onDone={() => setAdding(false)}
               onSave={(event) => {
                 setAdding(false)
-                setSelected(parseDate(event.startsAt) ?? selected)
+                pager.select(parseDate(event.startsAt) ?? selected)
                 mutate(event.audience.length > 1 ? 'Added an event both sides can see.' : 'Added an event.', (current) => ({
                   ...current,
                   events: [...current.events, { ...event, id: nextId(current.events) }],
@@ -180,7 +179,7 @@ export function Calendar({ side }: { side: Side }) {
                 <button
                   key={toIso(day)}
                   type="button"
-                  onClick={() => setSelected(day)}
+                  onClick={() => pager.select(day)}
                   style={{
                     textAlign: 'left',
                     border: 'none',
@@ -433,33 +432,6 @@ function TextAction({ onClick, children }: { onClick(): void; children: string }
       style={{ background: 'none', border: 'none', padding: 0, font: '400 12px/1.4 var(--mbc-font-sans)', color: 'var(--text-link)', cursor: 'pointer' }}
     >
       {children}
-    </button>
-  )
-}
-
-function Pill({ label, title, onClick }: { label: string; title?: string; onClick(): void }) {
-  const wide = label.length > 1
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      aria-label={title ?? label}
-      style={{
-        minWidth: wide ? undefined : 44,
-        height: 44,
-        padding: wide ? '0 18px' : 0,
-        borderRadius: 'var(--mbc-radius-pill)',
-        border: '1px solid var(--border-control)',
-        background: 'none',
-        cursor: 'pointer',
-        font: '700 12px/1 var(--mbc-font-sans)',
-        letterSpacing: wide ? '.06em' : undefined,
-        textTransform: wide ? 'uppercase' : undefined,
-        color: 'var(--text-heading)',
-      }}
-    >
-      {label}
     </button>
   )
 }
