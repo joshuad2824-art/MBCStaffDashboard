@@ -2,36 +2,45 @@ import { useMemo } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useData } from '../data/store'
-import { useCare } from '../data/care/store'
 import { useSession } from '../session/session'
 import { useDisplayScale, useNarrow } from '../lib/displayScale'
 import { useClock, useForecast } from '../lib/weather'
 import { itemsForDay, monthGrid, nextOnCalendar } from '../lib/calendar'
-import { currentWeek, issueChecks } from '../lib/communicator'
+import { currentWeek } from '../lib/communicator'
 import { carePastWindow, unannouncedNotices, unclaimedCount } from '../lib/rollups'
 import { gapsIn } from '../lib/serving'
-import { firstName, isHuddleArchived, personName } from '../lib/derive'
+import { firstName, personName } from '../lib/derive'
 import { addDays, parseDate, relativeDay, sameDay, startOfToday, toIso, todayIso } from '../lib/date'
 import { reaches } from '../lib/audience'
 import { useUnreadThreadIds } from '../lib/unread'
 import { Announcements } from './discussion/Announcements'
 import { Forecast } from './today/Forecast'
+import { useCanOpen } from './useSurfaces'
+import { SURFACES } from './surfaces'
 import type { DashboardData } from '../data/types'
 
 /* Today at Memorial, as a board of tiles (October 2026 redesign). Every tile
-   wears the colour of the room it opens — the bulletin is Sunbeam because it
-   opens Work, Deacon of the Week is Sage because it is care — so after a week
-   the eye finds things by colour without being told. Nothing here is stored:
-   every count is derived from the same records the rooms show. */
+   wears the colour of the room it opens, so after a week the eye finds things
+   by colour without being told. Nothing here is stored: every count is derived
+   from the same records the rooms show.
+
+   Home never points at a room that is off (home brief §1.3). A tile, or a row
+   inside one, names the surface it opens, and `Tile` / `TileRow` ask
+   `canOpen()` before drawing anything — so the next page switched off takes
+   its tile with it, and no caller has to remember. Since 10 November 2026 that
+   has taken the Huddle, the bulletin and Deacon of the Week tiles off the
+   board, and Cadence, the Notice log and Care out of Waiting on someone. */
 
 export function Today() {
   const data = useData()
   const { member, viewAs } = useSession()
+  const canOpen = useCanOpen()
   const narrow = useNarrow()
   const { width } = useDisplayScale()
   const medium = !narrow && width < 1180
   const today = startOfToday()
   const staffRole = viewAs === 'staff'
+  const talk = canOpen('discussion')
   const live = data.announcements.some((item) => reaches(item.audience, 'staff') && item.expiresOn >= todayIso())
 
   return (
@@ -39,18 +48,15 @@ export function Today() {
       <Masthead data={data} today={today} name={member ? firstName(member.name) : ''} narrow={narrow} />
       <div className="board" data-narrow={narrow ? '' : undefined} data-medium={medium ? '' : undefined}>
         <NowTile data={data} today={today} span={3} compact={narrow} />
-        <WaitingTile data={data} today={today} staffRole={staffRole} span={5} />
+        <WaitingTile data={data} today={today} span={5} />
         <MonthTile data={data} today={today} span={4} />
-        <ScheduleTile data={data} today={today} staffRole={staffRole} span={5} />
-        <HuddleTile data={data} today={today} span={4} />
-        <BulletinTile data={data} today={today} span={3} />
+        <ScheduleTile data={data} today={today} staffRole={staffRole} span={talk ? 7 : 12} />
+        <DiscussionTile data={data} today={today} span={5} />
         {live ? (
-          <div style={{ gridColumn: `span ${staffRole ? 5 : 9}`, minWidth: 0 }} data-wide={staffRole ? undefined : ''}>
+          <div style={{ gridColumn: 'span 12', minWidth: 0 }} data-wide="">
             <Announcements side="staff" />
           </div>
         ) : null}
-        {staffRole ? <DiscussionTile data={data} today={today} span={live ? 4 : 9} /> : null}
-        <DeaconWeekTile span={3} />
         <div style={{ gridColumn: 'span 12', minWidth: 0 }} data-wide="">
           <Forecast />
         </div>
@@ -99,11 +105,11 @@ function NowTile({ data, today, span, compact }: { data: DashboardData; today: D
   const nextLine = next ? (sameDay(next.when, today) ? `${next.name} at ${next.time}.` : `Next: ${next.name}, ${relativeDay(next.when, today)}.`) : 'Nothing on the calendar for a while.'
 
   return (
-    <section
-      aria-label="Right now"
-      className="tile"
+    <Tile
+      label="Right now"
+      heading={false}
+      span={span}
       style={{
-        gridColumn: `span ${span}`,
         background: 'var(--tile-home)',
         color: 'var(--tile-home-ink)',
         border: '2px solid var(--tile-home-edge)',
@@ -128,41 +134,43 @@ function NowTile({ data, today, span, compact }: { data: DashboardData; today: D
           {weather.precipitation >= 40 ? ` · ${weather.precipitation}% rain` : ''}
         </p>
       ) : null}
-    </section>
+    </Tile>
   )
 }
 
-function WaitingTile({ data, today, staffRole, span }: { data: DashboardData; today: Date; staffRole: boolean; span: number }) {
-  const navigate = useNavigate()
-  const rows: { label: string; count: number; of?: number; to: string; lamp: string }[] = [
-    { label: 'Recurring commitments with no owner', count: unclaimedCount(data.cadence), of: data.cadence.length, to: '/cadence', lamp: 'var(--room-work)' },
-    ...(staffRole ? [{ label: 'Care entries past their window', count: carePastWindow(data.care, today).length, to: '/care', lamp: 'var(--room-people)' }] : []),
-    { label: 'Decisions not yet announced', count: unannouncedNotices(data).length, to: '/notice', lamp: 'var(--room-work)' },
-    { label: 'Groups with no leader named', count: gapsIn(data).length, to: '/ministries', lamp: 'var(--room-people)' },
+function WaitingTile({ data, today, span }: { data: DashboardData; today: Date; span: number }) {
+  const canOpen = useCanOpen()
+  const rows: { label: string; count: () => number; of?: number; opens: string; lamp: string }[] = [
+    { label: 'Recurring commitments with no owner', count: () => unclaimedCount(data.cadence), of: data.cadence.length, opens: 'cadence', lamp: 'var(--room-work)' },
+    { label: 'Care entries past their window', count: () => carePastWindow(data.care, today).length, opens: 'care', lamp: 'var(--room-people)' },
+    { label: 'Decisions not yet announced', count: () => unannouncedNotices(data).length, opens: 'notice', lamp: 'var(--room-work)' },
+    { label: 'Groups with no leader named', count: () => gapsIn(data).length, opens: 'ministries', lamp: 'var(--room-people)' },
   ]
-  const waiting = rows.filter((row) => row.count > 0)
+  /* The rows that would land, counted once. A row whose room is off is not a
+     zero; it is not there. */
+  const shown = rows.filter((row) => canOpen(row.opens)).map((row) => ({ ...row, n: row.count() }))
+  const waiting = shown.filter((row) => row.n > 0)
   const words = ['Nothing', 'One thing needs', 'Two things need', 'Three things need', 'Four things need']
 
   return (
-    <section aria-label="Waiting on someone" className="tile" style={{ gridColumn: `span ${span}`, background: 'var(--surface-card)', border: '1px solid var(--border-card)', paddingBottom: 12 }}>
-      <p className="tile-label" style={{ color: 'var(--text-category)' }}>Waiting on someone</p>
+    <Tile label="Waiting on someone" span={span} drawn={shown.length > 0} style={{ background: 'var(--surface-card)', border: '1px solid var(--border-card)', paddingBottom: 12 }} labelColour="var(--text-category)">
       <p style={{ margin: '0 0 6px', font: '600 26px/1.15 var(--mbc-font-serif)', letterSpacing: '-.015em', color: 'var(--text-heading)' }}>
         {waiting.length === 0 ? 'Every commitment has a name beside it.' : `${words[waiting.length] ?? waiting.length + ' things need'} a name beside them.`}
       </p>
       <div>
-        {rows.map((row) => (
-          <button key={row.label} type="button" className="tile-row" onClick={() => navigate(row.to)}>
+        {shown.map((row) => (
+          <TileRow key={row.label} opens={row.opens}>
             <span className="lamp-sm" style={{ background: row.lamp }} aria-hidden="true" />
             <span style={{ flex: 1 }}>{row.label}</span>
-            <span className="tabular" style={{ font: '600 20px/1 var(--mbc-font-serif)', whiteSpace: 'nowrap', color: row.count ? 'var(--text-heading)' : 'var(--text-muted)' }}>
-              {row.count}
+            <span className="tabular" style={{ font: '600 20px/1 var(--mbc-font-serif)', whiteSpace: 'nowrap', color: row.n ? 'var(--text-heading)' : 'var(--text-muted)' }}>
+              {row.n}
               {row.of !== undefined ? <span style={{ font: '400 14px var(--mbc-font-sans)', color: 'var(--text-meta)' }}> of {row.of}</span> : null}
               <span style={{ color: 'var(--text-link)', marginLeft: 8 }} aria-hidden="true">→</span>
             </span>
-          </button>
+          </TileRow>
         ))}
       </div>
-    </section>
+    </Tile>
   )
 }
 
@@ -174,10 +182,10 @@ function MonthTile({ data, today, span }: { data: DashboardData; today: Date; sp
   const month = today.toLocaleDateString('en-US', { month: 'long' })
 
   return (
-    <section aria-label="This month" className="tile" style={{ gridColumn: `span ${span}`, background: 'var(--tile-time)', color: 'var(--tile-time-ink)' }}>
+    <Tile label="This month" heading={false} opens="calendar" span={span} style={{ background: 'var(--tile-time)', color: 'var(--tile-time-ink)' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
         <span style={{ font: '600 24px/1 var(--mbc-font-serif)' }}>{month}</span>
-        <button type="button" className="tile-link" style={{ marginTop: 0, fontSize: 14, textDecoration: 'none' }} onClick={() => navigate('/calendar')}>
+        <button type="button" className="tile-link" style={{ marginTop: 0, fontSize: 14, textDecoration: 'none' }} onClick={() => navigate(SURFACES.calendar.path)}>
           Open the calendar →
         </button>
       </div>
@@ -213,7 +221,7 @@ function MonthTile({ data, today, span }: { data: DashboardData; today: Date; sp
           )
         })}
       </div>
-    </section>
+    </Tile>
   )
 }
 
@@ -245,7 +253,7 @@ function ScheduleTile({ data, today, staffRole, span }: { data: DashboardData; t
     .slice(0, 4)
 
   return (
-    <section aria-label="Today and coming up" className="tile" style={{ gridColumn: `span ${span}`, background: 'var(--surface-card)', border: '1px solid var(--border-card)' }}>
+    <Tile label="Today and coming up" heading={false} opens="calendar" span={span} style={{ background: 'var(--surface-card)', border: '1px solid var(--border-card)' }}>
       <p className="tile-label" style={{ color: 'var(--room-calendar)' }}>Today</p>
       {todays.length === 0 ? (
         <p style={{ margin: '0 0 8px', font: '400 16px/1.5 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>Nothing on the calendar today.</p>
@@ -289,76 +297,7 @@ function ScheduleTile({ data, today, staffRole, span }: { data: DashboardData; t
           })}
         </div>
       )}
-    </section>
-  )
-}
-
-function HuddleTile({ data, today, span }: { data: DashboardData; today: Date; span: number }) {
-  const navigate = useNavigate()
-  const current = data.huddle.filter((post) => !isHuddleArchived(post.createdAt, today) && !post.resolvedAt)
-  const count = (col: string) => current.filter((post) => post.col === col).length
-  const win = [...current].filter((post) => post.col === 'win').sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
-
-  return (
-    <section aria-label="This week’s huddle" className="tile" style={{ gridColumn: `span ${span}`, background: 'var(--tile-talk)', color: 'var(--tile-talk-ink)' }}>
-      <p className="tile-label">This week’s huddle</p>
-      <div style={{ display: 'flex', gap: 26 }}>
-        {[
-          ['win', 'Wins'],
-          ['tension', 'Tensions'],
-          ['fyi', 'FYIs'],
-        ].map(([col, label]) => (
-          <span key={col}>
-            <span className="tabular" style={{ display: 'block', font: '600 40px/1 var(--mbc-font-serif)' }}>{count(col)}</span>
-            <span style={{ font: '700 11px/1 var(--mbc-font-sans)', letterSpacing: '.12em', textTransform: 'uppercase' }}>{label}</span>
-          </span>
-        ))}
-      </div>
-      {win ? (
-        <>
-          <p style={{ margin: '6px 0 0', paddingTop: 16, borderTop: '1px solid var(--tile-talk-rule)', font: 'italic 400 18px/1.5 var(--mbc-font-serif)' }}>“{win.body}”</p>
-          <p style={{ margin: 0, font: '400 14px/1.4 var(--mbc-font-sans)' }}>{personName(data.people, win.authorId)} · a win</p>
-        </>
-      ) : null}
-      <button type="button" className="tile-link" onClick={() => navigate('/huddle')}>
-        Open the huddle
-      </button>
-    </section>
-  )
-}
-
-function BulletinTile({ data, today, span }: { data: DashboardData; today: Date; span: number }) {
-  const navigate = useNavigate()
-  const week = currentWeek(data.weeks, today)
-  const checks = week ? issueChecks(week, data.settings) : []
-  const ready = checks.filter((check) => check.ok).length
-
-  return (
-    <section aria-label="Sunday’s bulletin" className="tile" style={{ gridColumn: `span ${span}`, background: 'var(--tile-gold)', color: 'var(--tile-gold-ink)' }}>
-      <p className="tile-label">Sunday’s bulletin</p>
-      <p style={{ margin: 0, font: '600 26px/1.1 var(--mbc-font-serif)', letterSpacing: '-.015em' }}>
-        {!week ? 'Not started yet.' : week.status === 'draft' ? 'Still a draft.' : 'Published.'}
-      </p>
-      {week ? <p style={{ margin: 0, font: '400 15px/1.5 var(--mbc-font-sans)' }}>{[week.sermonTitle, week.scripture].filter(Boolean).join(' · ')}</p> : null}
-      {week ? (
-        <>
-          <div aria-hidden="true" style={{ display: 'grid', gridTemplateColumns: `repeat(${checks.length}, minmax(0,1fr))`, gap: 4, marginTop: 4 }}>
-            {checks.map((check) => (
-              <span
-                key={check.key}
-                style={{ height: 30, borderRadius: '999px 999px 3px 3px', background: check.ok ? 'var(--tile-gold-ink)' : 'transparent', border: check.ok ? 'none' : '1.5px dashed var(--tile-gold-ink)' }}
-              />
-            ))}
-          </div>
-          <p className="tabular" style={{ margin: 0, font: '700 14px/1.4 var(--mbc-font-sans)' }}>
-            {ready} of {checks.length} ready to print
-          </p>
-        </>
-      ) : null}
-      <button type="button" className="tile-link" onClick={() => navigate('/communicator')}>
-        {!week ? 'Start this week’s issue' : week.status === 'draft' ? 'Finish it' : 'Open it'}
-      </button>
-    </section>
+    </Tile>
   )
 }
 
@@ -372,7 +311,7 @@ function DiscussionTile({ data, today, span }: { data: DashboardData; today: Dat
   const unread = useUnreadThreadIds(member?.id ?? null, threads).length
 
   return (
-    <section aria-label="Discussion" className="tile" style={{ gridColumn: `span ${span}`, background: 'var(--tile-tint)', color: 'var(--tile-tint-ink)', paddingBottom: 14 }}>
+    <Tile label="Discussion" heading={false} opens="discussion" span={span} style={{ background: 'var(--tile-tint)', color: 'var(--tile-tint-ink)', paddingBottom: 14 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <p className="tile-label" style={{ color: 'var(--tile-tint-label)' }}>Discussion</p>
         {unread > 0 ? <span className="tabular" style={{ font: '700 13px/1 var(--mbc-font-sans)', color: 'var(--tile-tint-label)' }}>{unread} new</span> : null}
@@ -382,7 +321,7 @@ function DiscussionTile({ data, today, span }: { data: DashboardData; today: Dat
       ) : (
         <div>
           {threads.slice(0, 3).map((thread) => (
-            <button key={thread.id} type="button" className="tile-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4, borderColor: 'var(--tile-tint-rule)', color: 'inherit' }} onClick={() => navigate('/discussion')}>
+            <button key={thread.id} type="button" className="tile-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4, borderColor: 'var(--tile-tint-rule)', color: 'inherit' }} onClick={() => navigate(SURFACES.discussion.path)}>
               <span style={{ font: '600 18px/1.3 var(--mbc-font-serif)' }}>{thread.subject}</span>
               <span style={{ font: '400 14px/1.4 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
                 {personName(data.people, thread.createdBy)} · {relativeDay(parseDate(thread.lastActivity) ?? today, today)}
@@ -391,35 +330,61 @@ function DiscussionTile({ data, today, span }: { data: DashboardData; today: Dat
           ))}
         </div>
       )}
-    </section>
-  )
-}
-
-function DeaconWeekTile({ span }: { span: number }) {
-  const care = useCare()
-  if (!care.data) return null
-  const today = startOfToday()
-  const sunday = toIso(addDays(today, -today.getDay()))
-  const week = care.data.weeks.find((w) => w.weekOf === sunday) ?? null
-  const name = (id: string | null) => (id ? care.data?.names[id] ?? null : null)
-  const who = week ? name(week.personId) : null
-  const backup = week ? name(week.backupPersonId) : null
-
-  return (
-    <Tile span={span} label="Deacon of the Week" style={{ background: 'var(--tile-care)', color: 'var(--tile-care-ink)' }}>
-      <p style={{ margin: 0, font: '600 28px/1.1 var(--mbc-font-serif)', letterSpacing: '-.015em' }}>{who ?? 'Not named yet'}</p>
-      <p style={{ margin: 0, font: '400 15px/1.5 var(--mbc-font-sans)' }}>
-        {who ? (backup ? `Backup, ${backup}. Calls to the office go to him this week.` : 'Calls to the office go to him this week.') : 'The chairman sets the rotation on the deacon side.'}
-      </p>
     </Tile>
   )
 }
 
-function Tile({ span, label, style, children }: { span: number; label: string; style: CSSProperties; children: ReactNode }) {
+/* ------------------------------------------------------- tile and row */
+
+/** One tile on the board. `opens` names the SURFACES key the tile leads to;
+    when that surface would not open for this person — switched off, or not
+    theirs — the tile is not drawn at all. The check lives here so that no
+    caller can forget it (home brief §1.3). `drawn` lets a tile with nothing to
+    show stand down the same way. `heading` draws the label as the tile's
+    eyebrow; tiles that set their own eyebrows inside pass false. */
+function Tile({
+  label,
+  span,
+  style,
+  opens,
+  drawn = true,
+  heading = true,
+  labelColour,
+  children,
+}: {
+  label: string
+  span: number
+  style: CSSProperties
+  opens?: string
+  drawn?: boolean
+  heading?: boolean
+  labelColour?: string
+  children: ReactNode
+}) {
+  const canOpen = useCanOpen()
+  if (!drawn || (opens && !canOpen(opens))) return null
   return (
     <section aria-label={label} className="tile" style={{ gridColumn: `span ${span}`, ...style }}>
-      <p className="tile-label">{label}</p>
+      {heading ? (
+        <p className="tile-label" style={labelColour ? { color: labelColour } : undefined}>
+          {label}
+        </p>
+      ) : null}
       {children}
     </section>
+  )
+}
+
+/** A row inside a tile that opens a surface. The same rule as `Tile`: a row
+    whose surface would not open is not drawn. */
+function TileRow({ opens, children }: { opens: string; children: ReactNode }) {
+  const navigate = useNavigate()
+  const canOpen = useCanOpen()
+  const surface = SURFACES[opens]
+  if (!surface || !canOpen(opens)) return null
+  return (
+    <button type="button" className="tile-row" onClick={() => navigate(surface.path)}>
+      {children}
+    </button>
   )
 }

@@ -12,6 +12,8 @@ import type { Person, Post } from '../data/types'
 import { canSignIn } from '../data/types'
 import { Announcements } from './discussion/Announcements'
 import { PromoteToAgenda } from './discussion/PromoteToAgenda'
+import { SURFACES } from './surfaces'
+import { useCanOpen } from './useSurfaces'
 
 /* Posts are a flat chronological list, not a nested tree — a staff of seven does
    not need indentation levels. A reply carries a reference to the post it
@@ -32,6 +34,13 @@ export function Discussion({ side, room: roomSlug }: { side: Side; room?: string
   const { mutate, say } = useStore()
   const { member, bodies, viewAs } = useSession()
   const navigate = useNavigate()
+  const canOpen = useCanOpen()
+  /* Promote moves a post somewhere that does not forget. Each destination is
+     offered only while its room is on (home brief §1.3); with the Huddle, the
+     Notice log and the ledger all off, the staff board has nowhere to promote
+     to, and the action is not drawn. */
+  const promoteTo = { tension: canOpen('huddle'), notice: canOpen('notice'), ledger: canOpen('cadence') }
+  const canPromote = side === 'deacon' || promoteTo.tension || promoteTo.notice || promoteTo.ledger
   const today = startOfToday()
 
   /* The room is a body. The two sides' boards are the staff and Board rooms;
@@ -431,7 +440,7 @@ export function Discussion({ side, room: roomSlug }: { side: Side; room?: string
                         >
                           Reply
                         </TextAction>
-                        {committee ? null : (
+                        {committee || !canPromote ? null : (
                           <TextAction onClick={() => setPromoting(promoting === post.id ? null : post.id)}>
                             Promote
                           </TextAction>
@@ -472,22 +481,28 @@ export function Discussion({ side, room: roomSlug }: { side: Side; room?: string
                           <PromoteToAgenda post={post} onDone={() => setPromoting(null)} />
                         ) : (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                            <Button variant="outline" size="sm" onClick={() => promoteToTension(post)}>
-                              Post as a tension
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => promoteToNotice(post)}>
-                              Record the decision
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                say('A mention is not an assignment. Name the owner on the ledger.')
-                                navigate('/cadence')
-                              }}
-                            >
-                              Open the ledger
-                            </Button>
+                            {promoteTo.tension ? (
+                              <Button variant="outline" size="sm" onClick={() => promoteToTension(post)}>
+                                Post as a tension
+                              </Button>
+                            ) : null}
+                            {promoteTo.notice ? (
+                              <Button variant="outline" size="sm" onClick={() => promoteToNotice(post)}>
+                                Record the decision
+                              </Button>
+                            ) : null}
+                            {promoteTo.ledger ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  say('A mention is not an assignment. Name the owner on the ledger.')
+                                  navigate(SURFACES.cadence.path)
+                                }}
+                              >
+                                Open the ledger
+                              </Button>
+                            ) : null}
                           </div>
                         )}
                       </div>

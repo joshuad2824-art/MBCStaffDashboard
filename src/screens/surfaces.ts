@@ -1,6 +1,6 @@
 import type { Access } from '../data/types'
-import { sideOfBody } from '../session/session'
-import type { Side } from '../session/session'
+import { sideOfBody } from '../session/side'
+import type { Side } from '../session/side'
 import type { PreviewSeat } from '../session/viewAs'
 
 /** Eyebrow and H1 for each surface. There is no lead paragraph beneath them:
@@ -39,6 +39,15 @@ export interface Surface {
   /** Switched off: no nav entry and no route, for anyone, in view-as too.
       The screen and its data stay, so switching it back on is one line. */
   off?: boolean
+  /** Routable but not in the menu: it is reached from a link somewhere else
+      (the manual and Robert's Rules, from Resources — home brief §1.2). Not a
+      gate and not `off`: `off` means the route refuses; this only means no
+      room lists it. */
+  hidden?: boolean
+  /** The administrator only (`person.admin`), within whatever `bodies` and
+      `staffOnly` already allow. It only narrows, and it is the interface's
+      rule, not a policy: what the page reads is still decided by RLS. */
+  adminOnly?: boolean
   /* Whether a wide screen buys this surface anything.
 
      A table or a calendar is better at every extra pixel: columns stop
@@ -71,6 +80,9 @@ export const SURFACES: Record<string, Surface> = {
     bodies: ['deacon-board'],
     side: 'deacon',
     nested: true,
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/meeting',
     eyebrow: 'The spine of the deacon year',
     title: 'The Board meeting',
@@ -81,6 +93,9 @@ export const SURFACES: Record<string, Surface> = {
     bodies: ['deacon-board', 'committee:finance', 'committee:personnel', 'committee:building-grounds', 'committee:family-assistance'],
     side: 'deacon',
     nested: true,
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/reports',
     eyebrow: 'Records, not conversation',
     title: 'Reports',
@@ -107,6 +122,9 @@ export const SURFACES: Record<string, Surface> = {
     bodies: ['staff', 'deacon-board', 'committee:finance', 'committee:personnel', 'committee:building-grounds', 'committee:family-assistance'],
     side: 'both',
     nested: true,
+    /* Off the menu since 10 November 2026 (home brief §1.2); still routable,
+       and reached from Resources once §7 lands, from More until then. */
+    hidden: true,
     path: '/reference',
     eyebrow: 'The manual, as transcribed',
     title: 'Governance reference',
@@ -123,6 +141,9 @@ export const SURFACES: Record<string, Surface> = {
     bodies: ['staff', 'deacon-board', 'committee:finance', 'committee:personnel', 'committee:building-grounds', 'committee:family-assistance'],
     side: 'both',
     nested: true,
+    /* Off the menu since 10 November 2026 (home brief §1.2); still routable,
+       and reached from Resources once §7 lands, from More until then. */
+    hidden: true,
     path: '/rules',
     eyebrow: 'Parliamentary procedure, in plain words',
     title: 'Robert’s Rules of Order',
@@ -133,6 +154,9 @@ export const SURFACES: Record<string, Surface> = {
     bodies: ['deacon-board'],
     side: 'deacon',
     wide: true,
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/board/care',
     eyebrow: 'Pointers, not content',
     title: 'The care list',
@@ -142,6 +166,9 @@ export const SURFACES: Record<string, Surface> = {
     group: 2,
     bodies: ['deacon-board'],
     side: 'deacon',
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/board/week',
     eyebrow: 'A rotation and a visit log',
     title: 'Deacon of the Week',
@@ -151,6 +178,9 @@ export const SURFACES: Record<string, Surface> = {
     group: 3,
     bodies: ['committee:finance'],
     side: 'deacon',
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/committee/finance',
     eyebrow: 'Committee room',
     title: 'Finance committee',
@@ -160,6 +190,9 @@ export const SURFACES: Record<string, Surface> = {
     group: 3,
     bodies: ['committee:personnel'],
     side: 'deacon',
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/committee/personnel',
     eyebrow: 'Committee room',
     title: 'Personnel committee',
@@ -169,6 +202,9 @@ export const SURFACES: Record<string, Surface> = {
     group: 3,
     bodies: ['committee:building-grounds'],
     side: 'deacon',
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/committee/building-grounds',
     eyebrow: 'Committee room',
     title: 'Building & Grounds committee',
@@ -178,6 +214,9 @@ export const SURFACES: Record<string, Surface> = {
     group: 3,
     bodies: ['committee:family-assistance'],
     side: 'deacon',
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/committee/family-assistance',
     eyebrow: 'Committee room · confidential',
     title: 'Family Assistance committee',
@@ -188,6 +227,9 @@ export const SURFACES: Record<string, Surface> = {
     bodies: ['deacon-board'],
     side: 'deacon',
     wide: true,
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/board/calendar',
     eyebrow: 'One calendar, shared',
     title: 'The Board’s calendar',
@@ -197,12 +239,15 @@ export const SURFACES: Record<string, Surface> = {
     group: 1,
     bodies: ['deacon-board'],
     side: 'deacon',
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/board/discussion',
     eyebrow: '14-day memory',
     title: 'The Board’s room',
   },
   today: {
-    nav: 'Today',
+    nav: 'Home',
     group: 0,
     bodies: ['staff'],
     side: 'staff',
@@ -216,6 +261,9 @@ export const SURFACES: Record<string, Surface> = {
     group: 1,
     bodies: ['staff'],
     side: 'staff',
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/huddle',
     eyebrow: 'Monday · 9:00 AM',
     title: 'Huddle',
@@ -226,6 +274,9 @@ export const SURFACES: Record<string, Surface> = {
     bodies: ['staff'],
     side: 'staff',
     wide: true,
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/cadence',
     eyebrow: 'Recurring commitments',
     title: 'Cadence ledger',
@@ -236,6 +287,9 @@ export const SURFACES: Record<string, Surface> = {
     bodies: ['staff'],
     side: 'staff',
     wide: true,
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/notice',
     eyebrow: 'The instrument',
     title: 'Notice log',
@@ -265,6 +319,9 @@ export const SURFACES: Record<string, Surface> = {
     group: 2,
     bodies: ['staff'],
     side: 'staff',
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/communicator',
     eyebrow: 'One entry, many outputs',
     title: 'Communicator',
@@ -274,6 +331,9 @@ export const SURFACES: Record<string, Surface> = {
     group: 2,
     bodies: ['staff'],
     side: 'staff',
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/care',
     eyebrow: 'Pastoral layer',
     title: 'Care pipelines',
@@ -284,6 +344,9 @@ export const SURFACES: Record<string, Surface> = {
     group: 2,
     bodies: ['staff'],
     side: 'staff',
+    /* Off since 10 November 2026, at Joshua's ask: simplify before staff
+       start. Data kept. */
+    off: true,
     path: '/goals',
     eyebrow: 'Annual · reviewed quarterly',
     title: 'Goals',
@@ -308,6 +371,8 @@ export const SURFACES: Record<string, Surface> = {
     eyebrow: 'Who can be named',
     title: 'People',
     staffOnly: true,
+    /* The administrator only since 10 November 2026 (home brief §1.1). */
+    adminOnly: true,
   },
 }
 
@@ -323,13 +388,16 @@ export interface Viewer {
   previewSeat?: PreviewSeat | null
   /** The person's real access, when `viewAs` is a seat's. */
   access?: Access
+  /** `person.admin`. A seat is never the administrator's, so a worn seat
+      drops it. */
+  admin?: boolean
 }
 
 /** The viewer a seat is drawn for: the seat's bodies and access, the same
     `canOpen()`. Without a seat, the viewer as given. */
 function asSeat(viewer: Viewer): Viewer {
   const seat = viewer.previewSeat
-  return seat ? { ...viewer, bodies: seat.bodies, viewAs: seat.access } : viewer
+  return seat ? { ...viewer, bodies: seat.bodies, viewAs: seat.access, admin: false } : viewer
 }
 
 /** Whether a person may open a surface: they sit in one of its bodies, and if
@@ -343,6 +411,7 @@ export function canOpen(surface: Surface, viewer: Viewer): boolean {
   if (surface.off) return false
   if (!surface.bodies.some((slug) => viewer.bodies.includes(slug))) return false
   if (surface.staffOnly && viewer.viewAs !== 'staff') return false
+  if (surface.adminOnly && !viewer.admin) return false
   if (surface.bothSides && viewer.sides.length < 2) return false
   if (viewer.sides.length > 1 && surface.side !== 'both' && surface.side !== viewer.context) return false
   return true
@@ -364,6 +433,13 @@ export function isStub(surface: Surface, viewer: Viewer): boolean {
   if (surface.staffOnly && (viewer.access ?? viewer.viewAs) !== 'staff') return true
   if (surface.bothSides && new Set(viewer.bodies.map(sideOfBody)).size < 2) return true
   return false
+}
+
+/** Whether a side has anything switched on for these bodies. A side with
+    nothing on is not offered: the session leaves it out of `sides`, so the
+    header's switch and More's have nothing to switch to and are not drawn. */
+export function sideIsDrawn(side: Side, bodies: readonly string[]): boolean {
+  return Object.values(SURFACES).some((surface) => surface.side === side && !surface.off && surface.bodies.some((slug) => bodies.includes(slug)))
 }
 
 /** Where a side opens. */
