@@ -11,6 +11,7 @@ import type { Appearance } from '../../lib/theme'
 import { DisplaySizeControl } from './DisplaySizeControl'
 import { ViewAsPicker } from './ViewAsPicker'
 import { RememberDevice } from '../RememberDevice'
+import { usePillFolds } from './RoomPill'
 import { useCanOpen } from '../../screens/useSurfaces'
 
 /* More: one sheet, two taps from anywhere. On a phone it carries the rooms too,
@@ -43,6 +44,7 @@ export function MoreSheet({
   const { member, seats, viewAs, sides, context, setContext, admin, previewSeat, setPresentMode, signOut, auth } = useSession()
   const { choice, setChoice } = useTheme()
   const narrow = useNarrow()
+  const folded = usePillFolds(rooms.length)
   const canOpen = useCanOpen()
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -141,7 +143,7 @@ export function MoreSheet({
           </button>
         </div>
 
-        {narrow && rooms.length > 0 ? (
+        {folded && rooms.length > 0 ? (
           <Section label="Rooms">
             <nav aria-label="Rooms" style={{ display: 'grid', gap: 2 }}>
               {rooms.map((r) => {

@@ -12,6 +12,7 @@ import type {
   FamilyKind,
   GroupKind,
   MemberDate,
+  ResourceCategory,
   HuddleColumn,
   Ministry,
   OrderItem,
@@ -110,6 +111,8 @@ function withAudiences(data: DashboardData): DashboardData {
     newsCategories: data.newsCategories?.length ? data.newsCategories : seed.newsCategories,
     newsPosts: data.newsPosts ?? [],
     newsComments: data.newsComments ?? [],
+    // A board stored before 0025 has no resources.
+    resources: data.resources ?? [],
   }
 }
 
@@ -135,13 +138,14 @@ type Entity =
   | 'memberDate'
   | 'newsPost'
   | 'newsComment'
+  | 'resource'
 
 type Row = Record<string, unknown>
 
 const entities: Entity[] = [
   'person', 'cadence', 'event', 'huddle', 'notice', 'care',
   'thread', 'post', 'mention', 'announcement', 'goal', 'week',
-  'ministry', 'group', 'assignment', 'need', 'needComment', 'familyNews', 'memberDate', 'newsPost', 'newsComment',
+  'ministry', 'group', 'assignment', 'need', 'needComment', 'familyNews', 'memberDate', 'newsPost', 'newsComment', 'resource',
 ]
 
 function emptyDashboard(): DashboardData {
@@ -152,6 +156,7 @@ function emptyDashboard(): DashboardData {
     needs: [], needTags: [], needComments: [],
     familyNews: [], memberDates: [],
     newsCategories: [], newsPosts: [], newsComments: [],
+    resources: [],
   }
 }
 
@@ -308,7 +313,7 @@ export class SupabaseRepository implements Repository {
 
     const [peopleRows, cadenceRows, occurrenceRows, eventRows, huddleRows, noticeRows, careRows,
       threadRows, postRows, mentionRows, announcementRows, goalRows, weekRows, settingsRows,
-      ministryRows, roleRows, groupRows, assignmentRows, needRows, needTagRows, needCommentRows, familyRows, memberDateRows, newsCategoryRows, newsPostRows, newsCommentRows] = await Promise.all([
+      ministryRows, roleRows, groupRows, assignmentRows, needRows, needTagRows, needCommentRows, familyRows, memberDateRows, newsCategoryRows, newsPostRows, newsCommentRows, resourceRows] = await Promise.all([
       this.read('person', 'id,name,role,email,access,active'),
       this.read('cadence_item', 'id,name,ministry,owner_id,interval_count,interval_label,notice_days,last_held,notes,archived'),
       this.read('cadence_occurrence', 'cadence_item_id,held_on'),
@@ -335,6 +340,7 @@ export class SupabaseRepository implements Repository {
       this.readLater('news_category', 'slug,name,description,position,active'),
       this.readLater('news_post', 'id,url,title,site_name,image_url,note,categories,shared_by,post_on,expires_on,created_at'),
       this.readLater('news_comment', 'id,post_id,author,body,created_at'),
+      this.readLater('resource', 'id,name,url,description,category,pinned,added_by,position,active'),
     ])
 
     this.resetIds()
@@ -496,7 +502,13 @@ export class SupabaseRepository implements Repository {
       }
     }).sort((a, b) => (a.createdAt + a.time).localeCompare(b.createdAt + b.time))
 
-    const loaded = { people, cadence, huddle, notices, care, goals, threads, posts, mentions, events, announcements, weeks, settings, ministries, servingRoles, groups, assignments, needs, needTags, needComments, familyNews, memberDates, newsCategories, newsPosts, newsComments }
+    const resources = resourceRows.map((row) => ({
+      id: this.localId('resource', row.id), name: text(row.name), url: text(row.url), description: text(row.description),
+      category: text(row.category) as ResourceCategory, pinned: row.pinned === true, addedBy: this.localId('person', row.added_by),
+      position: number(row.position), active: row.active !== false,
+    }))
+
+    const loaded = { people, cadence, huddle, notices, care, goals, threads, posts, mentions, events, announcements, weeks, settings, ministries, servingRoles, groups, assignments, needs, needTags, needComments, familyNews, memberDates, newsCategories, newsPosts, newsComments, resources }
     this.lastSnapshot = loaded
     return loaded
   }
@@ -786,6 +798,18 @@ export class SupabaseRepository implements Repository {
         // A removed post took its comments with it (on delete cascade).
         this.knownRemote.set('newsComment', ids('newsComment', data.newsComments))
       }
+    }
+
+    // Resources (0025): added by anyone on staff; edited, pinned and removed by
+    // whoever added one or a staff-role account — the policy decides each.
+    if (!this.missing.has('resource')) {
+      const changedResources = changed(data.resources, prior?.resources)
+      const resourceRows = data.resources.map((r) => ({
+        id: this.remoteId('resource', r.id), name: r.name, url: r.url, description: r.description, category: r.category,
+        pinned: r.pinned, added_by: this.remoteId('person', r.addedBy), position: r.position, active: r.active,
+      }))
+      await this.save('resource', 'resource', resourceRows.filter((row) => changedResources.has(this.localId('resource', row.id))))
+      await this.deleteMissing('resource', 'resource', ids('resource', data.resources))
     }
 
     const meetingTimes = data.settings.meetingBlocks.map((block) => [block.day, ...block.lines].join(' · ')).join('\n')
