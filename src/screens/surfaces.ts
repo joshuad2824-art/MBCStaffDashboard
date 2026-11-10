@@ -256,6 +256,18 @@ export const SURFACES: Record<string, Surface> = {
     eyebrow: 'Leave this one up',
     title: 'Today at Memorial',
   },
+  /* Needs (home brief §3): ask a colleague for input, or keep a to-do. The
+     whole staff body, limited accounts included — a need is logistics, not
+     pastoral care. */
+  needs: {
+    nav: 'Needs',
+    group: 1,
+    bodies: ['staff'],
+    side: 'staff',
+    path: '/needs',
+    eyebrow: 'Waiting on someone',
+    title: 'Needs',
+  },
   huddle: {
     nav: 'Huddle',
     group: 1,

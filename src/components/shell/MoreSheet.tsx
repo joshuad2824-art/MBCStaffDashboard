@@ -26,6 +26,7 @@ export function MoreSheet({
   room,
   back,
   unread,
+  waiting = {},
   onOpenHistory,
   onChangePassword,
 }: {
@@ -35,6 +36,7 @@ export function MoreSheet({
   room: OpenRoom | null
   back: Surface[]
   unread: Partial<Record<RoomKey, number>>
+  waiting?: Partial<Record<RoomKey, number>>
   onOpenHistory(): void
   onChangePassword(): void
 }) {
@@ -165,6 +167,10 @@ export function MoreSheet({
                     {unread[r.key] ? (
                       <span className="tabular" style={{ font: '700 13px/1 var(--mbc-font-sans)', color: 'var(--text-eyebrow)' }}>
                         {unread[r.key]} new
+                      </span>
+                    ) : waiting[r.key] ? (
+                      <span className="tabular" style={{ font: '700 13px/1 var(--mbc-font-sans)', color: 'var(--text-heading)' }}>
+                        {waiting[r.key]} waiting
                       </span>
                     ) : here ? (
                       <span style={{ font: '700 12px/1 var(--mbc-font-sans)', color: 'var(--text-category)' }}>You’re here</span>

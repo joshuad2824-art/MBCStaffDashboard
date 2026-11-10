@@ -1507,3 +1507,132 @@ reset role;
 update ministry set name = 'Pre-school' where slug = 'preschool';
 select test.assert((select count(*) from cadence_item where ministry = 'Pre-school') = 1, 'ministries: renaming a ministry moves the rows that carry its name');
 update ministry set name = 'Preschool' where slug = 'preschool';
+
+-- ------------------------------------------------------------- 13. needs (0021)
+--
+-- Home brief §3 and §11. The whole staff body reads and writes needs, limited
+-- accounts included; signed out and the deacon side read nothing. Open and
+-- done are the only states, anyone may move between them, and the database —
+-- not the browser — says who did it and when. Only the author changes the
+-- ask and who it is asked of. Nothing is deleted but a tag.
+
+reset role;
+
+select test.assert(
+  (select count(*) from pg_policies where tablename in ('need', 'need_comment') and cmd = 'DELETE') = 0,
+  'needs: no delete policy on need or need_comment');
+select test.assert(
+  (select count(*) from pg_policies where tablename = 'need_comment' and cmd = 'UPDATE') = 0,
+  'needs: a comment is appended, never edited through the API');
+select test.assert(
+  (select count(*) from membership m join body b on b.id = m.body_id
+    where b.slug = 'staff' and m.person_id in ('b0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000003')) = 3,
+  'needs: the staff, limited and other test accounts all sit in the staff body');
+
+-- 13a. Signed out: nothing, and no way to write. The claims are cleared
+-- first, so nothing of the last sign-in rides along.
+
+select test.sign_out();
+set role anon;
+select test.assert((select count(*) from need) = 0,         'signed out: no needs');
+select test.assert((select count(*) from need_tag) = 0,     'signed out: no tags');
+select test.assert((select count(*) from need_comment) = 0, 'signed out: no comments');
+select test.refused($q$ insert into need (title, created_by) values ('From outside', 'b0000000-0000-0000-0000-000000000001') $q$,
+  '42501', 'signed out: cannot post a need');
+reset role;
+
+-- 13b. The staff role posts a need and tags two colleagues.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+-- Posted in somebody else's name, and pre-marked done by somebody else: the
+-- database writes the real poster and refuses the shortcut.
+insert into need (id, title, body, link, needed_by, created_by)
+  values ('a6000000-0000-0000-0000-000000000001', 'Flyer for the Christmas Eve service', 'Proof attached.', 'https://example.org/flyer', current_date + 2,
+          'b0000000-0000-0000-0000-000000000003');
+insert into need (id, title, done_at, done_by)
+  values ('a6000000-0000-0000-0000-000000000002', 'Book the fellowship hall', now() - interval '3 days', 'b0000000-0000-0000-0000-000000000003');
+insert into need_tag (need_id, person_id) values
+  ('a6000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000002'),
+  ('a6000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000003');
+insert into need_comment (need_id, body) values ('a6000000-0000-0000-0000-000000000001', 'Here is the draft.');
+select test.assert((select count(*) from need) = 2 and (select count(*) from need_tag) = 2, 'staff: posts needs and tags two colleagues');
+select test.assert((select created_by from need where id = 'a6000000-0000-0000-0000-000000000001') = 'b0000000-0000-0000-0000-000000000001',
+  'staff: a need posted in a colleague''s name is recorded as the real poster''s');
+select test.assert((select done_by from need where id = 'a6000000-0000-0000-0000-000000000002') = 'b0000000-0000-0000-0000-000000000001'
+                   and (select done_at from need where id = 'a6000000-0000-0000-0000-000000000002') > now() - interval '1 minute',
+  'staff: a need posted already done is done now and by the poster, whatever the browser sent');
+select test.refused($q$ insert into need_comment (need_id, author, body) values ('a6000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000003', 'Not mine to say') $q$,
+  '42501', 'staff: cannot comment in a colleague''s name');
+select test.refused($q$ insert into need (title, link) values ('Bad link', 'javascript:alert(1)') $q$,
+  '23514', 'staff: a link must be an http or https address');
+reset role;
+
+-- 13c. A limited account: reads, writes, marks done — and cannot rewrite the ask.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from need) = 2,         'limited: reads the needs');
+select test.assert((select count(*) from need_tag) = 2,     'limited: reads who is tagged');
+select test.assert((select count(*) from need_comment) = 1, 'limited: reads the comments');
+insert into need (id, title) values ('a6000000-0000-0000-0000-000000000003', 'Order more bulletin paper');
+insert into need_comment (need_id, body) values ('a6000000-0000-0000-0000-000000000001', 'Looks good to me.');
+select test.assert((select count(*) from need) = 3 and (select count(*) from need_comment) = 2, 'limited: posts a need and replies to one — a need is logistics, not pastoral care');
+-- Marks the staff member's need done, claiming a colleague did it a week ago.
+update need set done_at = now() - interval '7 days', done_by = 'b0000000-0000-0000-0000-000000000003'
+ where id = 'a6000000-0000-0000-0000-000000000001';
+select test.assert((select done_by from need where id = 'a6000000-0000-0000-0000-000000000001') = 'b0000000-0000-0000-0000-000000000002'
+                   and (select done_at from need where id = 'a6000000-0000-0000-0000-000000000001') > now() - interval '1 minute',
+  'limited: marks a colleague''s need done, and the record says it was them, now');
+select test.refused($q$ update need set title = 'Something else' where id = 'a6000000-0000-0000-0000-000000000001' $q$,
+  'P0001', 'limited: cannot rewrite what a colleague''s need asks');
+update need_tag set seen_at = now() where need_id = 'a6000000-0000-0000-0000-000000000001' and person_id = 'b0000000-0000-0000-0000-000000000002';
+update need_tag set seen_at = now() where need_id = 'a6000000-0000-0000-0000-000000000001' and person_id = 'b0000000-0000-0000-0000-000000000003';
+select test.refused($q$ insert into need_tag (need_id, person_id) values ('a6000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000004') $q$,
+  '42501', 'limited: cannot add a tag to a need they did not post');
+delete from need_tag where need_id = 'a6000000-0000-0000-0000-000000000001';
+delete from need;
+delete from need_comment;
+reset role;
+select test.assert((select seen_at from need_tag where need_id = 'a6000000-0000-0000-0000-000000000001' and person_id = 'b0000000-0000-0000-0000-000000000002') is not null,
+  'limited: marks their own tag seen');
+select test.assert((select seen_at from need_tag where need_id = 'a6000000-0000-0000-0000-000000000001' and person_id = 'b0000000-0000-0000-0000-000000000003') is null,
+  'limited: an update aimed at a colleague''s tag changed nothing');
+select test.assert((select count(*) from need_tag) = 2, 'limited: a delete aimed at another''s tags removed nothing');
+select test.assert((select count(*) from need) = 3 and (select count(*) from need_comment) = 2, 'limited: a delete aimed at needs or comments removed nothing');
+
+-- 13d. Another colleague reopens it; done again keeps the first record.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000003', 'other@memorial.test');
+set role authenticated;
+update need set done_at = null where id = 'a6000000-0000-0000-0000-000000000001';
+reset role;
+select test.assert((select done_at is null and done_by is null from need where id = 'a6000000-0000-0000-0000-000000000001'),
+  'other staff: reopens a need, and who closed it is cleared with it');
+select test.sign_in('a0000000-0000-0000-0000-000000000003', 'other@memorial.test');
+set role authenticated;
+update need set done_at = now() where id = 'a6000000-0000-0000-0000-000000000002';
+reset role;
+select test.assert((select done_by from need where id = 'a6000000-0000-0000-0000-000000000002') = 'b0000000-0000-0000-0000-000000000001',
+  'other staff: marking an already-done need done again rewrites nobody''s history');
+
+-- 13e. The author edits the ask and changes who it is asked of.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+update need set title = 'Flyer for Christmas Eve — final proof', needed_by = current_date + 1 where id = 'a6000000-0000-0000-0000-000000000001';
+delete from need_tag where need_id = 'a6000000-0000-0000-0000-000000000001' and person_id = 'b0000000-0000-0000-0000-000000000003';
+select test.refused($q$ update need set created_by = 'b0000000-0000-0000-0000-000000000003' where id = 'a6000000-0000-0000-0000-000000000001' $q$,
+  'P0001', 'author: who posted a need does not change');
+reset role;
+select test.assert((select title from need where id = 'a6000000-0000-0000-0000-000000000001') like 'Flyer for Christmas Eve — final%', 'author: edits the ask');
+select test.assert((select count(*) from need_tag where need_id = 'a6000000-0000-0000-0000-000000000001') = 1, 'author: removes a tag');
+
+-- 13f. The deacon side: nothing of it.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from need) = 0,         'deacon A: reads zero needs');
+select test.assert((select count(*) from need_tag) = 0,     'deacon A: reads zero tags');
+select test.assert((select count(*) from need_comment) = 0, 'deacon A: reads zero comments');
+reset role;

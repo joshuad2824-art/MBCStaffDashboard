@@ -1,20 +1,21 @@
 import { useMemo } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useData } from '../data/store'
+import { useData, useStore } from '../data/store'
 import { useSession } from '../session/session'
 import { useDisplayScale, useNarrow } from '../lib/displayScale'
 import { WEATHER_URL, untilTime, useClock, useWeather } from '../lib/weather'
 import type { Weather, WeatherAlert } from '../lib/weather'
 import { itemsForDay } from '../lib/calendar'
 import type { CalendarItem } from '../lib/calendar'
-import { carePastWindow, unannouncedNotices, unclaimedCount } from '../lib/rollups'
-import { gapsIn } from '../lib/serving'
+import { isOpen, markDone, neededByLabel, unseenBy, waitingOn } from '../lib/needs'
+import { personName } from '../lib/derive'
 import { addDays, formatMonthTitle, parseDate, sameDay, startOfToday, toIso, todayIso } from '../lib/date'
 import { reaches } from '../lib/audience'
 import { useUnreadThreadIds } from '../lib/unread'
 import { MonthGrid, MonthNav, useMonthPager } from '../components/month/Month'
 import { Announcements } from './discussion/Announcements'
+import { Ring } from './Needs'
 import { useCanOpen } from './useSurfaces'
 import { SURFACES } from './surfaces'
 import type { DashboardData } from '../data/types'
@@ -65,7 +66,8 @@ export function Home() {
           <DateTile today={today} span={1} compact />
           <WeatherTile weather={weather} span={1} compact />
         </div>
-        <WaitingTile data={data} today={today} span={12} />
+        <PostTile span={12} compact />
+        <WaitingTile data={data} span={12} />
         <ScheduleTile data={data} today={today} span={12} />
         <MonthTile data={data} span={12} />
         <PagesTile data={data} span={12} />
@@ -77,11 +79,15 @@ export function Home() {
   return (
     <div className="board" data-medium={medium ? '' : undefined}>
       {band}
-      <DateTile today={today} span={2} />
+      {/* The date, and under it the one-tap way to ask for something. */}
+      <div style={{ gridColumn: 'span 2', display: 'grid', gridTemplateRows: '1fr auto', gap: 20, minWidth: 0 }}>
+        <DateTile today={today} span={1} />
+        <PostTile span={1} />
+      </div>
       <ScheduleTile data={data} today={today} span={4} />
       <MonthTile data={data} span={3} />
       <WeatherTile weather={weather} span={3} />
-      <WaitingTile data={data} today={today} span={7} />
+      <WaitingTile data={data} span={7} />
       <PagesTile data={data} span={5} />
       {announcements}
     </div>
@@ -357,40 +363,68 @@ function SevereBand({ alerts }: { alerts: WeatherAlert[] }) {
   )
 }
 
-/* ------------------------------------------------------ waiting on someone */
+/* ------------------------------------------------------- post a need */
 
-function WaitingTile({ data, today, span }: { data: DashboardData; today: Date; span: number }) {
-  const canOpen = useCanOpen()
-  const rows: { label: string; count: () => number; of?: number; opens: string; lamp: string }[] = [
-    { label: 'Recurring commitments with no owner', count: () => unclaimedCount(data.cadence), of: data.cadence.length, opens: 'cadence', lamp: 'var(--room-work)' },
-    { label: 'Care entries past their window', count: () => carePastWindow(data.care, today).length, opens: 'care', lamp: 'var(--room-people)' },
-    { label: 'Decisions not yet announced', count: () => unannouncedNotices(data).length, opens: 'notice', lamp: 'var(--room-work)' },
-    { label: 'Groups with no leader named', count: () => gapsIn(data).length, opens: 'ministries', lamp: 'var(--room-people)' },
-  ]
-  /* The rows that would land, counted once. A row whose room is off is not a
-     zero; it is not there. */
-  const shown = rows.filter((row) => canOpen(row.opens)).map((row) => ({ ...row, n: row.count() }))
-  const waiting = shown.filter((row) => row.n > 0)
-  const words = ['Nothing', 'One thing needs', 'Two things need', 'Three things need', 'Four things need']
+/** One tap to a new need (§3): opens Needs with the composer ready. */
+function PostTile({ span, compact = false }: { span: number; compact?: boolean }) {
+  const navigate = useNavigate()
+  return (
+    <Tile label="Post a need" heading={false} opens="needs" span={span} style={{ padding: 0, background: 'var(--tile-gold)', color: 'var(--tile-gold-ink)' }}>
+      <button
+        type="button"
+        onClick={() => navigate(`${SURFACES.needs.path}?new=1`)}
+        style={{ ...bare, justifySelf: 'stretch', width: '100%', minHeight: compact ? 64 : 96, padding: compact ? '0 20px' : '22px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, color: 'inherit', borderRadius: 'inherit' }}
+      >
+        <span className="tile-label" style={{ fontSize: 13, lineHeight: 1.4 }}>Post a need</span>
+        <span aria-hidden="true" style={{ font: '300 34px/1 var(--mbc-font-sans)' }}>+</span>
+      </button>
+    </Tile>
+  )
+}
+
+/* ------------------------------------------------------- waiting on you */
+
+/** Needs tagged to you, soonest first, undated last (§3.3), each with a ring
+    to mark it done; how many others are open, beneath. */
+function WaitingTile({ data, span }: { data: DashboardData; span: number }) {
+  const navigate = useNavigate()
+  const { mutate } = useStore()
+  const { member } = useSession()
+  const me = member?.id ?? null
+  const mine = waitingOn(data, me)
+  const others = data.needs.filter(isOpen).length - mine.length
+  const shown = mine.slice(0, 4)
 
   return (
-    <Tile label="Waiting on someone" span={span} drawn={shown.length > 0} style={{ background: 'var(--surface-card)', border: '1px solid var(--border-card)', paddingBottom: 12 }} labelColour="var(--text-category)">
-      <p style={{ margin: '0 0 6px', font: '600 26px/1.15 var(--mbc-font-serif)', letterSpacing: '-.015em', color: 'var(--text-heading)' }}>
-        {waiting.length === 0 ? 'Every commitment has a name beside it.' : `${words[waiting.length] ?? waiting.length + ' things need'} a name beside them.`}
-      </p>
-      <div>
-        {shown.map((row) => (
-          <TileRow key={row.label} opens={row.opens}>
-            <span className="lamp-sm" style={{ background: row.lamp }} aria-hidden="true" />
-            <span style={{ flex: 1 }}>{row.label}</span>
-            <span className="tabular" style={{ font: '600 20px/1 var(--mbc-font-serif)', whiteSpace: 'nowrap', color: row.n ? 'var(--text-heading)' : 'var(--text-muted)' }}>
-              {row.n}
-              {row.of !== undefined ? <span style={{ font: '400 15px var(--mbc-font-sans)', color: 'var(--text-meta)' }}> of {row.of}</span> : null}
-              <span style={{ color: 'var(--text-link)', marginLeft: 8 }} aria-hidden="true">→</span>
-            </span>
-          </TileRow>
-        ))}
-      </div>
+    <Tile label="Waiting on you" opens="needs" span={span} style={{ background: 'var(--surface-card)', border: '1px solid var(--border-card)', paddingBottom: 14 }} labelColour="var(--text-category)">
+      {mine.length === 0 ? (
+        <p style={{ margin: 0, font: '600 24px/1.2 var(--mbc-font-serif)', color: 'var(--text-heading)' }}>Nothing is waiting on you.</p>
+      ) : (
+        <div>
+          {shown.map((need) => {
+            const due = neededByLabel(need.neededBy)
+            return (
+              <div key={need.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderTop: '1px solid var(--border-hairline)' }}>
+                <Ring done={false} label={`Mark done: ${need.title}`} onClick={() => me !== null && mutate(`Done: ${need.title}`, (current) => markDone(current, need.id, me))} />
+                <button type="button" onClick={() => navigate(`${SURFACES.needs.path}?need=${need.id}`)} style={{ ...bare, flex: 1, minWidth: 0, minHeight: 44, display: 'grid', gap: 2, padding: '4px 0' }}>
+                  <span style={{ font: '400 18px/1.3 var(--mbc-font-sans)', color: 'var(--text-heading)' }}>
+                    {need.title}
+                    {unseenBy(data, me, need.id) ? <span style={{ marginLeft: 8, font: '700 11px/1 var(--mbc-font-sans)', letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-eyebrow)' }}>New</span> : null}
+                  </span>
+                  <span style={{ font: '400 15px/1.3 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>
+                    {personName(data.people, need.createdBy)}
+                    {due ? <strong style={{ color: 'var(--text-heading)' }}> · {due}</strong> : null}
+                  </span>
+                </button>
+              </div>
+            )
+          })}
+          {mine.length > shown.length ? <p style={{ margin: '6px 0 0', font: '400 15px/1.3 var(--mbc-font-sans)', color: 'var(--text-meta)' }}>and {mine.length - shown.length} more waiting on you</p> : null}
+        </div>
+      )}
+      <button type="button" className="tile-link" style={{ fontSize: 15, justifySelf: 'start', alignSelf: 'flex-start' }} onClick={() => navigate(SURFACES.needs.path)}>
+        {others > 0 ? `${others} other${others === 1 ? '' : 's'} open` : 'Open Needs'}
+      </button>
     </Tile>
   )
 }

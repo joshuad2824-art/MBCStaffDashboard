@@ -12,6 +12,7 @@ import { useData } from '../../data/store'
 import { useSession } from '../../session/session'
 import { useUnreadThreadIds } from '../../lib/unread'
 import { reaches } from '../../lib/audience'
+import { waitingOn } from '../../lib/needs'
 import { homeOf } from '../../screens/surfaces'
 import { useOpenSurfaces } from '../../screens/useSurfaces'
 import type { Surface } from '../../screens/surfaces'
@@ -50,6 +51,10 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
     boardroom: boardUnread,
   }
 
+  /* What is waiting on you, beside Needs: a number, not a coloured badge
+     (home brief §3.3). */
+  const waiting: Partial<Record<RoomKey, number>> = { needs: waitingOn(data, member?.id).length }
+
   /* Tables and calendars take the whole monitor. Everything else stops where
      lines stop being comfortable to read. */
   const contentMax = surface.wide ? '100%' : 'var(--mbc-measure-max)'
@@ -78,7 +83,7 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
         {children}
       </main>
 
-      <RoomPill rooms={rooms} room={room} home={homeOf(context)} unread={unread} moreOpen={moreOpen} onMore={() => setMoreOpen((v) => !v)} />
+      <RoomPill rooms={rooms} room={room} home={homeOf(context)} unread={unread} waiting={waiting} moreOpen={moreOpen} onMore={() => setMoreOpen((v) => !v)} />
       <MoreSheet
         open={moreOpen}
         onClose={closeMore}
@@ -86,6 +91,7 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
         room={room}
         back={back}
         unread={unread}
+        waiting={waiting}
         onOpenHistory={() => setHistoryOpen(true)}
         onChangePassword={() => setPasswordOpen(true)}
       />

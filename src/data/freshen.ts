@@ -36,6 +36,9 @@ const DATE_FIELDS = [
   'expiresOn',
   'serviceDate',
   'updatedAt',
+  'neededBy',
+  'doneAt',
+  'seenAt',
 ] as const
 
 function shiftIso(value: unknown, days: number): unknown {
