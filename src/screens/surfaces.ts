@@ -268,6 +268,18 @@ export const SURFACES: Record<string, Surface> = {
     eyebrow: 'Waiting on someone',
     title: 'Needs',
   },
+  /* Leadership (home brief §6): the deacons and their offices, the church's
+     committees and who sits on them. A directory, not access control. */
+  leadership: {
+    nav: 'Leadership',
+    group: 2,
+    bodies: ['staff'],
+    side: 'staff',
+    wide: true,
+    path: '/leadership',
+    eyebrow: 'Who serves, in what office',
+    title: 'Leadership',
+  },
   /* News & articles (home brief §5): links staff share, their own notes and
      categories. /news, /news/<category> and /news/archive are one screen. */
   news: {

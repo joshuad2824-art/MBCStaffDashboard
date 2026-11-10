@@ -6,7 +6,7 @@ import { useData, useStore } from '../data/store'
 import { useSession } from '../session/session'
 import { nextId, personName } from '../lib/derive'
 import { formatShort, parseDate, todayIso } from '../lib/date'
-import { KINDS, KIND_LABEL, LEADS, LEAD_WORD, directoryMinistries, gapsIn, hasGap, liveGroups, serving } from '../lib/serving'
+import { KINDS, KIND_LABEL, LEADS, LEAD_WORD, directoryMinistries, directoryRoles, gapsIn, hasGap, liveGroups, serving } from '../lib/serving'
 import type { GroupKind, Person, ServingAssignment, ServingGroup } from '../data/types'
 
 /* Ministries, classes and groups (expansion brief §B; design handoff in
@@ -165,7 +165,7 @@ function MinistryPage() {
     const group = data.groups.find((g) => g.id === adding.groupId)
     const name = adding.name.trim()
     if (!group || !name) return
-    const role = data.servingRoles.find((r) => r.slug === adding.roleSlug) ?? data.servingRoles[0]
+    const role = data.servingRoles.find((r) => r.slug === adding.roleSlug) ?? directoryRoles(data)[0]
     const existing = data.people.find((p) => p.active && p.name.trim().toLowerCase() === name.toLowerCase())
     const personId = existing?.id ?? nextId(data.people)
     const current = serving(data, group.id)
@@ -426,7 +426,7 @@ function GroupCard({ group, canEdit, editing, setEditing, onCommit, adding, setA
                       }}
                       style={{ ...field, width: 'auto', font: '400 15px/1 var(--mbc-font-sans)' }}
                     >
-                      {data.servingRoles.map((role) => <option key={role.slug} value={role.slug}>{role.name}</option>)}
+                      {directoryRoles(data).map((role) => <option key={role.slug} value={role.slug}>{role.name}</option>)}
                     </select>
                     {index !== 0 ? (
                       <button type="button" onClick={() => patchAssignment(assignment, `${name} is the one to call for ${group.name}.`, { isPrimary: true })} style={linkButton}>
@@ -458,7 +458,7 @@ function GroupCard({ group, canEdit, editing, setEditing, onCommit, adding, setA
               />
               <datalist id={`roster-${group.id}`}>{roster.map((p) => <option key={p.id} value={p.name} />)}</datalist>
               <select value={adding.roleSlug} aria-label="Their role" onChange={(event) => setAdding({ ...adding, roleSlug: event.target.value })} style={{ ...field, width: 'auto' }}>
-                {data.servingRoles.map((role) => <option key={role.slug} value={role.slug}>{role.name}</option>)}
+                {directoryRoles(data).map((role) => <option key={role.slug} value={role.slug}>{role.name}</option>)}
               </select>
               <Button variant="dark" size="sm" disabled={adding.name.trim().length === 0} onClick={onConfirmAdd}>Add to this group</Button>
               <button type="button" onClick={() => setAdding(null)} style={{ ...linkButton, color: 'var(--text-meta)' }}>Cancel</button>

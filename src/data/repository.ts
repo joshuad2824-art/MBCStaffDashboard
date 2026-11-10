@@ -444,7 +444,7 @@ export class SupabaseRepository implements Repository {
     })).sort((a, b) => a.position - b.position)
     const groups = groupRows.map((row) => ({
       id: this.localId('group', row.id), ministryId: this.localId('ministry', row.ministry_id),
-      kind: (['class', 'community-group', 'team'].includes(text(row.kind)) ? text(row.kind) : 'class') as GroupKind,
+      kind: (['class', 'community-group', 'team', 'board', 'committee'].includes(text(row.kind)) ? text(row.kind) : 'class') as GroupKind,
       name: text(row.name), meets: text(row.meets), location: text(row.location), audienceNote: text(row.audience_note),
       notes: text(row.notes), startedOn: nullableText(row.started_on), endedOn: nullableText(row.ended_on),
     }))

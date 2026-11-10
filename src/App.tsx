@@ -9,6 +9,7 @@ import { Today } from './screens/Today'
 import { Needs } from './screens/Needs'
 import { ChurchFamily } from './screens/ChurchFamily'
 import { News } from './screens/News'
+import { Leadership } from './screens/Leadership'
 import { Huddle } from './screens/Huddle'
 import { Cadence } from './screens/Cadence'
 import { Discussion } from './screens/Discussion'
@@ -45,6 +46,7 @@ const SCREENS: Record<string, ReactNode> = {
   needs: <Needs />,
   churchFamily: <ChurchFamily />,
   news: <News />,
+  leadership: <Leadership />,
   huddle: <Huddle />,
   cadence: <Cadence />,
   notice: <NoticeLog />,

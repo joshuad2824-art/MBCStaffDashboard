@@ -10,7 +10,7 @@ import type { Surface } from './surfaces'
 
    Since 10 November 2026 (home brief §1.1) the staff rooms are the short menu
    the brief draws — Home · Calendar · Needs · News · Discussion · Ministries ·
-   People today, with Leadership, Homebound and Resources joining as each is
+   Leadership · People today, with Homebound and Resources joining as each is
    built. The deacon rooms are kept as written; every surface in them is off,
    so none is drawn.
 
@@ -18,7 +18,7 @@ import type { Surface } from './surfaces'
    since the same date — live in More until Resources (§7) lists them: they
    are opened twice a year, not twice a day. */
 
-export type RoomKey = 'today' | 'calendar' | 'needs' | 'news' | 'discussion' | 'ministries' | 'work' | 'people' | 'meeting' | 'reports' | 'care' | 'boardroom'
+export type RoomKey = 'today' | 'calendar' | 'needs' | 'news' | 'discussion' | 'ministries' | 'leadership' | 'work' | 'people' | 'meeting' | 'reports' | 'care' | 'boardroom'
 
 export interface Room {
   key: RoomKey
@@ -45,6 +45,7 @@ export const ROOMS: Room[] = [
      holds only off surfaces and so is not drawn. */
   { key: 'discussion', side: 'staff', label: 'Discussion', lamp: 'var(--room-huddle)', lit: 'var(--lamp-huddle)', tabFill: 'var(--tile-talk)', tabInk: 'var(--tile-talk-ink)', surfaces: ['discussion', 'huddle'] },
   { key: 'ministries', side: 'staff', label: 'Ministries', lamp: 'var(--room-people)', lit: 'var(--lamp-people)', tabFill: 'var(--tile-care)', tabInk: 'var(--tile-care-ink)', surfaces: ['ministries', 'care'] },
+  { key: 'leadership', side: 'staff', label: 'Leadership', lamp: 'var(--room-people)', lit: 'var(--lamp-people)', tabFill: 'var(--tile-care)', tabInk: 'var(--tile-care-ink)', surfaces: ['leadership'] },
   { key: 'work', side: 'staff', label: 'Work', lamp: 'var(--room-work)', lit: 'var(--lamp-work)', tabFill: 'var(--tile-gold)', tabInk: 'var(--tile-gold-ink)', surfaces: ['cadence', 'notice', 'communicator', 'goals'] },
   { key: 'people', side: 'staff', label: 'People', lamp: 'var(--room-work)', lit: 'var(--lamp-work)', tabFill: 'var(--tile-gold)', tabInk: 'var(--tile-gold-ink)', surfaces: ['people'] },
 
