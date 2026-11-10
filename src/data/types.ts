@@ -335,6 +335,43 @@ export interface NeedComment {
   time: string
 }
 
+/* Church family (home brief §4): what the church would announce. Says where
+   someone is, never what is wrong. Members are not on the staff roster, so an
+   entry names people in text, the way a bulletin does. */
+export type FamilyKind =
+  | 'new-member' | 'baptism' | 'birth' | 'expecting' | 'passing' | 'illness'
+  | 'wedding' | 'engagement' | 'graduation' | 'milestone' | 'moved' | 'military'
+
+export interface FamilyNews {
+  id: Id
+  kind: FamilyKind
+  /** "Tom and Linda Rogers". */
+  names: string
+  /** The date of the thing itself, YYYY-MM-DD. */
+  onDate: string | null
+  /** One line. Never a condition. */
+  detail: string
+  link: string
+  /** Illness and expecting: the staff role's alone. The database sets it. */
+  restricted: boolean
+  /** On the board through this date. */
+  showUntil: string
+  postedBy: Id
+  createdAt: string
+}
+
+/** A birthday (adults only, never a year) or an anniversary. */
+export interface MemberDate {
+  id: Id
+  names: string
+  kind: 'birthday' | 'anniversary'
+  month: number
+  day: number
+  /** Anniversaries only. */
+  year: number | null
+  source: 'breeze-import' | 'manual'
+}
+
 export interface DashboardData {
   people: Person[]
   cadence: CadenceItem[]
@@ -358,4 +395,7 @@ export interface DashboardData {
   needs: Need[]
   needTags: NeedTag[]
   needComments: NeedComment[]
+  /** Church family (0022). */
+  familyNews: FamilyNews[]
+  memberDates: MemberDate[]
 }

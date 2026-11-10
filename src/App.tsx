@@ -7,6 +7,7 @@ import { SignIn } from './screens/SignIn'
 import { SetPassword } from './screens/SetPassword'
 import { Today } from './screens/Today'
 import { Needs } from './screens/Needs'
+import { ChurchFamily } from './screens/ChurchFamily'
 import { Huddle } from './screens/Huddle'
 import { Cadence } from './screens/Cadence'
 import { Discussion } from './screens/Discussion'
@@ -41,6 +42,7 @@ const SCREENS: Record<string, ReactNode> = {
   boardDiscussion: <Discussion side="deacon" />,
   today: <Today />,
   needs: <Needs />,
+  churchFamily: <ChurchFamily />,
   huddle: <Huddle />,
   cadence: <Cadence />,
   notice: <NoticeLog />,

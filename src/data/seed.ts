@@ -268,6 +268,24 @@ export const seed: DashboardData = {
     { id: 2, needId: 4, authorId: 8, body: 'Two typos marked on page 3. Otherwise ready.', createdAt: '2026-08-25', time: '10:02 AM' },
   ],
 
+  // Church family (home brief §4). Names in text, the way a bulletin does;
+  // situation, never diagnosis. Dated around the seed's Friday and slid
+  // forward with everything else.
+  familyNews: [
+    { id: 1, kind: 'baptism', names: 'Ava Rogers', onDate: '2026-08-30', detail: 'Sunday morning worship', link: '', restricted: false, showUntil: '2026-09-29', postedBy: 2, createdAt: '2026-08-26' },
+    { id: 2, kind: 'new-member', names: 'Dan and Erin Whitfield', onDate: '2026-08-23', detail: 'By letter from First Baptist, Broken Arrow', link: '', restricted: false, showUntil: '2026-09-22', postedBy: 7, createdAt: '2026-08-24' },
+    { id: 3, kind: 'birth', names: 'Josh and Amy Hale', onDate: '2026-08-25', detail: 'a daughter', link: '', restricted: false, showUntil: '2026-09-24', postedBy: 5, createdAt: '2026-08-26' },
+    { id: 4, kind: 'illness', names: 'Ruth Ellison', onDate: null, detail: 'In the hospital — Saint Francis, room 412; cards welcome', link: '', restricted: true, showUntil: '2026-09-09', postedBy: 1, createdAt: '2026-08-26' },
+    { id: 5, kind: 'passing', names: 'Harold Pruitt', onDate: '2026-08-22', detail: 'Service Saturday at 11:00 in the sanctuary', link: 'https://www.legacy.com/', restricted: false, showUntil: '2026-09-21', postedBy: 1, createdAt: '2026-08-23' },
+    { id: 6, kind: 'expecting', names: 'Sam and Kate Moore', onDate: null, detail: 'Due in spring', link: '', restricted: true, showUntil: '2026-12-20', postedBy: 4, createdAt: '2026-08-21' },
+  ],
+  memberDates: [
+    { id: 1, names: 'Linda Rogers', kind: 'birthday', month: 9, day: 1, year: null, source: 'manual' },
+    { id: 2, names: 'Tom and Linda Rogers', kind: 'anniversary', month: 8, day: 31, year: 1976, source: 'manual' },
+    { id: 3, names: 'Bill Carter', kind: 'birthday', month: 9, day: 6, year: null, source: 'manual' },
+    { id: 4, names: 'Gene and Pat Lowry', kind: 'anniversary', month: 9, day: 4, year: 2001, source: 'manual' },
+  ],
+
   settings: {
     welcome:
       'If you are visiting, please fill out a contact card \u2014 in the pew or at memorialbaptist.com \u2014 and return it to an offering box or the Welcome Desk.',

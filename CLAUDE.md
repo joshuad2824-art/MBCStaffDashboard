@@ -35,6 +35,20 @@ in the chairs, this becomes a system holding minors' names, which is a different
 different conversation in front of it. A screening or background-check field is out too (expansion
 brief §B.5): if one is asked for, that is a new brief, not a column.
 
+**Church-family news says where someone is, never what is wrong.** The same instinct as *pointers, not
+content*, on the staff side. An illness entry offers three situations — in the hospital, recovering at home,
+ongoing illness — and a free line for where cards or visits go; there is no field for a condition, and
+`family_news` and `member_date` have no condition, diagnosis, health, medical or notes column (the policy test
+checks the catalogue). Only what the family has shared with the church goes on the board, and nothing is ever
+copied from Care: a care record is not an announcement. The homebound list (§8) will keep the same rule.
+
+**Minors in church-family news, narrowly** (Joshua accepted home brief §4.6 on 10 November 2026). An entry
+may name a minor only for a public church milestone already announced to the church — a baptism or a birth.
+Never a birthday, an age, an address or a school. Birthdays are adults only: the Breeze import skips anyone
+under 18 *and anyone whose age it cannot tell*, a birthday stores no year (a check constraint), and a birth
+names the parents. This amends, for this board only, the rule above that groups hold who serves and never who
+attends; the serving directory is unchanged.
+
 **Absence, not greyed-out.** A surface a person has no membership for is not rendered, not
 disabled and not dimmed. Three layers: navigation omits it, the route refuses it, RLS returns no
 rows. Only the third is a security control; the other two exist so the interface tells the truth.
@@ -78,8 +92,8 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
 |---|---|
 | Branches | `claude/<short-description>` — matches existing history |
 | PRs | One per phase. Never fold Phase 0 and Phase 1 into one PR. |
-| CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too (it covers `netlify/functions` as well as `src`) — then `test:auth`, `test:weather` and `test:repository`. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
-| Migrations | Continue the sequence: next is `supabase/migrations/0022_…` (the home brief numbers 0021–0026) |
+| CI | Two jobs on every PR. `build` is `npm run build` — `tsc -b && vite build`, so it is the typecheck too (it covers `netlify/functions` as well as `src`) — then `test:auth`, `test:weather`, `test:repository` and `test:import`. `policies` applies the migrations to a throwaway Postgres and runs `supabase/tests/policies.sql`. |
+| Migrations | Continue the sequence: next is `supabase/migrations/0023_…` (the home brief numbers 0021–0026) |
 | Local dev | No secrets needed. Without `.env.local` the app runs on seed data with stubbed sign-in. |
 | Design system | Lora (editorial) + Lato (interface), tokens in `src/styles/tokens.css`, components in `src/components/ui`. The deacon side is not a different product and must not look like one. |
 
@@ -146,9 +160,8 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   More's present mode). The policy test did not move, which is the proof this was a nav-and-route change.
 - **Home** (home brief §2, part one, 10 November 2026) — `src/screens/Today.tsx`, still the `today` surface,
   named Home. The board is the §2.2 composition with what exists today: Date over Post a need · Today / Coming
-  up · Month · Weather, then Waiting on you · Pages, and live announcements beneath; on a phone, one column in the
-  brief's priority order. No masthead, no greeting, no lead. Church family and News join through `Tile` when
-  their workstreams land. **The month is shared:** `src/components/month/Month.tsx` is the pager
+  up · Month · Weather, then Church family · Waiting on you · Pages, and live announcements beneath; on a phone, one column in the
+  brief's priority order. No masthead, no greeting, no lead. News joins through `Tile` when its workstream lands. **The month is shared:** `src/components/month/Month.tsx` is the pager
   (`useMonthPager`), the ‹ Today › control and the compact grid; the Calendar screen uses the same pager and
   control, and opens at `?day=YYYY-MM-DD`, which is how Home's tiles land on a day. Home shows standing
   services and staff events only — nothing derived from a room that is off, nothing pastoral.
@@ -223,6 +236,17 @@ panel, no flag. If one is ever asked for again, it flags and never removes.
   row (a new issue is mostly blank), and the sermon line takes its words from the cover until it has its own.
   **The page must never be a dead end:** with no issues it offers to start one (it once said "Start one" and had
   no button, which on a database with no issues was the whole page).
+- **Church family** (home brief §4, `0022_church_family.sql`) — `family_news` (kinds from new members to
+  military; names in text, the way a bulletin does, because members are not on the `person` roster) and
+  `member_date` (birthdays and anniversaries). `src/screens/ChurchFamily.tsx` at `/church-family`, `hidden`
+  (reached from Home's cream reading panel, not the menu); `src/lib/family.ts` derives the board, the groups
+  and what comes round; `src/lib/breezeImport.ts` is the administrator's CSV import, pure, tested by
+  `scripts/import.test.mjs`. **Anyone on staff adds, edits and removes any entry they can read** (Joshua,
+  10 November 2026) — so unlike Needs these tables have delete policies and a `deleteMissing()`, which only
+  ever covers rows that person loaded. Illness and expecting are `restricted`, the staff role's alone, set from
+  the kind by `guard_family_news()` so no form can get it wrong; a limited account is not offered those kinds
+  and the database refuses them anyway. Entries leave the board on `show_until` (illness 14 days, expecting
+  120, most things 30 days past their date); nothing purges them.
 - **A migration not yet applied** — migrations are applied to the live database by hand and the site deploys
   on merge, so for a while a build can run against a database without its newest tables. Tables the home
   brief adds are read with `readLater()` in `src/data/repository.ts`: a table the server says is not there

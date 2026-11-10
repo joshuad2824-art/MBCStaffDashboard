@@ -9,7 +9,9 @@ import type {
   CareStatus,
   CommunicatorWeek,
   DashboardData,
+  FamilyKind,
   GroupKind,
+  MemberDate,
   HuddleColumn,
   Ministry,
   OrderItem,
@@ -101,6 +103,9 @@ function withAudiences(data: DashboardData): DashboardData {
     needs: data.needs ?? [],
     needTags: data.needTags ?? [],
     needComments: data.needComments ?? [],
+    // A board stored before 0022 has no church family.
+    familyNews: data.familyNews ?? [],
+    memberDates: data.memberDates ?? [],
   }
 }
 
@@ -122,13 +127,15 @@ type Entity =
   | 'assignment'
   | 'need'
   | 'needComment'
+  | 'familyNews'
+  | 'memberDate'
 
 type Row = Record<string, unknown>
 
 const entities: Entity[] = [
   'person', 'cadence', 'event', 'huddle', 'notice', 'care',
   'thread', 'post', 'mention', 'announcement', 'goal', 'week',
-  'ministry', 'group', 'assignment', 'need', 'needComment',
+  'ministry', 'group', 'assignment', 'need', 'needComment', 'familyNews', 'memberDate',
 ]
 
 function emptyDashboard(): DashboardData {
@@ -137,6 +144,7 @@ function emptyDashboard(): DashboardData {
     threads: [], posts: [], mentions: [], events: [], announcements: [], weeks: [], settings: seed.settings,
     ministries: [], servingRoles: [], groups: [], assignments: [],
     needs: [], needTags: [], needComments: [],
+    familyNews: [], memberDates: [],
   }
 }
 
@@ -293,7 +301,7 @@ export class SupabaseRepository implements Repository {
 
     const [peopleRows, cadenceRows, occurrenceRows, eventRows, huddleRows, noticeRows, careRows,
       threadRows, postRows, mentionRows, announcementRows, goalRows, weekRows, settingsRows,
-      ministryRows, roleRows, groupRows, assignmentRows, needRows, needTagRows, needCommentRows] = await Promise.all([
+      ministryRows, roleRows, groupRows, assignmentRows, needRows, needTagRows, needCommentRows, familyRows, memberDateRows] = await Promise.all([
       this.read('person', 'id,name,role,email,access,active'),
       this.read('cadence_item', 'id,name,ministry,owner_id,interval_count,interval_label,notice_days,last_held,notes,archived'),
       this.read('cadence_occurrence', 'cadence_item_id,held_on'),
@@ -315,6 +323,8 @@ export class SupabaseRepository implements Repository {
       this.readLater('need', 'id,title,body,link,needed_by,created_by,created_at,done_at,done_by'),
       this.readLater('need_tag', 'need_id,person_id,seen_at'),
       this.readLater('need_comment', 'id,need_id,author,body,created_at'),
+      this.readLater('family_news', 'id,kind,names,on_date,detail,link,restricted,show_until,posted_by,created_at'),
+      this.readLater('member_date', 'id,names,kind,month,day,year,source'),
     ])
 
     this.resetIds()
@@ -449,7 +459,18 @@ export class SupabaseRepository implements Repository {
       }
     }).sort((a, b) => (a.createdAt + a.time).localeCompare(b.createdAt + b.time))
 
-    const loaded = { people, cadence, huddle, notices, care, goals, threads, posts, mentions, events, announcements, weeks, settings, ministries, servingRoles, groups, assignments, needs, needTags, needComments }
+    const familyNews = familyRows.map((row) => ({
+      id: this.localId('familyNews', row.id), kind: text(row.kind) as FamilyKind, names: text(row.names), onDate: nullableText(row.on_date),
+      detail: text(row.detail), link: text(row.link), restricted: row.restricted === true, showUntil: text(row.show_until),
+      postedBy: this.localId('person', row.posted_by), createdAt: text(row.created_at),
+    }))
+    const memberDates = memberDateRows.map((row) => ({
+      id: this.localId('memberDate', row.id), names: text(row.names), kind: (text(row.kind) === 'anniversary' ? 'anniversary' : 'birthday') as MemberDate['kind'],
+      month: number(row.month, 1), day: number(row.day, 1), year: typeof row.year === 'number' ? row.year : null,
+      source: (text(row.source) === 'breeze-import' ? 'breeze-import' : 'manual') as MemberDate['source'],
+    }))
+
+    const loaded = { people, cadence, huddle, notices, care, goals, threads, posts, mentions, events, announcements, weeks, settings, ministries, servingRoles, groups, assignments, needs, needTags, needComments, familyNews, memberDates }
     this.lastSnapshot = loaded
     return loaded
   }
@@ -693,6 +714,29 @@ export class SupabaseRepository implements Repository {
     if (!this.missing.has('need') && !this.missing.has('need_comment')) {
       await this.save('needComment', 'need_comment', needCommentRows.filter((row) => changedNeedComments.has(this.localId('needComment', row.id))))
       this.knownRemote.set('needComment', ids('needComment', data.needComments))
+    }
+
+    // Church family (0022). Anyone who can read an entry may add, edit or
+    // remove one, so these do have deleteMissing() — and only over rows this
+    // person loaded: a restricted entry a limited account never read is never
+    // in its known set, so it is never taken for removed.
+    if (!this.missing.has('family_news')) {
+      const changedFamily = changed(data.familyNews, prior?.familyNews)
+      const familyRows = data.familyNews.map((f) => ({
+        id: this.remoteId('familyNews', f.id), kind: f.kind, names: f.names, on_date: f.onDate, detail: f.detail,
+        link: f.link || null, show_until: f.showUntil, posted_by: this.remoteId('person', f.postedBy),
+      }))
+      await this.save('familyNews', 'family_news', familyRows.filter((row) => changedFamily.has(this.localId('familyNews', row.id))))
+      await this.deleteMissing('familyNews', 'family_news', ids('familyNews', data.familyNews))
+    }
+    if (!this.missing.has('member_date')) {
+      const changedDates = changed(data.memberDates, prior?.memberDates)
+      const dateRows = data.memberDates.map((m) => ({
+        id: this.remoteId('memberDate', m.id), names: m.names, kind: m.kind, month: m.month, day: m.day,
+        year: m.kind === 'birthday' ? null : m.year, source: m.source,
+      }))
+      await this.save('memberDate', 'member_date', dateRows.filter((row) => changedDates.has(this.localId('memberDate', row.id))))
+      await this.deleteMissing('memberDate', 'member_date', ids('memberDate', data.memberDates))
     }
 
     const meetingTimes = data.settings.meetingBlocks.map((block) => [block.day, ...block.lines].join(' · ')).join('\n')

@@ -1636,3 +1636,104 @@ select test.assert((select count(*) from need) = 0,         'deacon A: reads zer
 select test.assert((select count(*) from need_tag) = 0,     'deacon A: reads zero tags');
 select test.assert((select count(*) from need_comment) = 0, 'deacon A: reads zero comments');
 reset role;
+
+-- ---------------------------------------------------------- 14. church family (0022)
+--
+-- Home brief §4 and §11. What the church would announce, and nothing more
+-- private: situation, never diagnosis — no condition, diagnosis, health or
+-- notes column anywhere. The whole staff body reads the board; illness and
+-- expecting are the staff role's alone, and `restricted` follows the kind
+-- whatever a form sends. Anyone who can read an entry may add, edit or remove
+-- one. A birthday never stores a year.
+
+reset role;
+
+select test.assert(
+  not exists (select 1 from information_schema.columns
+               where table_schema = 'public' and table_name in ('family_news', 'member_date')
+                 and (column_name ilike '%condition%' or column_name ilike '%diagnos%' or column_name ilike '%health%'
+                      or column_name ilike '%note%' or column_name ilike '%illness%' or column_name ilike '%medical%')),
+  'church family: no table in 0022 has a condition, diagnosis, health, medical or notes column');
+
+-- 14a. Signed out: nothing.
+
+select test.sign_out();
+set role anon;
+select test.assert((select count(*) from family_news) = 0, 'signed out: no church-family news');
+select test.assert((select count(*) from member_date) = 0, 'signed out: no birthdays or anniversaries');
+select test.refused($q$ insert into family_news (kind, names) values ('birth', 'Outsiders') $q$, '42501', 'signed out: cannot post church-family news');
+reset role;
+
+-- 14b. The staff role posts both kinds; restricted follows the kind, not the form.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000001', 'staff@memorial.test');
+set role authenticated;
+insert into family_news (id, kind, names, on_date, detail, restricted, posted_by) values
+  ('a7000000-0000-0000-0000-000000000001', 'baptism',   'Ava Rogers',         current_date + 4, 'Sunday morning worship', false, 'b0000000-0000-0000-0000-000000000003'),
+  ('a7000000-0000-0000-0000-000000000002', 'illness',   'Ruth Ellison',       current_date,     'In the hospital — Saint Francis, room 412; cards welcome', false, null),
+  ('a7000000-0000-0000-0000-000000000003', 'expecting', 'Sam and Kate Moore', null,             'Due in spring', false, null);
+insert into member_date (id, names, kind, month, day, year) values
+  ('a8000000-0000-0000-0000-000000000001', 'Tom and Linda Rogers', 'anniversary', 11, 14, 1976),
+  ('a8000000-0000-0000-0000-000000000002', 'Linda Rogers', 'birthday', 11, 20, null);
+select test.assert((select count(*) from family_news) = 3, 'staff: reads all three, the restricted kinds included');
+select test.assert((select count(*) from family_news where restricted) = 2, 'staff: illness and expecting are restricted though the form sent false');
+select test.assert((select posted_by from family_news where id = 'a7000000-0000-0000-0000-000000000001') = 'b0000000-0000-0000-0000-000000000001',
+  'staff: an entry posted in a colleague''s name is recorded as the real poster''s');
+select test.assert((select show_until from family_news where id = 'a7000000-0000-0000-0000-000000000002') = current_date + 14,
+  'staff: an illness entry with no end date stays up fourteen days');
+select test.refused($q$ insert into member_date (names, kind, month, day, year) values ('Someone', 'birthday', 3, 4, 1980) $q$,
+  '23514', 'staff: a birthday with a year is refused — the board needs only the day');
+select test.refused($q$ insert into family_news (kind, names) values ('diagnosis', 'Someone') $q$,
+  '23514', 'staff: a kind outside the list is refused');
+reset role;
+
+-- 14c. A limited account: the board without the restricted kinds, and full
+-- rights over what it can see.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from family_news) = 1, 'limited: reads the board');
+select test.assert((select count(*) from family_news where restricted) = 0, 'limited: reads ZERO restricted entries — illness and expecting are the staff role''s');
+select test.assert((select count(*) from member_date) = 2, 'limited: reads the birthdays and anniversaries');
+insert into family_news (id, kind, names, on_date, detail) values ('a7000000-0000-0000-0000-000000000004', 'birth', 'Josh and Amy Hale', current_date - 1, 'a daughter');
+update family_news set detail = 'Sunday morning worship, 10:30' where id = 'a7000000-0000-0000-0000-000000000001';
+update member_date set day = 21 where id = 'a8000000-0000-0000-0000-000000000002';
+select test.refused($q$ insert into family_news (kind, names, restricted) values ('illness', 'Someone', false) $q$,
+  '42501', 'limited: cannot post an illness entry, whatever restricted it sends');
+select test.refused($q$ update family_news set kind = 'expecting' where id = 'a7000000-0000-0000-0000-000000000004' $q$,
+  '42501', 'limited: cannot turn an entry into a restricted kind');
+update family_news set detail = 'Recovering at home' where id = 'a7000000-0000-0000-0000-000000000002';
+delete from family_news where id = 'a7000000-0000-0000-0000-000000000003';
+reset role;
+select test.assert((select detail from family_news where id = 'a7000000-0000-0000-0000-000000000001') like '%10:30', 'limited: edits an entry a colleague posted — anyone may');
+select test.assert((select day from member_date where id = 'a8000000-0000-0000-0000-000000000002') = 21, 'limited: corrects a birthday');
+select test.assert((select detail from family_news where id = 'a7000000-0000-0000-0000-000000000002') like 'In the hospital%', 'limited: an update aimed at a restricted entry changed nothing');
+select test.assert((select count(*) from family_news where id = 'a7000000-0000-0000-0000-000000000003') = 1, 'limited: a delete aimed at a restricted entry removed nothing');
+
+select test.sign_in('a0000000-0000-0000-0000-000000000002', 'limited@memorial.test');
+set role authenticated;
+delete from family_news where id = 'a7000000-0000-0000-0000-000000000001';
+delete from member_date where id = 'a8000000-0000-0000-0000-000000000002';
+reset role;
+select test.assert((select count(*) from family_news where id = 'a7000000-0000-0000-0000-000000000001') = 0, 'limited: removes an entry a colleague posted — anyone may');
+select test.assert((select count(*) from member_date where id = 'a8000000-0000-0000-0000-000000000002') = 0, 'limited: removes a birthday');
+
+-- 14d. Another staff-role colleague edits and removes a restricted entry.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000003', 'other@memorial.test');
+set role authenticated;
+update family_news set detail = 'Recovering at home; visits welcome' where id = 'a7000000-0000-0000-0000-000000000002';
+delete from family_news where id = 'a7000000-0000-0000-0000-000000000003';
+select test.refused($q$ update family_news set posted_by = 'b0000000-0000-0000-0000-000000000003' where id = 'a7000000-0000-0000-0000-000000000002' $q$,
+  'P0001', 'other staff: who posted an entry does not change');
+reset role;
+select test.assert((select detail from family_news where id = 'a7000000-0000-0000-0000-000000000002') like 'Recovering%', 'other staff: edits a restricted entry');
+select test.assert((select count(*) from family_news where id = 'a7000000-0000-0000-0000-000000000003') = 0, 'other staff: removes a restricted entry');
+
+-- 14e. The deacon side: nothing of it.
+
+select test.sign_in('a0000000-0000-0000-0000-000000000009', 'deacon-a@memorial.test');
+set role authenticated;
+select test.assert((select count(*) from family_news) = 0, 'deacon A: reads zero church-family news');
+select test.assert((select count(*) from member_date) = 0, 'deacon A: reads zero birthdays and anniversaries');
+reset role;
